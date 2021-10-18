@@ -1,5 +1,5 @@
 """
-ASGI config for troll_tracker project.
+ASGI config for twoops_tracker project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'troll_tracker.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'twoops_tracker.settings')
 
 application = get_asgi_application()

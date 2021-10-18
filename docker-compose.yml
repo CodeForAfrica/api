@@ -5,19 +5,19 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_USER=troll_tracker
-      - POSTGRES_PASSWORD=troll_tracker
-      - POSTGRES_DB=troll_tracker
+      - POSTGRES_USER=twoops_tracker
+      - POSTGRES_PASSWORD=twoops_tracker
+      - POSTGRES_DB=twoops_tracker
     ports:
       # Allow DB access from outside the container
       - "54321:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U troll_tracker"]
+      test: ["CMD-SHELL", "pg_isready -U twoops_tracker"]
       interval: 5s
       timeout: 5s
       retries: 5
   app:
-    image: codeforafrica/troll_tracker:0.0.1
+    image: codeforafrica/twoops_tracker:0.0.1
     restart: unless-stopped
     build:
       context: .
@@ -31,9 +31,9 @@ services:
       - .env
     environment:
       - PGHOST=db
-      - PGUSER=troll_tracker
-      - PGPASSWORD=troll_tracker
-      - PGDATABASE=troll_tracker
+      - PGUSER=twoops_tracker
+      - PGPASSWORD=twoops_tracker
+      - PGDATABASE=twoops_tracker
     stdin_open: true
     tty: true
     command: ["/wait-for-postgres.sh", "/cmd.sh"]
@@ -46,7 +46,7 @@ services:
       - app-staticfiles:/var/www/static
       - app-mediafiles:/var/www/media
     ports:
-      - 8001:80
+      - 8000:80
     depends_on:
       - app
 
