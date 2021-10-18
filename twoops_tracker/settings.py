@@ -37,6 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Local apps
+    'twoops_tracker.db',
+    'twoops_tracker.users',
 ]
 
 MIDDLEWARE = [
@@ -80,6 +84,7 @@ DATABASES = {
     }
 }
 
+AUTH_USER_MODEL = "users.TwoopsUser"
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
