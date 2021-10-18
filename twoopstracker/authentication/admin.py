@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from twoopstracker.users.models import User
+from twoopstracker.authentication.models import User
 
 admin.site.register(
     [
