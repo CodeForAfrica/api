@@ -89,8 +89,8 @@ ENV PATH=/root/.local/bin:$PATH
 
 ### Dependencies
 #### Python
-COPY ${APP_HOST}/requirements-all.txt ${APP_HOST}/requirements-all.txt /tmp/
-RUN pip install --user -r /tmp/requirements-all.txt
+COPY ${APP_HOST}/requirements-all.txt ${APP_HOST}/requirements.txt /tmp/
+RUN pip install --user -r /tmp/requirements.txt
 
 ###############################################################################
 ## Python app image
