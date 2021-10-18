@@ -18,4 +18,4 @@ exec gunicorn \
     --log-file=/app/logs/gunicorn.log \
     --access-logfile=/app/logs/access.log \
     --name twoopsTracker \
-    twoops_tracker.wsgi:application
+    twoopstracker.wsgi:application

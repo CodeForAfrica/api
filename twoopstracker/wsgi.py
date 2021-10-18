@@ -1,5 +1,5 @@
 """
-WSGI config for twoops_tracker project.
+WSGI config for twoopstracker project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'twoops_tracker.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'twoopstracker.settings')
 
 application = get_wsgi_application()
