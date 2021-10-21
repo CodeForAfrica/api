@@ -18,7 +18,7 @@ class Tweet(TimestampedModelMixin):
     owner = models.ForeignKey("TwitterAccount", on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.tweet_id
+        return f"{self.tweet_id}"
 
 
 class TwitterAccount(TimestampedModelMixin):
