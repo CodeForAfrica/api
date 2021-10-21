@@ -17,7 +17,7 @@ services:
       timeout: 5s
       retries: 5
   app:
-    image: codeforafrica/twoops_tracker:0.0.1
+    image: codeforafrica/twoopstracker:latest
     restart: unless-stopped
     build:
       context: .
