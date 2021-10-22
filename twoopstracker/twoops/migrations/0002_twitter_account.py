@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
                         help_text="Twitter Account Screen Name", max_length=100
                     ),
                 ),
-                ("veified", models.BooleanField(default=False)),
+                ("verified", models.BooleanField(default=False)),
                 ("protected", models.BooleanField(default=False)),
                 ("location", models.CharField(max_length=100)),
                 ("description", models.TextField()),

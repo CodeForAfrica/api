@@ -16,7 +16,10 @@ class Migration(migrations.Migration):
             fields=[
                 ("updated_at", models.DateTimeField(auto_now=True)),
                 ("tweet_id", models.BigIntegerField(primary_key=True, serialize=False)),
-                ("content", models.TextField(help_text="Tweet Content")),
+                (
+                    "content",
+                    models.CharField(max_length=280, help_text="Tweet Content"),
+                ),
                 ("deleted", models.BooleanField(default=False)),
                 ("created_at", models.DateTimeField()),
                 ("retweet_id", models.BigIntegerField(null=True)),
