@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     # Local apps
     "twoopstracker.db",
     "twoopstracker.authentication",
-    "twoopstracker.twitter",
+    "twoopstracker.twoops",
 ]
 
 MIDDLEWARE = [

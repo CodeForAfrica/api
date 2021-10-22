@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("twitter", "0001_tweet_model"),
+        ("twoops", "0001_tweet_model"),
     ]
 
     operations = [
@@ -53,7 +53,7 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(
                 default=1,
                 on_delete=django.db.models.deletion.CASCADE,
-                to="twitter.twitteraccount",
+                to="twoops.twitteraccount",
             ),
             preserve_default=False,
         ),

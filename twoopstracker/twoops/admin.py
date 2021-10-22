@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from twoopstracker.twitter.models import Tweet, TwitterAccount
+from twoopstracker.twoops.models import Tweet, TwitterAccount
 
 admin.site.register(
     [

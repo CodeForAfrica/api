@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from twoopstracker.twitter.models import Tweet, TwitterAccount
+from twoopstracker.twoops.models import Tweet, TwitterAccount
 
 
 class TwitterAccountSerializer(serializers.ModelSerializer):

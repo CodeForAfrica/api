@@ -1,7 +1,7 @@
 from rest_framework import generics
 
-from twoopstracker.twitter.models import Tweet
-from twoopstracker.twitter.serializers import TweetSerializer
+from twoopstracker.twoops.models import Tweet
+from twoopstracker.twoops.serializers import TweetSerializer
 
 
 class TweetsView(generics.ListAPIView):
