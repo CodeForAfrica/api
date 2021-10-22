@@ -16,6 +16,7 @@ class Tweet(TimestampedModelMixin):
     retweet_id = models.BigIntegerField(null=True)
     retweeted_user_id = models.BigIntegerField(null=True)
     number_of_interactions = models.IntegerField(default=0)
+    actual_tweet = models.JSONField()
     owner = models.ForeignKey("TwitterAccount", on_delete=models.CASCADE)
 
     def __str__(self):
@@ -41,6 +42,10 @@ class TwitterAccount(TimestampedModelMixin):
     favourites_count = models.IntegerField()
     statuses_count = models.IntegerField()
     profile_image_url = models.URLField(max_length=200)
+    deleted = models.BooleanField(
+        default=False,
+        help_text=_("When deleted is true, we aren't tracking this account anymore."),
+    )
 
     def __str__(self):
         return self.screen_name

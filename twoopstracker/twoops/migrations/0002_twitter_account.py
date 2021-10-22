@@ -39,8 +39,15 @@ class Migration(migrations.Migration):
                 ("friends_count", models.IntegerField()),
                 ("favourites_count", models.IntegerField()),
                 ("statuses_count", models.IntegerField()),
-                ("created_at", models.DateTimeField()),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("profile_image_url", models.URLField()),
+                (
+                    "deleted",
+                    models.BooleanField(
+                        default=False,
+                        help_text="When deleted is true, we aren't tracking this account anymore.",
+                    ),
+                ),
             ],
             options={
                 "get_latest_by": "updated_at",

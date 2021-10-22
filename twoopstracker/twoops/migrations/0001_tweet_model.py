@@ -21,10 +21,11 @@ class Migration(migrations.Migration):
                     models.CharField(max_length=280, help_text="Tweet Content"),
                 ),
                 ("deleted", models.BooleanField(default=False)),
-                ("created_at", models.DateTimeField()),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("retweet_id", models.BigIntegerField(null=True)),
                 ("retweeted_user_id", models.BigIntegerField(null=True)),
                 ("number_of_interactions", models.IntegerField(default=0)),
+                ("actual_tweet", models.JSONField()),
             ],
             options={
                 "get_latest_by": "updated_at",
