@@ -1,3 +1,4 @@
 Django==3.2.8
+environs[django]==9.3.4
 greenlet==1.1.2
 gunicorn[gevent, setproctitle]==20.1.0
