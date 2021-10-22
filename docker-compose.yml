@@ -30,6 +30,11 @@ services:
     env_file:
       - .env
     environment:
+      - TWOOPSTRACKER_ALLOWED_HOSTS=${TWOOPSTRACKER_ALLOWED_HOSTS:-*}
+      - TWOOPSTRACKER_DATABASE_URL=${TWOOPSTRACKER_DATABASE_URL:-postgresql://twoops_tracker:twoops_tracker@db:5432/twoops_tracker}
+      - TWOOPSTRACKER_DEBUG=${TWOOPSTRACKER_DEBUG:-True}
+      # psql connection parameters (used in wait-for-postgrsql.sh)
+      # see: https://www.postgresql.org/docs/9.6/libpq-envars.html
       - PGHOST=db
       - PGUSER=twoops_tracker
       - PGPASSWORD=twoops_tracker
