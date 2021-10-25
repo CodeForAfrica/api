@@ -35,19 +35,19 @@ class TwitterAccount(TimestampedModelMixin):
     """
 
     account_id = models.BigIntegerField(primary_key=True)
-    name = models.CharField(max_length=100, help_text=_("Name of Twitter Account"))
+    name = models.CharField(max_length=255, help_text=_("Name of Twitter Account"))
     screen_name = models.CharField(
-        max_length=100, help_text=_("Twitter Account Screen Name")
+        max_length=255, help_text=_("Twitter Account Screen Name")
     )
     verified = models.BooleanField(default=False)
     protected = models.BooleanField(default=False)
-    location = models.CharField(max_length=100)
+    location = models.CharField(max_length=255)
     description = models.TextField()
     followers_count = models.IntegerField()
     friends_count = models.IntegerField()
     favourites_count = models.IntegerField()
     statuses_count = models.IntegerField()
-    profile_image_url = models.URLField(max_length=200)
+    profile_image_url = models.URLField(max_length=255)
     deleted = models.BooleanField(
         default=False,
         help_text=_("When deleted is true, we aren't tracking this account anymore."),

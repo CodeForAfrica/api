@@ -22,18 +22,18 @@ class Migration(migrations.Migration):
                 (
                     "name",
                     models.CharField(
-                        help_text="Name of Twitter Account", max_length=100
+                        help_text="Name of Twitter Account", max_length=255
                     ),
                 ),
                 (
                     "screen_name",
                     models.CharField(
-                        help_text="Twitter Account Screen Name", max_length=100
+                        help_text="Twitter Account Screen Name", max_length=255
                     ),
                 ),
                 ("verified", models.BooleanField(default=False)),
                 ("protected", models.BooleanField(default=False)),
-                ("location", models.CharField(max_length=100)),
+                ("location", models.CharField(max_length=255)),
                 ("description", models.TextField()),
                 ("followers_count", models.IntegerField()),
                 ("friends_count", models.IntegerField()),
