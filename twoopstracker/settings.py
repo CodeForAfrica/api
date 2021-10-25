@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # installed apps
     "rest_framework",
+    "storages",
     # Local apps
     "twoopstracker.db",
     "twoopstracker.authentication",
@@ -132,3 +133,20 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
+
+TWOOPSTRACKER_USE_S3 = env.bool("TWOOPSTRACKER_USE_S3", False)
+
+if TWOOPSTRACKER_USE_S3:
+    STATICFILES_STORAGE = "storages.backends.s3boto3.S3StaticStorage"
+    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    AWS_ACCESS_KEY_ID = env.str("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = env.str("AWS_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = env.str("AWS_STORAGE_BUCKET_NAME")
+    AWS_S3_SIGNATURE_VERSION = env.str("AWS_S3_SIGNATURE_VERSION", "s3v4")
+    AWS_S3_REGION_NAME = env.str("AWS_S3_REGION_NAME")
+    AWS_S3_FILE_OVERWRITE = env.bool("AWS_S3_FILE_OVERWRITE", False)
+    AWS_LOCATION = env.str("AWS_LOCATION", "static")
+    AWS_DEFAULT_ACL = env("AWS_DEFAULT_ACL", None)
+    AWS_S3_VERIFY = env.bool("AWS_S3_VERIFY", True)
