@@ -24,7 +24,9 @@ class Migration(migrations.Migration):
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("retweet_id", models.BigIntegerField(null=True)),
                 ("retweeted_user_id", models.BigIntegerField(null=True)),
-                ("number_of_interactions", models.IntegerField(default=0)),
+                ("likes_count", models.IntegerField(default=0)),
+                ("retweets_count", models.IntegerField(default=0)),
+                ("replies_count", models.IntegerField(default=0)),
                 ("actual_tweet", models.JSONField()),
             ],
             options={

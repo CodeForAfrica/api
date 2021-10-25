@@ -15,12 +15,18 @@ class Tweet(TimestampedModelMixin):
     deleted = models.BooleanField(default=False)
     retweet_id = models.BigIntegerField(null=True)
     retweeted_user_id = models.BigIntegerField(null=True)
-    number_of_interactions = models.IntegerField(default=0)
+    likes_count = models.IntegerField(default=0)
+    retweets_count = models.IntegerField(default=0)
+    replies_count = models.IntegerField(default=0)
     actual_tweet = models.JSONField()
     owner = models.ForeignKey("TwitterAccount", on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.tweet_id}"
+
+    @property
+    def number_of_interactions(self):
+        return self.likes_count + self.retweets_count + self.replies_count
 
 
 class TwitterAccount(TimestampedModelMixin):
