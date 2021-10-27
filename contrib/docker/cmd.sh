@@ -18,4 +18,5 @@ exec gunicorn \
     --log-file=/app/logs/gunicorn.log \
     --access-logfile=/app/logs/access.log \
     --name twoopsTracker \
+    ${TWOOPSTRACKER_GUNICORN_EXTRA_CONFIG:-} \
     twoopstracker.wsgi:application
