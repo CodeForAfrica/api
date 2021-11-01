@@ -80,6 +80,7 @@ class TwitterAccountsList(TimestampedModelMixin):
     slug = models.CharField(max_length=255, help_text=_("Twitter List Slug"))
     owner = models.ForeignKey("UserProfile", on_delete=models.CASCADE)
     accounts = models.ManyToManyField("TwitterAccount", related_name="lists")
+    is_private = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name

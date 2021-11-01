@@ -46,6 +46,11 @@ class Migration(migrations.Migration):
                         to="twoops.userprofile",
                     ),
                 ),
+                migrations.AddField(
+                    model_name="twitteraccountslist",
+                    name="is_private",
+                    field=models.BooleanField(default=False),
+                ),
             ],
             options={
                 "get_latest_by": "updated_at",
