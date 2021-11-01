@@ -55,3 +55,22 @@ class TwitterAccount(TimestampedModelMixin):
 
     def __str__(self):
         return self.screen_name
+
+
+class List(TimestampedModelMixin):
+    """
+    A model holding lists of twitter accounts
+    """
+
+    list_id = models.BigIntegerField(primary_key=True)
+    name = models.CharField(max_length=255, help_text=_("List Name"))
+    owner = models.ForeignKey("TwitterAccount", on_delete=models.CASCADE)
+    members_count = models.IntegerField()
+    subscribers_count = models.IntegerField()
+    deleted = models.BooleanField(
+        default=False,
+        help_text=_("When deleted is true, we aren't tracking this list anymore."),
+    )
+
+    def __str__(self):
+        return self.name
