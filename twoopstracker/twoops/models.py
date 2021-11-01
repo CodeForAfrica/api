@@ -71,7 +71,7 @@ class UserProfile(TimestampedModelMixin):
         return self.user.username
 
 
-class List(TimestampedModelMixin):
+class TwitterAccountsList(TimestampedModelMixin):
     """
     List model
     """

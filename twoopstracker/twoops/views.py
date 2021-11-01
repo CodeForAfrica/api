@@ -3,8 +3,11 @@ from datetime import datetime
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from rest_framework import generics
 
-from twoopstracker.twoops.models import Tweet
-from twoopstracker.twoops.serializers import TweetSerializer
+from twoopstracker.twoops.models import Tweet, TwitterAccountsList
+from twoopstracker.twoops.serializers import (
+    TweetSerializer,
+    TwitterAccountListSerializer,
+)
 
 
 def get_search_type(search_string):
@@ -58,3 +61,13 @@ class TweetsView(generics.ListAPIView):
         if location:
             tweets = tweets.filter(owner__location=location)
         return tweets
+
+
+class AccountsList(generics.ListCreateAPIView):
+    queryset = TwitterAccountsList.objects.all()
+    serializer_class = TwitterAccountListSerializer
+
+
+class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
+    queryset = TwitterAccountsList.objects.all()
+    serializer_class = TwitterAccountListSerializer
