@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # installed apps
+    "django.contrib.postgres",
     "rest_framework",
     "storages",
     # Local apps

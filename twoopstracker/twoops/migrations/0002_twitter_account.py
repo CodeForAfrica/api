@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
                 ("favourites_count", models.IntegerField()),
                 ("statuses_count", models.IntegerField()),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("profile_image_url", models.URLField()),
+                ("profile_image_url", models.URLField(max_length=255)),
                 (
                     "deleted",
                     models.BooleanField(
