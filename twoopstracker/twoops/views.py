@@ -24,21 +24,19 @@ def refromat_search_string(search_string):
 
 class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
-    queryset = Tweet.objects.all()
-
-
-class Search(generics.ListAPIView):
-    serializer_class = TweetSerializer
 
     def get_queryset(self):
         query = self.request.GET.get("query")
-        search_type = get_search_type(query)
-        if search_type == "raw":
-            query = refromat_search_string(query)
-        vector = SearchVector("content", "actual_tweet")
-        if search_type:
-            search_query = SearchQuery(query, search_type=search_type)
+        if query:
+            search_type = get_search_type(query)
+            if search_type == "raw":
+                query = refromat_search_string(query)
+            vector = SearchVector("content", "actual_tweet")
+            if search_type:
+                search_query = SearchQuery(query, search_type=search_type)
+            else:
+                search_query = SearchQuery(query)
+            tweets = Tweet.objects.annotate(search=vector).filter(search=search_query)
         else:
-            search_query = SearchQuery(query)
-        tweets = Tweet.objects.annotate(search=vector).filter(search=search_query)
+            tweets = Tweet.objects.all()
         return tweets
