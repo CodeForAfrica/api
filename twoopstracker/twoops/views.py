@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from rest_framework import generics
 
@@ -27,6 +29,14 @@ class TweetsView(generics.ListAPIView):
 
     def get_queryset(self):
         query = self.request.GET.get("query")
+        startDate = self.request.GET.get("startDate")
+        endDate = self.request.GET.get("endDate")
+
+        if startDate:
+            startDate = datetime.fromisoformat(startDate)
+        if endDate:
+            endDate = datetime.fromisoformat(endDate)
+
         if query:
             search_type = get_search_type(query)
             if search_type == "raw":
@@ -39,4 +49,9 @@ class TweetsView(generics.ListAPIView):
             tweets = Tweet.objects.annotate(search=vector).filter(search=search_query)
         else:
             tweets = Tweet.objects.all()
+
+        if startDate:
+            tweets = tweets.filter(created_at__gte=startDate)
+        if endDate:
+            tweets = tweets.filter(created_at__lte=endDate)
         return tweets
