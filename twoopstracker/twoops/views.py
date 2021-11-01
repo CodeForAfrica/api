@@ -31,6 +31,7 @@ class TweetsView(generics.ListAPIView):
         query = self.request.GET.get("query")
         startDate = self.request.GET.get("startDate")
         endDate = self.request.GET.get("endDate")
+        location = self.request.GET.get("location")
 
         if startDate:
             startDate = datetime.fromisoformat(startDate)
@@ -54,4 +55,6 @@ class TweetsView(generics.ListAPIView):
             tweets = tweets.filter(created_at__gte=startDate)
         if endDate:
             tweets = tweets.filter(created_at__lte=endDate)
+        if location:
+            tweets = tweets.filter(owner__location=location)
         return tweets
