@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -57,20 +58,14 @@ class TwitterAccount(TimestampedModelMixin):
         return self.screen_name
 
 
-class List(TimestampedModelMixin):
+class UserProfile(TimestampedModelMixin):
     """
-    A model holding lists of twitter accounts
+    User Profile model
     """
 
-    list_id = models.BigIntegerField(primary_key=True)
-    name = models.CharField(max_length=255, help_text=_("List Name"))
-    owner = models.ForeignKey("TwitterAccount", on_delete=models.CASCADE)
-    members_count = models.IntegerField()
-    subscribers_count = models.IntegerField()
-    deleted = models.BooleanField(
-        default=False,
-        help_text=_("When deleted is true, we aren't tracking this list anymore."),
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True
     )
 
     def __str__(self):
-        return self.name
+        return self.user.username
