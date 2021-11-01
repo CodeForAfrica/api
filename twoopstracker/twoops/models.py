@@ -69,3 +69,17 @@ class UserProfile(TimestampedModelMixin):
 
     def __str__(self):
         return self.user.username
+
+
+class List(TimestampedModelMixin):
+    """
+    List model
+    """
+
+    name = models.CharField(max_length=255, help_text=_("Name of Twitter List"))
+    slug = models.CharField(max_length=255, help_text=_("Twitter List Slug"))
+    owner = models.ForeignKey("UserProfile", on_delete=models.CASCADE)
+    accounts = models.ManyToManyField("TwitterAccount", related_name="lists")
+
+    def __str__(self):
+        return self.name
