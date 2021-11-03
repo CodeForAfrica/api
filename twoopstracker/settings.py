@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "twoopstracker.db",
     "twoopstracker.authentication",
     "twoopstracker.twoops",
+    "twoopstracker.tweetsclient",
 ]
 
 MIDDLEWARE = [

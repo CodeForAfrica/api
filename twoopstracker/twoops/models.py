@@ -15,9 +15,10 @@ class Tweet(TimestampedModelMixin):
     deleted = models.BooleanField(default=False)
     retweet_id = models.BigIntegerField(null=True)
     retweeted_user_id = models.BigIntegerField(null=True)
-    likes_count = models.IntegerField(default=0)
-    retweets_count = models.IntegerField(default=0)
-    replies_count = models.IntegerField(default=0)
+    favorite_count = models.IntegerField(default=0)
+    retweet_count = models.IntegerField(default=0)
+    quote_count = models.IntegerField(default=0)
+    reply_count = models.IntegerField(default=0)
     actual_tweet = models.JSONField()
     owner = models.ForeignKey("TwitterAccount", on_delete=models.CASCADE)
 
@@ -26,7 +27,7 @@ class Tweet(TimestampedModelMixin):
 
     @property
     def number_of_interactions(self):
-        return self.likes_count + self.retweets_count + self.replies_count
+        return self.favorite_count + self.retweet_count + self.reply_count
 
 
 class TwitterAccount(TimestampedModelMixin):
