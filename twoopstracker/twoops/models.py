@@ -44,10 +44,10 @@ class TwitterAccount(TimestampedModelMixin):
     protected = models.BooleanField(default=False)
     location = models.CharField(max_length=255)
     description = models.TextField()
-    followers_count = models.IntegerField()
-    friends_count = models.IntegerField()
-    favourites_count = models.IntegerField()
-    statuses_count = models.IntegerField()
+    followers_count = models.IntegerField(default=0)
+    friends_count = models.IntegerField(default=0)
+    favourites_count = models.IntegerField(default=0)
+    statuses_count = models.IntegerField(default=0)
     profile_image_url = models.URLField(max_length=255)
     deleted = models.BooleanField(
         default=False,
