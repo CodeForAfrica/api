@@ -15,18 +15,13 @@ class TwitterClient:
             settings.TWOOPSTRACKER_ACCESS_TOKEN,
             settings.TWOOPSTRACKER_ACCESS_TOKEN_SECRET,
         )
-        self.api = None
+        self.api = tweepy.API(self.auth)
 
         try:
-            username = self.get_api().verify_credentials().screen_name
+            username = self.api.verify_credentials().screen_name
             logger.info("@" + username + " is authenticated")
         except tweepy.errors.TweepyException as e:
             logger.error(e)
-
-    def get_api(self):
-        if not self.api:
-            self.api = tweepy.API(self.auth)
-        return self.api
 
     def get_user(self, user, key="screen_name"):
         try:
