@@ -3,7 +3,8 @@ from datetime import datetime
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from rest_framework import generics
 
-from twoopstracker.twoops.models import Tweet, TwitterAccountsList
+from twoopstracker.twitterclient import TwitterClient
+from twoopstracker.twoops.models import Tweet, TwitterAccount, TwitterAccountsList
 from twoopstracker.twoops.serializers import (
     TweetSerializer,
     TwitterAccountListSerializer,
@@ -66,6 +67,38 @@ class TweetsView(generics.ListAPIView):
 class AccountsList(generics.ListCreateAPIView):
     queryset = TwitterAccountsList.objects.all()
     serializer_class = TwitterAccountListSerializer
+
+    def post(self, request, *args, **kwargs):
+        twitterclient = TwitterClient()
+
+        accounts = []
+
+        # Since accounts come in as a list of usernames,
+        # we need to get the account details and create a TwittwerAccount in our database
+        for username in request.data.get("accounts"):
+            # Get account details from twitter
+            user = twitterclient.get_user(username)
+
+            account_obj, _ = TwitterAccount.objects.get_or_create(
+                account_id=user.id,
+                name=user.name,
+                screen_name=user.screen_name,
+                description=user.description,
+                verified=user.verified,
+                protected=user.protected,
+                location=user.location,
+                followers_count=user.followers_count,
+                friends_count=user.friends_count,
+                favourites_count=user.favourites_count,
+                statuses_count=user.statuses_count,
+                profile_image_url=user.profile_image_url,
+            )
+            account_obj.save()
+            accounts.append(account_obj.account_id)
+
+        del request.data["accounts"]
+        request.data["accounts"] = accounts
+        return self.create(request, *args, **kwargs)
 
 
 class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
