@@ -28,6 +28,22 @@ def refromat_search_string(search_string):
     return " | ".join(search_string.split(","))
 
 
+def save_user(account_obj, user):
+    account_obj.name = user.name
+    account_obj.screen_name = user.screen_name
+    account_obj.description = user.description
+    account_obj.verified = user.verified
+    account_obj.protected = user.protected
+    account_obj.location = user.location
+    account_obj.followers_count = user.followers_count
+    account_obj.friends_count = user.friends_count
+    account_obj.favourites_count = user.favourites_count
+    account_obj.statuses_count = user.statuses_count
+    account_obj.profile_image_url = user.profile_image_url
+
+    account_obj.save()
+
+
 class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
 
@@ -79,21 +95,11 @@ class AccountsList(generics.ListCreateAPIView):
             # Get account details from twitter
             user = twitterclient.get_user(username)
 
-            account_obj, _ = TwitterAccount.objects.get_or_create(
-                account_id=user.id,
-                name=user.name,
-                screen_name=user.screen_name,
-                description=user.description,
-                verified=user.verified,
-                protected=user.protected,
-                location=user.location,
-                followers_count=user.followers_count,
-                friends_count=user.friends_count,
-                favourites_count=user.favourites_count,
-                statuses_count=user.statuses_count,
-                profile_image_url=user.profile_image_url,
-            )
-            account_obj.save()
+            account_obj, _ = TwitterAccount.objects.get_or_create(account_id=user.id)
+
+            # Move this to a que
+            save_user(account_obj, user)
+
             accounts.append(account_obj.account_id)
 
         del request.data["accounts"]
@@ -104,3 +110,26 @@ class AccountsList(generics.ListCreateAPIView):
 class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
     queryset = TwitterAccountsList.objects.all()
     serializer_class = TwitterAccountListSerializer
+
+    def put(self, request, *args, **kwargs):
+        twitterclient = TwitterClient()
+        accounts = []
+
+        for username in request.data.get("accounts"):
+            # Get account details from twitter
+            try:
+                int(username)
+                user = twitterclient.get_user(username, key="id")
+            except Exception:
+                # the username is not an integer, so it's a screen_name
+                user = twitterclient.get_user(username, key="screen_name")
+
+            account_obj, _ = TwitterAccount.objects.get_or_create(account_id=user.id)
+
+            # Move this to a que
+            save_user(account_obj, user)
+            accounts.append(account_obj.account_id)
+
+        del request.data["accounts"]
+        request.data["accounts"] = accounts
+        return self.update(request, *args, **kwargs)
