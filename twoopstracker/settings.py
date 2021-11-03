@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     # installed apps
     "django.contrib.postgres",
     "rest_framework",
+    "corsheaders",
     "storages",
     # Local apps
     "twoopstracker.db",
@@ -54,6 +55,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -134,6 +136,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# CORS
+CORS_ALLOWED_ORIGIN_REGEXES = env.str(
+    "TWOOPSTRACKER_CORS_ALLOWED_ORIGIN_REGEXES", r"*"
+).split(",")
 
 # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
 
