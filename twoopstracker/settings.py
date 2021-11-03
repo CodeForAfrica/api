@@ -138,9 +138,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS
-CORS_ALLOWED_ORIGIN_REGEXES = env.str(
-    "TWOOPSTRACKER_CORS_ALLOWED_ORIGIN_REGEXES", r"*"
-).split(",")
+CORS_ALLOW_ALL_ORIGINS = True
 
 # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
 
