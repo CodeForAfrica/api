@@ -88,6 +88,7 @@ class AccountsList(generics.ListCreateAPIView):
         twitterclient = TwitterClient()
 
         accounts = []
+        failed_accounts = []
 
         # Since accounts come in as a list of usernames,
         # we need to get the account details and create a TwittwerAccount in our database
@@ -95,7 +96,9 @@ class AccountsList(generics.ListCreateAPIView):
             username = account.get("screen_name")
             # Get account details from twitter
             user = twitterclient.get_user(username)
-
+            if not user:
+                failed_accounts.append(username)
+                continue
             account_obj, _ = TwitterAccount.objects.get_or_create(account_id=user.id)
 
             # Move this to a que
@@ -105,7 +108,15 @@ class AccountsList(generics.ListCreateAPIView):
 
         del request.data["accounts"]
         request.data["accounts"] = accounts
-        return self.create(request, *args, **kwargs)
+        response = self.create(request, *args, **kwargs)
+
+        if failed_accounts:
+            response.data["errors"] = {
+                "message": "The following accounts couldn't be processed",
+                "failed_accounts": failed_accounts,
+            }
+
+        return response
 
 
 class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
@@ -115,17 +126,20 @@ class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
         twitterclient = TwitterClient()
         accounts = []
+        failed_accounts = []
 
         for account in request.data.get("accounts"):
             username = account.get("screen_name")
+            user_id = account.get("account_id")
             # Get account details from twitter
-            try:
-                int(username)
-                user = twitterclient.get_user(username, key="id")
-            except Exception:
-                # the username is not an integer, so it's a screen_name
-                user = twitterclient.get_user(username, key="screen_name")
+            if user_id:
+                user = twitterclient.get_user(user_id, key="id")
+            else:
+                user = twitterclient.get_user(username)
 
+            if not user:
+                failed_accounts.append(account)
+                continue
             account_obj, _ = TwitterAccount.objects.get_or_create(account_id=user.id)
 
             # Move this to a que
@@ -134,4 +148,11 @@ class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
 
         del request.data["accounts"]
         request.data["accounts"] = accounts
-        return self.update(request, *args, **kwargs)
+        response = self.update(request, *args, **kwargs)
+
+        if failed_accounts:
+            response.data["errors"] = {
+                "message": "The following accounts couldn't be processed",
+                "failed_accounts": failed_accounts,
+            }
+        return response
