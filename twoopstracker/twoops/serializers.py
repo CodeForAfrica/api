@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from twoopstracker.twoops.models import Tweet, TwitterAccount
+from twoopstracker.twoops.models import Tweet, TwitterAccount, TwitterAccountsList
 
 
 class TwitterAccountSerializer(serializers.ModelSerializer):
@@ -14,3 +14,28 @@ class TweetSerializer(serializers.ModelSerializer):
         model = Tweet
         fields = "__all__"
         depth = 1
+
+
+class TwitterAccountListSerializer(serializers.ModelSerializer):
+    def get_accounts(self, obj):
+        accounts = obj.accounts.all()
+        data = []
+        for account in accounts:
+            data.append(
+                {
+                    "name": account.name,
+                    "account_id": account.account_id,
+                    "screen_name": account.screen_name,
+                }
+            )
+
+        return data
+
+    class Meta:
+        model = TwitterAccountsList
+        fields = ["id", "name", "owner", "is_private", "accounts"]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["accounts"] = self.get_accounts(instance)
+        return data

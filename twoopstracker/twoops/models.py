@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -43,10 +44,10 @@ class TwitterAccount(TimestampedModelMixin):
     protected = models.BooleanField(default=False)
     location = models.CharField(max_length=255)
     description = models.TextField()
-    followers_count = models.IntegerField()
-    friends_count = models.IntegerField()
-    favourites_count = models.IntegerField()
-    statuses_count = models.IntegerField()
+    followers_count = models.IntegerField(default=0)
+    friends_count = models.IntegerField(default=0)
+    favourites_count = models.IntegerField(default=0)
+    statuses_count = models.IntegerField(default=0)
     profile_image_url = models.URLField(max_length=255)
     deleted = models.BooleanField(
         default=False,
@@ -55,3 +56,31 @@ class TwitterAccount(TimestampedModelMixin):
 
     def __str__(self):
         return self.screen_name
+
+
+class UserProfile(TimestampedModelMixin):
+    """
+    User Profile model
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True
+    )
+
+    def __str__(self):
+        return self.user.username
+
+
+class TwitterAccountsList(TimestampedModelMixin):
+    """
+    List model
+    """
+
+    name = models.CharField(max_length=255, help_text=_("Name of Twitter List"))
+    slug = models.CharField(max_length=255, help_text=_("Twitter List Slug"))
+    owner = models.ForeignKey("UserProfile", on_delete=models.CASCADE)
+    accounts = models.ManyToManyField("TwitterAccount", related_name="lists")
+    is_private = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
