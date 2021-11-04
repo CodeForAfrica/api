@@ -91,7 +91,8 @@ class AccountsList(generics.ListCreateAPIView):
 
         # Since accounts come in as a list of usernames,
         # we need to get the account details and create a TwittwerAccount in our database
-        for username in request.data.get("accounts"):
+        for account in request.data.get("accounts"):
+            username = account.get("screen_name")
             # Get account details from twitter
             user = twitterclient.get_user(username)
 
@@ -115,7 +116,8 @@ class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
         twitterclient = TwitterClient()
         accounts = []
 
-        for username in request.data.get("accounts"):
+        for account in request.data.get("accounts"):
+            username = account.get("screen_name")
             # Get account details from twitter
             try:
                 int(username)
