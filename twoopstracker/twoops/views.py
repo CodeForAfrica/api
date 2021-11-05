@@ -10,6 +10,8 @@ from twoopstracker.twoops.serializers import (
     TwitterAccountListSerializer,
 )
 
+from .tasks import save_user
+
 
 def get_search_type(search_string):
     search_type = ""
@@ -26,22 +28,6 @@ def get_search_type(search_string):
 
 def refromat_search_string(search_string):
     return " | ".join(search_string.split(","))
-
-
-def save_user(account_obj, user):
-    account_obj.name = user.name
-    account_obj.screen_name = user.screen_name
-    account_obj.description = user.description
-    account_obj.verified = user.verified
-    account_obj.protected = user.protected
-    account_obj.location = user.location
-    account_obj.followers_count = user.followers_count
-    account_obj.friends_count = user.friends_count
-    account_obj.favourites_count = user.favourites_count
-    account_obj.statuses_count = user.statuses_count
-    account_obj.profile_image_url = user.profile_image_url
-
-    account_obj.save()
 
 
 class TweetsView(generics.ListAPIView):
@@ -99,12 +85,12 @@ class AccountsList(generics.ListCreateAPIView):
             if not user:
                 failed_accounts.append(username)
                 continue
-            account_obj, _ = TwitterAccount.objects.get_or_create(account_id=user.id)
+            account_id = user.id
+            TwitterAccount.objects.get_or_create(account_id=account_id)
 
-            # Move this to a que
-            save_user(account_obj, user)
+            save_user.delay(account_id, user._json)
 
-            accounts.append(account_obj.account_id)
+            accounts.append(account_id)
 
         del request.data["accounts"]
         request.data["accounts"] = accounts
@@ -140,11 +126,10 @@ class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
             if not user:
                 failed_accounts.append(account)
                 continue
-            account_obj, _ = TwitterAccount.objects.get_or_create(account_id=user.id)
-
-            # Move this to a que
-            save_user(account_obj, user)
-            accounts.append(account_obj.account_id)
+            account_id = user.id
+            TwitterAccount.objects.get_or_create(account_id=account_id)
+            save_user.delay(account_id, user._json)
+            accounts.append(account_id)
 
         del request.data["accounts"]
         request.data["accounts"] = accounts
