@@ -27,6 +27,21 @@ def refromat_search_string(search_string):
     return " | ".join(search_string.split(","))
 
 
+def update_kwargs_with_account_ids(kwargs):
+    accounts_ids = []
+    accounts = kwargs.get("data", {}).get("accounts", [])
+    for account in accounts:
+        account, _ = TwitterAccount.objects.get_or_create(
+            screen_name=account.get("screen_name")
+        )
+        accounts_ids.append(account.account_id)
+
+    if accounts:
+        kwargs["data"]["accounts"] = accounts_ids
+
+    return kwargs
+
+
 class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
 
@@ -69,15 +84,7 @@ class AccountsList(generics.ListCreateAPIView):
 
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
-        accounts_ids = []
-
-        accounts = kwargs.get("data", {}).get("accounts", [])
-        for screen_name in accounts:
-            account, _ = TwitterAccount.objects.get_or_create(screen_name=screen_name)
-            accounts_ids.append(account.account_id)
-
-        if accounts:
-            kwargs["data"]["accounts"] = accounts_ids
+        kwargs = update_kwargs_with_account_ids(kwargs)
 
         return serializer_class(*args, **kwargs)
 
@@ -86,16 +93,8 @@ class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
     queryset = TwitterAccountsList.objects.all()
     serializer_class = TwitterAccountListSerializer
 
-    def put(self, request, *args, **kwargs):
-        accounts = []
+    def get_serializer(self, *args, **kwargs):
+        serializer_class = self.get_serializer_class()
+        kwargs = update_kwargs_with_account_ids(kwargs)
 
-        for account in request.data.get("accounts"):
-            screen_name = account.get("screen_name")
-            account = TwitterAccount.objects.get_or_create(screen_name=screen_name)
-            accounts.append(account.account_id)
-
-        del request.data["accounts"]
-        request.data["accounts"] = accounts
-        response = self.update(request, *args, **kwargs)
-
-        return response
+        return serializer_class(*args, **kwargs)
