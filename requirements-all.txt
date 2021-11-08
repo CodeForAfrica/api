@@ -7,4 +7,5 @@ djangorestframework==3.12.4
 environs[django]==9.3.4
 greenlet==1.1.2
 gunicorn[gevent, setproctitle]==20.1.0
+redis==3.5.3
 tweepy==4.2.0
