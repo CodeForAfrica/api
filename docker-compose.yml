@@ -16,6 +16,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  redis:
+    restart: always
+    image: redis:latest
+    expose:
+      - "6379"
+
   app:
     image: codeforafrica/twoopstracker:latest
     restart: unless-stopped
