@@ -3,14 +3,11 @@ from datetime import datetime
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from rest_framework import generics
 
-from twoopstracker.twitterclient import TwitterClient
 from twoopstracker.twoops.models import Tweet, TwitterAccount, TwitterAccountsList
 from twoopstracker.twoops.serializers import (
     TweetSerializer,
     TwitterAccountListSerializer,
 )
-
-from .tasks import save_user
 
 
 def get_search_type(search_string):
@@ -71,36 +68,16 @@ class AccountsList(generics.ListCreateAPIView):
     serializer_class = TwitterAccountListSerializer
 
     def post(self, request, *args, **kwargs):
-        twitterclient = TwitterClient()
-
         accounts = []
-        failed_accounts = []
 
-        # Since accounts come in as a list of usernames,
-        # we need to get the account details and create a TwittwerAccount in our database
         for account in request.data.get("accounts"):
-            username = account.get("screen_name")
-            # Get account details from twitter
-            user = twitterclient.get_user(username)
-            if not user:
-                failed_accounts.append(username)
-                continue
-            account_id = user.id
-            TwitterAccount.objects.get_or_create(account_id=account_id)
-
-            save_user.delay(account_id, user._json)
-
-            accounts.append(account_id)
+            screen_name = account.get("screen_name")
+            account = TwitterAccount.objects.get_or_create(screen_name=screen_name)
+            accounts.append(account.account_id)
 
         del request.data["accounts"]
         request.data["accounts"] = accounts
         response = self.create(request, *args, **kwargs)
-
-        if failed_accounts:
-            response.data["errors"] = {
-                "message": "The following accounts couldn't be processed",
-                "failed_accounts": failed_accounts,
-            }
 
         return response
 
@@ -110,34 +87,15 @@ class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TwitterAccountListSerializer
 
     def put(self, request, *args, **kwargs):
-        twitterclient = TwitterClient()
         accounts = []
-        failed_accounts = []
 
         for account in request.data.get("accounts"):
-            username = account.get("screen_name")
-            user_id = account.get("account_id")
-            # Get account details from twitter
-            if user_id:
-                user = twitterclient.get_user(user_id, key="id")
-            else:
-                user = twitterclient.get_user(username)
-
-            if not user:
-                failed_accounts.append(account)
-                continue
-            account_id = user.id
-            TwitterAccount.objects.get_or_create(account_id=account_id)
-            save_user.delay(account_id, user._json)
-            accounts.append(account_id)
+            screen_name = account.get("screen_name")
+            account = TwitterAccount.objects.get_or_create(screen_name=screen_name)
+            accounts.append(account.account_id)
 
         del request.data["accounts"]
         request.data["accounts"] = accounts
         response = self.update(request, *args, **kwargs)
 
-        if failed_accounts:
-            response.data["errors"] = {
-                "message": "The following accounts couldn't be processed",
-                "failed_accounts": failed_accounts,
-            }
         return response
