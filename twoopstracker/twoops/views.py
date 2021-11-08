@@ -67,19 +67,19 @@ class AccountsList(generics.ListCreateAPIView):
     queryset = TwitterAccountsList.objects.all()
     serializer_class = TwitterAccountListSerializer
 
-    def post(self, request, *args, **kwargs):
-        accounts = []
+    def get_serializer(self, *args, **kwargs):
+        serializer_class = self.get_serializer_class()
+        accounts_ids = []
 
-        for account in request.data.get("accounts"):
-            screen_name = account.get("screen_name")
-            account = TwitterAccount.objects.get_or_create(screen_name=screen_name)
-            accounts.append(account.account_id)
+        accounts = kwargs.get("data", {}).get("accounts", [])
+        for screen_name in accounts:
+            account, _ = TwitterAccount.objects.get_or_create(screen_name=screen_name)
+            accounts_ids.append(account.account_id)
 
-        del request.data["accounts"]
-        request.data["accounts"] = accounts
-        response = self.create(request, *args, **kwargs)
+        if accounts:
+            kwargs["data"]["accounts"] = accounts_ids
 
-        return response
+        return serializer_class(*args, **kwargs)
 
 
 class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
