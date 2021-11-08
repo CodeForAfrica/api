@@ -147,6 +147,9 @@ TWOOPSTRACKER_ACCESS_TOKEN_SECRET = env.str("TWOOPSTRACKER_ACCESS_TOKEN_SECRET",
 # CORS
 CORS_ALLOW_ALL_ORIGINS = True
 
+# Celery
+CELERY_BROKER_URL = env.str("TWOOPSTRACKER_CELERY_BROKER_URL", "")
+
 # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
 
 TWOOPSTRACKER_USE_S3 = env.bool("TWOOPSTRACKER_USE_S3", False)
