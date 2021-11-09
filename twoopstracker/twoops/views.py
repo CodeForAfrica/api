@@ -75,6 +75,7 @@ class TweetsView(generics.ListAPIView):
             tweets = tweets.filter(created_at__lte=endDate)
         if location:
             tweets = tweets.filter(owner__location=location)
+        tweets = tweets.filter(deleted=True)
         return tweets
 
 
