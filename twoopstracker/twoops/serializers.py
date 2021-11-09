@@ -18,6 +18,7 @@ class TweetSerializer(serializers.ModelSerializer):
         fields = [
             "tweet_id",
             "retweet_id",
+            "retweeted_user_screen_name",
             "created_at",
             "content",
             "number_of_interactions",

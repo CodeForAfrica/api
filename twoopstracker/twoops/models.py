@@ -17,6 +17,12 @@ class Tweet(TimestampedModelMixin):
     deleted_at = models.DateTimeField(blank=True, null=True)
     retweet_id = models.BigIntegerField(blank=True, null=True)
     retweeted_user_id = models.BigIntegerField(blank=True, null=True)
+    retweeted_user_screen_name = models.CharField(
+        max_length=255,
+        help_text=_("Twitter Account Screen Name"),
+        blank=True,
+        null=True,
+    )
     likes_count = models.IntegerField(default=0)
     retweets_count = models.IntegerField(default=0)
     replies_count = models.IntegerField(default=0)
