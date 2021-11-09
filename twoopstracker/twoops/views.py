@@ -51,23 +51,27 @@ class TweetsView(generics.ListAPIView):
         endDate = self.request.GET.get("endDate")
         location = self.request.GET.get("location")
 
+        tweets = Tweet.objects.filter(deleted=True)
+
         if startDate:
             startDate = datetime.fromisoformat(startDate)
         if endDate:
             endDate = datetime.fromisoformat(endDate)
 
         if query:
-            search_type = get_search_type(query)
-            if search_type == "raw":
-                query = refromat_search_string(query)
-            vector = SearchVector("content", "actual_tweet")
-            if search_type:
-                search_query = SearchQuery(query, search_type=search_type)
+            if query.startswith("@"):
+                # search by username
+                tweets = tweets.filter(owner__screen_name=query[1:])
             else:
-                search_query = SearchQuery(query)
-            tweets = Tweet.objects.annotate(search=vector).filter(search=search_query)
-        else:
-            tweets = Tweet.objects.all()
+                search_type = get_search_type(query)
+                if search_type == "raw":
+                    query = refromat_search_string(query)
+                vector = SearchVector("content", "actual_tweet")
+                if search_type:
+                    search_query = SearchQuery(query, search_type=search_type)
+                else:
+                    search_query = SearchQuery(query)
+                tweets = tweets.annotate(search=vector).filter(search=search_query)
 
         if startDate:
             tweets = tweets.filter(created_at__gte=startDate)
@@ -75,6 +79,7 @@ class TweetsView(generics.ListAPIView):
             tweets = tweets.filter(created_at__lte=endDate)
         if location:
             tweets = tweets.filter(owner__location=location)
+
         return tweets
 
 
