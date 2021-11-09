@@ -3,8 +3,11 @@ from datetime import datetime
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from rest_framework import generics
 
-from twoopstracker.twoops.models import Tweet
-from twoopstracker.twoops.serializers import TweetSerializer
+from twoopstracker.twoops.models import Tweet, TwitterAccount, TwitterAccountsList
+from twoopstracker.twoops.serializers import (
+    TweetSerializer,
+    TwitterAccountListSerializer,
+)
 
 
 def get_search_type(search_string):
@@ -24,6 +27,21 @@ def refromat_search_string(search_string):
     return " | ".join(search_string.split(","))
 
 
+def update_kwargs_with_account_ids(kwargs):
+    accounts_ids = []
+    accounts = kwargs.get("data", {}).get("accounts", [])
+    for account in accounts:
+        account, _ = TwitterAccount.objects.get_or_create(
+            screen_name=account.get("screen_name")
+        )
+        accounts_ids.append(account.account_id)
+
+    if accounts:
+        kwargs["data"]["accounts"] = accounts_ids
+
+    return kwargs
+
+
 class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
 
@@ -33,23 +51,27 @@ class TweetsView(generics.ListAPIView):
         endDate = self.request.GET.get("endDate")
         location = self.request.GET.get("location")
 
+        tweets = Tweet.objects.filter(deleted=True)
+
         if startDate:
             startDate = datetime.fromisoformat(startDate)
         if endDate:
             endDate = datetime.fromisoformat(endDate)
 
         if query:
-            search_type = get_search_type(query)
-            if search_type == "raw":
-                query = refromat_search_string(query)
-            vector = SearchVector("content", "actual_tweet")
-            if search_type:
-                search_query = SearchQuery(query, search_type=search_type)
+            if query.startswith("@"):
+                # search by username
+                tweets = tweets.filter(owner__screen_name=query[1:])
             else:
-                search_query = SearchQuery(query)
-            tweets = Tweet.objects.annotate(search=vector).filter(search=search_query)
-        else:
-            tweets = Tweet.objects.all()
+                search_type = get_search_type(query)
+                if search_type == "raw":
+                    query = refromat_search_string(query)
+                vector = SearchVector("content", "actual_tweet")
+                if search_type:
+                    search_query = SearchQuery(query, search_type=search_type)
+                else:
+                    search_query = SearchQuery(query)
+                tweets = tweets.annotate(search=vector).filter(search=search_query)
 
         if startDate:
             tweets = tweets.filter(created_at__gte=startDate)
@@ -57,4 +79,27 @@ class TweetsView(generics.ListAPIView):
             tweets = tweets.filter(created_at__lte=endDate)
         if location:
             tweets = tweets.filter(owner__location=location)
+
         return tweets
+
+
+class AccountsList(generics.ListCreateAPIView):
+    queryset = TwitterAccountsList.objects.all()
+    serializer_class = TwitterAccountListSerializer
+
+    def get_serializer(self, *args, **kwargs):
+        serializer_class = self.get_serializer_class()
+        kwargs = update_kwargs_with_account_ids(kwargs)
+
+        return serializer_class(*args, **kwargs)
+
+
+class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
+    queryset = TwitterAccountsList.objects.all()
+    serializer_class = TwitterAccountListSerializer
+
+    def get_serializer(self, *args, **kwargs):
+        serializer_class = self.get_serializer_class()
+        kwargs = update_kwargs_with_account_ids(kwargs)
+
+        return serializer_class(*args, **kwargs)

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     # installed apps
     "django.contrib.postgres",
     "rest_framework",
+    "corsheaders",
     "storages",
     # Local apps
     "twoopstracker.db",
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -136,11 +138,18 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+
 # Twitter API credentials
-TWOOPSTRACKER_CONSUMER_KEY = env.str("TWOOPSTRACKER_CONSUMER_KEY")
-TWOOPSTRACKER_CONSUMER_SECRET = env.str("TWOOPSTRACKER_CONSUMER_SECRET")
-TWOOPSTRACKER_ACCESS_TOKEN = env.str("TWOOPSTRACKER_ACCESS_TOKEN")
-TWOOPSTRACKER_ACCESS_TOKEN_SECRET = env.str("TWOOPSTRACKER_ACCESS_TOKEN_SECRET")
+TWOOPSTRACKER_CONSUMER_KEY = env.str("TWOOPSTRACKER_CONSUMER_KEY", "")
+TWOOPSTRACKER_CONSUMER_SECRET = env.str("TWOOPSTRACKER_CONSUMER_SECRET", "")
+TWOOPSTRACKER_ACCESS_TOKEN = env.str("TWOOPSTRACKER_ACCESS_TOKEN", "")
+TWOOPSTRACKER_ACCESS_TOKEN_SECRET = env.str("TWOOPSTRACKER_ACCESS_TOKEN_SECRET", "")
+
+# CORS
+CORS_ALLOW_ALL_ORIGINS = True
+
+# Celery
+CELERY_BROKER_URL = env.str("TWOOPSTRACKER_CELERY_BROKER_URL", "")
 
 # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
 

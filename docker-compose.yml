@@ -16,6 +16,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  redis:
+    restart: always
+    image: redis:latest
+    expose:
+      - "6379"
+
   app:
     image: codeforafrica/twoopstracker:latest
     restart: unless-stopped
@@ -33,6 +40,7 @@ services:
       - TWOOPSTRACKER_ALLOWED_HOSTS=${TWOOPSTRACKER_ALLOWED_HOSTS:-*}
       - TWOOPSTRACKER_DATABASE_URL=${TWOOPSTRACKER_DATABASE_URL:-postgresql://twoops_tracker:twoops_tracker@db:5432/twoops_tracker}
       - TWOOPSTRACKER_DEBUG=${TWOOPSTRACKER_DEBUG:-True}
+      - TWOOPSTRACKER_CELERY_BROKER_URL=${TWOOPSTRACKER_CELERY_BROKER_URL:-redis://redis:6379/0}
       # psql connection parameters (used in wait-for-postgrsql.sh)
       # see: https://www.postgresql.org/docs/9.6/libpq-envars.html
       - PGHOST=db
