@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("twoops", "0002_twitter_account"),
+        ("twoops", "0009_tweet_retweeted_user_screen_name"),
     ]
 
     operations = [

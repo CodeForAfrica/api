@@ -23,9 +23,10 @@ class Tweet(TimestampedModelMixin):
         blank=True,
         null=True,
     )
-    likes_count = models.IntegerField(default=0)
-    retweets_count = models.IntegerField(default=0)
-    replies_count = models.IntegerField(default=0)
+    favorite_count = models.IntegerField(default=0)
+    retweet_count = models.IntegerField(default=0)
+    reply_count = models.IntegerField(default=0)
+    quote_count = models.IntegerField(default=0)
     actual_tweet = models.JSONField()
     owner = models.ForeignKey("TwitterAccount", on_delete=models.CASCADE)
 
