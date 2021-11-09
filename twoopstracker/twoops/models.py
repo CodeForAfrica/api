@@ -14,8 +14,8 @@ class Tweet(TimestampedModelMixin):
     # https://developer.twitter.com/en/docs/counting-characters
     content = models.CharField(max_length=280, help_text=_("Tweet Content"))
     deleted = models.BooleanField(default=False)
-    retweet_id = models.BigIntegerField(null=True)
-    retweeted_user_id = models.BigIntegerField(null=True)
+    retweet_id = models.BigIntegerField(blank=True, null=True)
+    retweeted_user_id = models.BigIntegerField(blank=True, null=True)
     likes_count = models.IntegerField(default=0)
     retweets_count = models.IntegerField(default=0)
     replies_count = models.IntegerField(default=0)
