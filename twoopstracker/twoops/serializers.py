@@ -10,9 +10,21 @@ class TwitterAccountSerializer(serializers.ModelSerializer):
 
 
 class TweetSerializer(serializers.ModelSerializer):
+    def get_number_of_interactions(self, obj):
+        return obj.number_of_interactions
+
     class Meta:
         model = Tweet
-        fields = "__all__"
+        fields = [
+            "tweet_id",
+            "retweet_id",
+            "created_at",
+            "content",
+            "number_of_interactions",
+            "deleted",
+            "deleted_at",
+            "owner",
+        ]
         depth = 1
 
 
