@@ -74,9 +74,9 @@ class TweetsView(generics.ListAPIView):
                 tweets = tweets.annotate(search=vector).filter(search=search_query)
 
         if startDate:
-            tweets = tweets.filter(created_at__gte=startDate)
+            tweets = tweets.filter(deleted_at__gte=startDate)
         if endDate:
-            tweets = tweets.filter(created_at__lte=endDate)
+            tweets = tweets.filter(deleted_at__lte=endDate)
         if location:
             tweets = tweets.filter(owner__location=location)
 
