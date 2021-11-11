@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from rest_framework import generics
@@ -53,10 +53,12 @@ class TweetsView(generics.ListAPIView):
 
         tweets = Tweet.objects.filter(deleted=True)
 
+        if not startDate:
+            startDate = str(datetime.datetime.now() - datetime.timedelta(days=7))
         if startDate:
-            startDate = datetime.fromisoformat(startDate)
+            startDate = datetime.datetime.fromisoformat(startDate)
         if endDate:
-            endDate = datetime.fromisoformat(endDate)
+            endDate = datetime.datetime.fromisoformat(endDate)
 
         if query:
             if query.startswith("@"):
