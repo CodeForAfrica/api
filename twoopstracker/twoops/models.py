@@ -78,7 +78,7 @@ class UserProfile(TimestampedModelMixin):
     )
 
     def __str__(self):
-        return self.user.username
+        return self.user.email
 
 
 class TwitterAccountsList(TimestampedModelMixin):
