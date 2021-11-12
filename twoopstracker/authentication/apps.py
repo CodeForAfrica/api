@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 
 
-class AuthenticatioConfig(AppConfig):
+class AuthenticationConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "twoopstracker.authentication"
 
