@@ -37,6 +37,20 @@ class Tweet(TimestampedModelMixin):
         return self.likes_count + self.retweets_count + self.replies_count
 
 
+class TweetSearch(TimestampedModelMixin):
+    """
+    TweetSearch model
+    """
+
+    search_query = models.TextField(help_text=_("Search Query"))
+    owner = models.ForeignKey(
+        "UserProfile", on_delete=models.CASCADE, related_name="tweet_searches"
+    )
+
+    def __str__(self):
+        return f"{self.search_query}"
+
+
 class TwitterAccount(TimestampedModelMixin):
     """
     Twitter Account model

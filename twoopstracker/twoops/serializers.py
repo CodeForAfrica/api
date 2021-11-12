@@ -1,6 +1,11 @@
 from rest_framework import serializers
 
-from twoopstracker.twoops.models import Tweet, TwitterAccount, TwitterAccountsList
+from twoopstracker.twoops.models import (
+    Tweet,
+    TweetSearch,
+    TwitterAccount,
+    TwitterAccountsList,
+)
 
 
 class TwitterAccountSerializer(serializers.ModelSerializer):
@@ -55,3 +60,9 @@ class TwitterAccountListSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         data["accounts"] = self.get_accounts(instance)
         return data
+
+
+class TweetSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TweetSearch
+        fields = "__all__"

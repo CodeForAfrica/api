@@ -4,8 +4,15 @@ from django.contrib.postgres.search import SearchQuery, SearchVector
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
-from twoopstracker.twoops.models import Tweet, TwitterAccount, TwitterAccountsList
+from twoopstracker.twoops.models import (
+    Tweet,
+    TweetSearch,
+    TwitterAccount,
+    TwitterAccountsList,
+    UserProfile,
+)
 from twoopstracker.twoops.serializers import (
+    TweetSearchSerializer,
     TweetSerializer,
     TwitterAccountListSerializer,
 )
@@ -87,6 +94,18 @@ class TweetsView(generics.ListAPIView):
             tweets = tweets.filter(owner__location=location)
 
         return tweets
+
+
+class TweetSearchesView(generics.ListCreateAPIView):
+    serializer_class = TweetSearchSerializer
+
+    def get_queryset(self):
+        user_profile = UserProfile.objects.get(user=self.request.user)
+        return TweetSearch.objects.filter(owner=user_profile)
+
+    def perform_create(self, serializer):
+        user_profile = UserProfile.objects.get(user=self.request.user)
+        serializer.save(owner=user_profile)
 
 
 class AccountsList(generics.ListCreateAPIView):
