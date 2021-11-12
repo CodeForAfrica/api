@@ -2,8 +2,8 @@ import requests  # type: ignore
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.shortcuts import redirect
-from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import get_or_create_user
 from .serializers import InputSerializer
@@ -54,9 +54,13 @@ def login(request):
         }
         user, _ = get_or_create_user(**profile_data)
         if user:
-            token, _ = Token.objects.get_or_create(user=user)
-            return redirect(TWOOPSTRACKER_FRONTEND_LOGIN_URL + "?token=" + token.key)
+            refresh = RefreshToken.for_user(user)
+            response = redirect(
+                f"{TWOOPSTRACKER_FRONTEND_LOGIN_URL}?access_token={str(refresh.access_token)}\
+                    &refresh_token={str(refresh)}"
+            )
+            return response
     elif validated_data.get("error"):
         return redirect(
-            TWOOPSTRACKER_FRONTEND_LOGIN_URL + "?error=" + validated_data.get("error")
+            f"{TWOOPSTRACKER_FRONTEND_LOGIN_URL}?error={validated_data.get('error')}"
         )
