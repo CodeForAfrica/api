@@ -65,5 +65,5 @@ class TwitterAccountListSerializer(serializers.ModelSerializer):
 class TweetSearchSerializer(serializers.ModelSerializer):
     class Meta:
         model = TweetSearch
-        fields = ["created_at", "updated_at", "owner", "search_query"]
+        fields = ["created_at", "updated_at", "owner", "name", "query"]
         read_only_fields = ["created_at", "updated_at", "owner"]

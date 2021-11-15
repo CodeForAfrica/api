@@ -42,7 +42,7 @@ class TweetSearch(TimestampedModelMixin):
     TweetSearch model
     """
 
-    query = models.TextField(help_text=_("Search Query"))
+    query = models.JSONField(help_text=_("Search Query"))
     name = models.CharField(
         help_text=_("The name of the Search Query"),
         null=True,
@@ -58,6 +58,7 @@ class TweetSearch(TimestampedModelMixin):
 
     class Meta:
         unique_together = ("query", "owner")
+        verbose_name_plural = _("Tweet Searches")
 
 
 class TwitterAccount(TimestampedModelMixin):
