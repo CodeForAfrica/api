@@ -9,7 +9,6 @@ from .models import get_or_create_user
 from .serializers import InputSerializer
 
 TWOOPSTRACKER_BACKEND_URL = settings.TWOOPSTRACKER_BACKEND_URL
-TWOOPSTRACKER_FRONTEND_LOGIN_URL = settings.TWOOPSTRACKER_FRONTEND_LOGIN_URL
 
 
 def google_get_access_token(code, redirect_uri):
@@ -42,6 +41,8 @@ def login(request):
 
     if validated_data.get("code"):
         # login successful
+        if validated_data.get("state"):
+            TWOOPSTRACKER_FRONTEND_LOGIN_URL = validated_data.get("state")
         access_token = google_get_access_token(
             validated_data.get("code"),
             redirect_uri=f"{TWOOPSTRACKER_BACKEND_URL}/auth/login/google/",
@@ -62,5 +63,5 @@ def login(request):
             return response
     elif validated_data.get("error"):
         return redirect(
-            f"{TWOOPSTRACKER_FRONTEND_LOGIN_URL}?error={validated_data.get('error')}"
+            f"{settings.TWOOPSTRACKER_FRONTEND_LOGIN_URL}?error={validated_data.get('error')}"
         )
