@@ -2,7 +2,6 @@ import datetime
 
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
 
 from twoopstracker.twoops.models import Tweet, TwitterAccount, TwitterAccountsList
 from twoopstracker.twoops.serializers import (
@@ -45,9 +44,6 @@ def update_kwargs_with_account_ids(kwargs):
 
 class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
-    permission_classes = [
-        IsAuthenticated,
-    ]
 
     def get_queryset(self):
         query = self.request.GET.get("query")
