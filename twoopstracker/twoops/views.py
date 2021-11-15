@@ -2,6 +2,7 @@ import datetime
 
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
 
 from twoopstracker.twoops.models import Tweet, TwitterAccount, TwitterAccountsList
 from twoopstracker.twoops.serializers import (
@@ -44,6 +45,9 @@ def update_kwargs_with_account_ids(kwargs):
 
 class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
+    permission_classes = [
+        IsAuthenticated,
+    ]
 
     def get_queryset(self):
         query = self.request.GET.get("query")
@@ -51,7 +55,10 @@ class TweetsView(generics.ListAPIView):
         endDate = self.request.GET.get("endDate")
         location = self.request.GET.get("location")
 
-        tweets = Tweet.objects.filter(deleted=True)
+        accounts_lists = TwitterAccountsList.objects.filter(
+            owner__user=self.request.user
+        ).values_list("accounts")
+        tweets = Tweet.objects.filter(deleted=True, owner__in=accounts_lists)
 
         if not startDate:
             startDate = str(datetime.datetime.now() - datetime.timedelta(days=7))
