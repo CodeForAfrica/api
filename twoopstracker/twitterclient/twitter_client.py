@@ -3,9 +3,8 @@ import logging
 
 import tweepy
 from django.conf import settings
-from django.utils import timezone
 
-from twoopstracker.twoops.models import Tweet, TwitterAccount
+from .tasks import mark_tweet_as_deleted, save_tweet
 
 logger = logging.getLogger(__name__)
 
@@ -34,14 +33,8 @@ class TweetListener(tweepy.Stream):
                 f'Queued delete notification for user {tweet.get("delete").get("status").get("user_id")} \
                     for tweet {tweet.get("delete").get("status").get("id")}'
             )
-            # Delete the tweet
-            tweet = Tweet.objects.get(
-                tweet_id=tweet.get("delete").get("status").get("id")
-            )
-            if tweet:
-                tweet.deleted = True
-                tweet.deleted_at = timezone.now
-                tweet.save()
+            # Mark the tweet as Deleted
+            mark_tweet_as_deleted.delay(tweet.get("delete").get("status").get("id"))
         else:
             # Create the tweet in to our database
             tweet_text = tweet.get("extended_tweet", {}).get(
@@ -54,23 +47,8 @@ class TweetListener(tweepy.Stream):
                     .get("full_text", tweet.get("text"))
                 )
 
-            tweet = Tweet(
-                tweet_id=tweet.get("id"),
-                content=tweet_text,
-                retweet_id=tweet.get("retweeted_status", {}).get("id"),
-                retweeted_user_id=tweet.get("retweeted_status", {})
-                .get("user", {})
-                .get("id"),
-                favorite_count=tweet.get("favorite_count"),
-                retweet_count=tweet.get("retweet_count"),
-                reply_count=tweet.get("reply_count"),
-                quote_count=tweet.get("quote_count"),
-                actual_tweet=tweet,
-                owner=TwitterAccount.objects.get(
-                    account_id=tweet.get("user").get("id")
-                ),
-            )
-            tweet.save()
+            tweet["tweet_text"] = tweet_text
+            save_tweet.delay(tweet)
         return True
 
     def on_error(self, status_code):
