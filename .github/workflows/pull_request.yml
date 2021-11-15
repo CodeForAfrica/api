@@ -52,6 +52,8 @@ jobs:
         run: |
           echo "TWOOPSTRACKER_SECRET_KEY=${{ secrets.TWOOPSTRACKER_SECRET_KEY }}" >> .env
           echo "TWOOPSTRACKER_SENTRY_DSN=${{ secrets.TWOOPSTRACKER_SENTRY_DSN }}" >> .env
+          echo "TWOOPSTRACKER_GOOGLE_OAUTH2_CLIENT_SECRET=${{ secrets.TWOOPSTRACKER_GOOGLE_OAUTH2_CLIENT_SECRET }}" >> .env
+          echo "TWOOPSTRACKER_GOOGLE_OAUTH2_CLIENT_ID=${{ secrets.TWOOPSTRACKER_GOOGLE_OAUTH2_CLIENT_ID }}" >> .env
           make runci
 
       - name: Run Lint

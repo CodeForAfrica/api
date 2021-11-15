@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     # installed apps
     "django.contrib.postgres",
     "rest_framework",
+    "rest_framework.authtoken",
     "corsheaders",
     "storages",
     # Local apps
@@ -166,3 +167,22 @@ if TWOOPSTRACKER_USE_S3:
     AWS_LOCATION = env.str("AWS_LOCATION", "static")
     AWS_DEFAULT_ACL = env("AWS_DEFAULT_ACL", None)
     AWS_S3_VERIFY = env.bool("AWS_S3_VERIFY", True)
+
+# REST_FRAMEWORK
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.BasicAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ]
+}
+
+# OAuth2
+TWOOPSTRACKER_GOOGLE_OAUTH2_CLIENT_ID = env("TWOOPSTRACKER_GOOGLE_OAUTH2_CLIENT_ID")
+TWOOPSTRACKER_GOOGLE_OAUTH2_CLIENT_SECRET = env(
+    "TWOOPSTRACKER_GOOGLE_OAUTH2_CLIENT_SECRET"
+)
+TWOOPSTRACKER_FRONTEND_LOGIN_URL = env(
+    "TWOOPSTRACKER_FRONTEND_LOGIN_URL", "http://localhost:3000"
+)
+TWOOPSTRACKER_BACKEND_URL = env("TWOOPSTRACKER_BACKEND_URL", "http://localhost:8000")
