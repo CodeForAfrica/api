@@ -42,13 +42,22 @@ class TweetSearch(TimestampedModelMixin):
     TweetSearch model
     """
 
-    search_query = models.TextField(help_text=_("Search Query"))
+    query = models.TextField(help_text=_("Search Query"))
+    name = models.CharField(
+        help_text=_("The name of the Search Query"),
+        null=True,
+        blank=True,
+        max_length=255,
+    )
     owner = models.ForeignKey(
         "UserProfile", on_delete=models.CASCADE, related_name="tweet_searches"
     )
 
     def __str__(self):
         return f"{self.search_query}"
+
+    class Meta:
+        unique_together = ("query", "owner")
 
 
 class TwitterAccount(TimestampedModelMixin):
