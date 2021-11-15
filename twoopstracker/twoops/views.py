@@ -95,6 +95,9 @@ class TweetsView(generics.ListAPIView):
 class AccountsList(generics.ListCreateAPIView):
     queryset = TwitterAccountsList.objects.all()
     serializer_class = TwitterAccountListSerializer
+    permission_classes = [
+        IsAuthenticated,
+    ]
 
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
@@ -106,6 +109,9 @@ class AccountsList(generics.ListCreateAPIView):
 class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
     queryset = TwitterAccountsList.objects.all()
     serializer_class = TwitterAccountListSerializer
+    permission_classes = [
+        IsAuthenticated,
+    ]
 
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
