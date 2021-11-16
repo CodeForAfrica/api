@@ -151,6 +151,9 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 # Celery
 CELERY_BROKER_URL = env.str("TWOOPSTRACKER_CELERY_BROKER_URL", "")
+TWOOPTRACKER_LISTENER_RESTART_MINUTES = env.int(
+    "TWOOPTRACKER_LISTENER_RESTART_MINUTES", 15
+)
 
 # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
 

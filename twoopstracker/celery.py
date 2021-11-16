@@ -3,6 +3,7 @@ import os
 
 from celery import Celery
 from celery.schedules import crontab
+from django.conf import settings
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "twoopstracker.settings")
@@ -29,6 +30,8 @@ def start_stream_listener():
 app.conf.beat_schedule = {
     "start_stream_listener": {
         "task": "start_stream_listener",
-        "schedule": crontab(minute="*/15"),
+        "schedule": crontab(
+            minute=f"*/{settings.TWOOPTRACKER_LISTENER_RESTART_MINUTES}"
+        ),
     },
 }
