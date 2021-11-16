@@ -4,6 +4,8 @@ import logging
 import tweepy
 from django.conf import settings
 
+from twoopstracker.twoops.models import TwitterAccount
+
 from .tasks import mark_tweet_as_deleted, save_tweet
 
 logger = logging.getLogger(__name__)
@@ -11,10 +13,9 @@ logger = logging.getLogger(__name__)
 
 class TweetListener(tweepy.Stream):
     def get_accounts(self):
-        accounts = []
-        with open("accounts.txt", "r") as f:
-            for line in f:
-                accounts.append(line.strip())
+        accounts = TwitterAccount.objects.filter(deleted=False).values_list(
+            "account_id"
+        )
         return accounts
 
     def on_connect(self):
