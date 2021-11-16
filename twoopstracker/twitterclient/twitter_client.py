@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 class TweetListener(tweepy.Stream):
     def get_accounts(self):
         accounts = TwitterAccount.objects.filter(deleted=False).values_list(
-            "account_id"
+            "account_id", flat=True
         )
-        return accounts
+        return list(accounts)
 
     def on_connect(self):
         logger.info("Stream listener connected.")
