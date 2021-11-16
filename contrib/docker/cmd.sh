@@ -12,6 +12,11 @@ tail -n 0 -f /app/logs/*.log &
 # Start celery worker
 celery -A twoopstracker worker -l INFO  &> /app/logs/celery.log &
 
+# everytime the container is restarted, the scheduler will reset
+rm -rf celerybeat-schedule
+# Start celery beat service
+celery -A twoopstracker beat -l INFO  &> /app/logs/celery.log &
+
 # Start Gunicorn processes
 echo Starting Gunicorn.
 exec gunicorn \
