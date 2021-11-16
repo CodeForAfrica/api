@@ -1,6 +1,12 @@
+from django.db import IntegrityError
 from rest_framework import serializers
 
-from twoopstracker.twoops.models import Tweet, TwitterAccount, TwitterAccountsList
+from twoopstracker.twoops.models import (
+    Tweet,
+    TweetSearch,
+    TwitterAccount,
+    TwitterAccountsList,
+)
 
 
 class TwitterAccountSerializer(serializers.ModelSerializer):
@@ -55,3 +61,16 @@ class TwitterAccountListSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         data["accounts"] = self.get_accounts(instance)
         return data
+
+
+class TweetSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TweetSearch
+        fields = ["created_at", "updated_at", "owner", "name", "query"]
+        read_only_fields = ["created_at", "updated_at", "owner"]
+
+    def create(self, validated_data):
+        try:
+            return super().create(validated_data)
+        except IntegrityError as e:
+            raise serializers.ValidationError(e)
