@@ -21,7 +21,7 @@ def google_get_user_info(access_token):
     return response.json()
 
 
-@api_view(["GET", "POST"])
+@api_view(["POST"])
 def login(request):
     input_serializer = InputSerializer(data=request.data)
     input_serializer.is_valid(raise_exception=True)
