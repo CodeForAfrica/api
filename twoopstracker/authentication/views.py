@@ -3,6 +3,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.shortcuts import redirect
 from rest_framework.decorators import api_view
+from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import get_or_create_user
@@ -53,3 +54,5 @@ def login(request):
             return response
     elif validated_data.get("error"):
         return redirect(f"{redirect_url}?error={validated_data.get('error')}")
+
+    return Response(input_serializer.data)
