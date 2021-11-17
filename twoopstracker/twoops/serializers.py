@@ -48,6 +48,9 @@ class TwitterAccountListSerializer(serializers.ModelSerializer):
                     "name": account.name,
                     "account_id": account.account_id,
                     "screen_name": account.screen_name,
+                    "protected": account.protected,
+                    "created_at": account.created_at,
+                    "updated_at": account.updated_at,
                 }
             )
 
