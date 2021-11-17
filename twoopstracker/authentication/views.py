@@ -1,5 +1,4 @@
 import requests  # type: ignore
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -7,9 +6,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import get_or_create_user
 from .serializers import InputSerializer
-
-TWOOPSTRACKER_BACKEND_URL = settings.TWOOPSTRACKER_BACKEND_URL
-TWOOPSTRACKER_FRONTEND_LOGIN_URL = settings.TWOOPSTRACKER_FRONTEND_LOGIN_URL
 
 
 def google_get_user_info(access_token):
