@@ -1,5 +1,6 @@
 import datetime
 
+from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from rest_framework import generics
 
@@ -54,23 +55,30 @@ class TweetsView(generics.ListAPIView):
 
     def get_queryset(self):
         query = self.request.GET.get("query")
-        startDate = self.request.GET.get("startDate")
-        endDate = self.request.GET.get("endDate")
+        start_date = self.request.GET.get("start_date")
+        end_date = self.request.GET.get("end_date")
         location = self.request.GET.get("location")
 
         tweets = Tweet.objects.filter(deleted=True)
 
-        if not startDate:
-            startDate = str(datetime.datetime.now() - datetime.timedelta(days=7))
-        if startDate:
-            startDate = datetime.datetime.fromisoformat(startDate)
-        if endDate:
-            endDate = datetime.datetime.fromisoformat(endDate)
+        if not start_date:
+            start_date = str(
+                (
+                    datetime.date.today()
+                    - datetime.timedelta(
+                        days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
+                    )
+                )
+            )
+        if start_date:
+            start_date = datetime.date.fromisoformat(start_date)
+        if end_date:
+            end_date = datetime.date.fromisoformat(end_date)
 
         if query:
             if query.startswith("@"):
                 # search by username
-                tweets = tweets.filter(owner__screen_name=query[1:])
+                tweets = tweets.filter(owner__screen_name__iexact=query[1:])
             else:
                 search_type = get_search_type(query)
                 if search_type == "raw":
@@ -82,10 +90,10 @@ class TweetsView(generics.ListAPIView):
                     search_query = SearchQuery(query)
                 tweets = tweets.annotate(search=vector).filter(search=search_query)
 
-        if startDate:
-            tweets = tweets.filter(deleted_at__gte=startDate)
-        if endDate:
-            tweets = tweets.filter(deleted_at__lte=endDate)
+        if start_date:
+            tweets = tweets.filter(deleted_at__gte=start_date)
+        if end_date:
+            tweets = tweets.filter(deleted_at__lte=end_date)
         if location:
             tweets = tweets.filter(owner__location=location)
 
