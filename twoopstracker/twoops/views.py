@@ -54,20 +54,20 @@ class TweetsView(generics.ListAPIView):
 
     def get_queryset(self):
         query = self.request.GET.get("query")
-        startDate = self.request.GET.get("startDate")
-        endDate = self.request.GET.get("endDate")
+        start_date = self.request.GET.get("start_date")
+        end_date = self.request.GET.get("end_date")
         location = self.request.GET.get("location")
 
         tweets = Tweet.objects.filter(deleted=True)
 
-        if not startDate:
-            startDate = str(
+        if not start_date:
+            start_date = str(
                 (datetime.datetime.now() - datetime.timedelta(days=7)).date()
             )
-        if startDate:
-            startDate = datetime.datetime.fromisoformat(startDate)
-        if endDate:
-            endDate = datetime.datetime.fromisoformat(endDate)
+        if start_date:
+            start_date = datetime.datetime.fromisoformat(start_date)
+        if end_date:
+            end_date = datetime.datetime.fromisoformat(end_date)
 
         if query:
             if query.startswith("@"):
@@ -84,10 +84,10 @@ class TweetsView(generics.ListAPIView):
                     search_query = SearchQuery(query)
                 tweets = tweets.annotate(search=vector).filter(search=search_query)
 
-        if startDate:
-            tweets = tweets.filter(deleted_at__gte=startDate)
-        if endDate:
-            tweets = tweets.filter(deleted_at__lte=endDate)
+        if start_date:
+            tweets = tweets.filter(deleted_at__gte=start_date)
+        if end_date:
+            tweets = tweets.filter(deleted_at__lte=end_date)
         if location:
             tweets = tweets.filter(owner__location=location)
 
