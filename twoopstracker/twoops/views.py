@@ -112,7 +112,7 @@ class TweetSearchesView(generics.ListCreateAPIView):
         serializer.save(owner=user_profile)
 
 
-class SingleSavedSearchView(generics.RetrieveUpdateDestroyAPIView):
+class TweetSearchView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TweetSearchSerializer
 
     def get_queryset(self):

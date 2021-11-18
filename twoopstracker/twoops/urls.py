@@ -2,9 +2,9 @@ from django.urls import path
 
 from .views import (
     AccountsList,
-    SingleSavedSearchView,
     SingleTwitterList,
     TweetSearchesView,
+    TweetSearchView,
     TweetsView,
 )
 
@@ -13,7 +13,7 @@ urlpatterns = [
     path("tweets/searches", TweetSearchesView.as_view(), name="tweets_searches"),
     path(
         "tweets/searches/<pk>",
-        SingleSavedSearchView.as_view(),
+        TweetSearchView.as_view(),
         name="single_saved_search",
     ),
     path("lists/", AccountsList.as_view(), name="accounts_list"),
