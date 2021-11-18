@@ -1,5 +1,6 @@
 import datetime
 
+from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from rest_framework import generics
 
@@ -61,7 +62,14 @@ class TweetsView(generics.ListAPIView):
         tweets = Tweet.objects.filter(deleted=True)
 
         if not start_date:
-            start_date = str((datetime.date.today() - datetime.timedelta(days=7)))
+            start_date = str(
+                (
+                    datetime.date.today()
+                    - datetime.timedelta(
+                        days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
+                    )
+                )
+            )
         if start_date:
             start_date = datetime.date.fromisoformat(start_date)
         if end_date:
