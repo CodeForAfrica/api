@@ -61,7 +61,9 @@ class TweetsView(generics.ListAPIView):
         tweets = Tweet.objects.filter(deleted=True)
 
         if not startDate:
-            startDate = str(datetime.datetime.now() - datetime.timedelta(days=7))
+            startDate = str(
+                (datetime.datetime.now() - datetime.timedelta(days=7)).date()
+            )
         if startDate:
             startDate = datetime.datetime.fromisoformat(startDate)
         if endDate:
