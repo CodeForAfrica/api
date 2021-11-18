@@ -112,6 +112,14 @@ class TweetSearchesView(generics.ListCreateAPIView):
         serializer.save(owner=user_profile)
 
 
+class SingleSavedSearchView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = TweetSearchSerializer
+
+    def get_queryset(self):
+        user_profile = UserProfile.objects.get(user=self.request.user)
+        return TweetSearch.objects.filter(owner=user_profile)
+
+
 class AccountsList(generics.ListCreateAPIView):
     queryset = TwitterAccountsList.objects.all()
     serializer_class = TwitterAccountListSerializer
