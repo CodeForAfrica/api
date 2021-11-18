@@ -72,7 +72,7 @@ class TweetsView(generics.ListAPIView):
         if query:
             if query.startswith("@"):
                 # search by username
-                tweets = tweets.filter(owner__screen_name=query[1:])
+                tweets = tweets.filter(owner__screen_name__iexact=query[1:])
             else:
                 search_type = get_search_type(query)
                 if search_type == "raw":
