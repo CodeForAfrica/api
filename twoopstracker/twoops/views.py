@@ -61,13 +61,11 @@ class TweetsView(generics.ListAPIView):
         tweets = Tweet.objects.filter(deleted=True)
 
         if not start_date:
-            start_date = str(
-                (datetime.datetime.now() - datetime.timedelta(days=7)).date()
-            )
+            start_date = str((datetime.date.today() - datetime.timedelta(days=7)))
         if start_date:
-            start_date = datetime.datetime.fromisoformat(start_date)
+            start_date = datetime.date.fromisoformat(start_date)
         if end_date:
-            end_date = datetime.datetime.fromisoformat(end_date)
+            end_date = datetime.date.fromisoformat(end_date)
 
         if query:
             if query.startswith("@"):
