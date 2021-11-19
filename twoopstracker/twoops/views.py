@@ -12,6 +12,7 @@ from twoopstracker.twoops.models import (
     UserProfile,
 )
 from twoopstracker.twoops.serializers import (
+    TweetGraphSerializer,
     TweetSearchSerializer,
     TweetSerializer,
     TwitterAccountListSerializer,
@@ -98,6 +99,41 @@ class TweetsView(generics.ListAPIView):
             tweets = tweets.filter(owner__location=location)
 
         return tweets
+
+
+class TweetsGraphView(TweetsView):
+    pagination_class = None
+
+    def get_serializer(self, *args, **kwargs):
+        start_date = datetime.datetime.fromisoformat(
+            self.request.GET.get(
+                "start_date",
+                str(
+                    (
+                        datetime.date.today()
+                        - datetime.timedelta(
+                            days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
+                        )
+                    )
+                ),
+            )
+        )
+        end_date = datetime.datetime.fromisoformat(
+            self.request.GET.get("end_date", str(datetime.date.today()))
+        )
+
+        counts = []
+        date = start_date
+        for _ in range(1, (end_date - start_date).days + 1):
+            query_set = self.get_queryset().filter(
+                deleted_at__gte=date, deleted_at__lte=date + datetime.timedelta(days=1)
+            )
+            counts.append({"date": date.date(), "count": query_set.count()})
+            date += datetime.timedelta(days=1)
+
+        serializer = TweetGraphSerializer(data=counts, many=True)
+        serializer.is_valid(raise_exception=True)
+        return serializer
 
 
 class TweetSearchesView(generics.ListCreateAPIView):
