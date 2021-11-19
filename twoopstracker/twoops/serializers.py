@@ -38,6 +38,11 @@ class TweetSerializer(serializers.ModelSerializer):
         depth = 1
 
 
+class TweetGraphSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    count = serializers.IntegerField()
+
+
 class TwitterAccountListSerializer(serializers.ModelSerializer):
     def get_accounts(self, obj):
         accounts = obj.accounts.all()
