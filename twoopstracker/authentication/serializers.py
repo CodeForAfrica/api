@@ -1,6 +1,11 @@
 from rest_framework import serializers
 
 
+class TokenSerializer(serializers.Serializer):
+    access_token = serializers.CharField()
+    id_token = serializers.CharField()
+
+
 class InputSerializer(serializers.Serializer):
-    access_token = serializers.CharField(required=False)
-    id_token = serializers.CharField(required=False)
+    tokens = TokenSerializer()
+    provider = serializers.CharField()
