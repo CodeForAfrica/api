@@ -2,6 +2,7 @@ import datetime
 
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
+from django.db.models import Count
 from django.db.models.functions import Trunc
 from rest_framework import generics
 
@@ -102,38 +103,21 @@ class TweetsView(generics.ListAPIView):
         return tweets
 
 
-class TweetsGraphView(TweetsView):
+class TweetsInsightsView(TweetsView):
     pagination_class = None
 
     def get_serializer(self, *args, **kwargs):
-        start_date = datetime.datetime.fromisoformat(
-            self.request.GET.get(
-                "start_date",
-                str(
-                    (
-                        datetime.date.today()
-                        - datetime.timedelta(
-                            days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
-                        )
-                    )
-                ),
-            )
+        query_set = (
+            self.get_queryset()
+            .annotate(start_date=Trunc("deleted_at", "day"))
+            .values("start_date")
+            .annotate(count=Count("start_date"))
+            .order_by("start_date")
         )
-        end_date = datetime.datetime.fromisoformat(
-            self.request.GET.get("end_date", str(datetime.date.today()))
-        )
-
-        counts = []
-        date = start_date
-        for _ in range(1, (end_date - start_date).days + 1):
-            query_set = (
-                self.get_queryset()
-                .annotate(start_date=Trunc("deleted_at", "day"))
-                .filter(start_date=date)
-            )
-            counts.append({"date": date.date(), "count": query_set.count()})
-            date += datetime.timedelta(days=1)
-
+        counts = [
+            {"date": str(query["start_date"].date()), "count": query["count"]}
+            for query in query_set
+        ]
         serializer = TweetGraphSerializer(data=counts, many=True)
         serializer.is_valid(raise_exception=True)
         return serializer

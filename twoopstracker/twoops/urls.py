@@ -5,13 +5,13 @@ from .views import (
     SingleTwitterList,
     TweetSearchesView,
     TweetSearchView,
-    TweetsGraphView,
+    TweetsInsightsView,
     TweetsView,
 )
 
 urlpatterns = [
     path("tweets/", TweetsView.as_view(), name="tweets"),
-    path("tweets/insights", TweetsGraphView.as_view(), name="tweets_insights"),
+    path("tweets/insights", TweetsInsightsView.as_view(), name="tweets_insights"),
     path("tweets/searches", TweetSearchesView.as_view(), name="tweets_searches"),
     path(
         "tweets/searches/<pk>",
