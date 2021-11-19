@@ -2,6 +2,8 @@ import datetime
 
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
+from django.db.models import Count
+from django.db.models.functions import Trunc
 from rest_framework import generics
 
 from twoopstracker.twoops.models import (
@@ -12,6 +14,7 @@ from twoopstracker.twoops.models import (
     UserProfile,
 )
 from twoopstracker.twoops.serializers import (
+    TweetGraphSerializer,
     TweetSearchSerializer,
     TweetSerializer,
     TwitterAccountListSerializer,
@@ -98,6 +101,26 @@ class TweetsView(generics.ListAPIView):
             tweets = tweets.filter(owner__location=location)
 
         return tweets
+
+
+class TweetsInsightsView(TweetsView):
+    pagination_class = None
+
+    def get_serializer(self, *args, **kwargs):
+        query_set = (
+            self.get_queryset()
+            .annotate(start_date=Trunc("deleted_at", "day"))
+            .values("start_date")
+            .annotate(count=Count("start_date"))
+            .order_by("start_date")
+        )
+        counts = [
+            {"date": str(query["start_date"].date()), "count": query["count"]}
+            for query in query_set
+        ]
+        serializer = TweetGraphSerializer(data=counts, many=True)
+        serializer.is_valid(raise_exception=True)
+        return serializer
 
 
 class TweetSearchesView(generics.ListCreateAPIView):
