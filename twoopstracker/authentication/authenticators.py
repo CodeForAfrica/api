@@ -20,7 +20,7 @@ class GoogleAuthenticator:
             # Check if user exists in our database
             user = User.objects.filter(email=response["email"]).first()
             if not user:
-                user_data = self.google_get_user_info(access_token=access_token)
+                user_data = self.load_user_info(access_token=access_token)
                 profile_data = {
                     "email": user_data["email"],
                     "first_name": user_data["given_name"],
@@ -46,7 +46,7 @@ class GoogleAuthenticator:
         except Exception as e:
             return False, e
 
-    def google_get_user_info(self, access_token):
+    def load_user_info(self, access_token):
         response = requests.get(
             "https://www.googleapis.com/oauth2/v1/userinfo?access_token=" + access_token
         )
