@@ -2,6 +2,7 @@ import datetime
 
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
+from django.db.models.functions import Trunc
 from rest_framework import generics
 
 from twoopstracker.twoops.models import (
@@ -125,8 +126,10 @@ class TweetsGraphView(TweetsView):
         counts = []
         date = start_date
         for _ in range(1, (end_date - start_date).days + 1):
-            query_set = self.get_queryset().filter(
-                deleted_at__gte=date, deleted_at__lte=date + datetime.timedelta(days=1)
+            query_set = (
+                self.get_queryset()
+                .annotate(start_date=Trunc("deleted_at", "day"))
+                .filter(start_date=date)
             )
             counts.append({"date": date.date(), "count": query_set.count()})
             date += datetime.timedelta(days=1)
