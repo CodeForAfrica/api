@@ -11,7 +11,7 @@ from .views import (
 
 urlpatterns = [
     path("tweets/", TweetsView.as_view(), name="tweets"),
-    path("tweets/graph", TweetsGraphView.as_view(), name="tweets_graph"),
+    path("tweets/insights", TweetsGraphView.as_view(), name="tweets_insights"),
     path("tweets/searches", TweetSearchesView.as_view(), name="tweets_searches"),
     path(
         "tweets/searches/<pk>",
