@@ -100,7 +100,7 @@ class TweetsView(generics.ListAPIView):
         if location:
             tweets = tweets.filter(owner__location=location)
 
-        return tweets
+        return tweets.order_by("-deleted_at")
 
 
 class TweetsInsightsView(TweetsView):
