@@ -143,7 +143,7 @@ class TweetsInsightsView(TweetsView):
                 [day_count["date"] == current_date for day_count in days_counts]
             ):
                 days_counts.append({"date": current_date, "count": 0})
-
+        days_counts.sort(key=lambda x: x["date"])
         serializer = TweetsInsightsSerializer(data=days_counts, many=True)
         serializer.is_valid(raise_exception=True)
         return serializer
