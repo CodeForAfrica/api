@@ -132,19 +132,18 @@ class TweetsInsightsView(TweetsView):
             .annotate(count=Count("start_date"))
             .order_by("start_date")
         )
-        days_counts = [
-            {"date": str(query["start_date"].date()), "count": query["count"]}
-            for query in query_set
-        ]
+
+        insights = {
+            str(query["start_date"].date()): query["count"] for query in query_set
+        }
         for day in range((end_date - start_date).days):
             current_date = str(start_date + datetime.timedelta(days=day))
+            insights.setdefault(current_date, 0)
 
-            if not any(
-                [day_count["date"] == current_date for day_count in days_counts]
-            ):
-                days_counts.append({"date": current_date, "count": 0})
-        days_counts.sort(key=lambda x: x["date"])
-        serializer = TweetsInsightsSerializer(data=days_counts, many=True)
+        # we can now return it in the expected [{'date': xxx, 'count': xxx}, ...] structure
+        data = [{"date": i, "count": insights[i]} for i in sorted(insights)]
+
+        serializer = TweetsInsightsSerializer(data=data, many=True)
         serializer.is_valid(raise_exception=True)
         return serializer
 
