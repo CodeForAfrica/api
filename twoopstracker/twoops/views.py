@@ -107,12 +107,13 @@ class TweetsInsightsView(TweetsView):
     pagination_class = None
 
     def get_serializer(self, *args, **kwargs):
+        today = datetime.date.today()
         start_date = datetime.date.fromisoformat(
             self.request.GET.get(
                 "start_date",
                 str(
                     (
-                        datetime.date.today()
+                        today
                         - datetime.timedelta(
                             days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
                         )
@@ -121,7 +122,7 @@ class TweetsInsightsView(TweetsView):
             )
         )
         end_date = datetime.date.fromisoformat(
-            self.request.GET.get("end_date", str(datetime.date.today()))
+            self.request.GET.get("end_date", str(today))
         )
 
         query_set = (
@@ -131,22 +132,19 @@ class TweetsInsightsView(TweetsView):
             .annotate(count=Count("start_date"))
             .order_by("start_date")
         )
-        counts = [
+        days_counts = [
             {"date": str(query["start_date"].date()), "count": query["count"]}
             for query in query_set
         ]
         for day in range((end_date - start_date).days):
-            if not any(
-                [
-                    count["date"] == str(start_date + datetime.timedelta(days=day))
-                    for count in counts
-                ]
-            ):
-                counts.append(
-                    {"date": str(start_date + datetime.timedelta(days=day)), "count": 0}
-                )
+            current_date = str(start_date + datetime.timedelta(days=day))
 
-        serializer = TweetsInsightsSerializer(data=counts, many=True)
+            if not any(
+                [day_count["date"] == current_date for day_count in days_counts]
+            ):
+                days_counts.append({"date": current_date, "count": 0})
+
+        serializer = TweetsInsightsSerializer(data=days_counts, many=True)
         serializer.is_valid(raise_exception=True)
         return serializer
 
