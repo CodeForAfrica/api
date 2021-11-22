@@ -14,9 +14,9 @@ from twoopstracker.twoops.models import (
     UserProfile,
 )
 from twoopstracker.twoops.serializers import (
-    TweetGraphSerializer,
     TweetSearchSerializer,
     TweetSerializer,
+    TweetsInsightsSerializer,
     TwitterAccountListSerializer,
 )
 
@@ -107,6 +107,23 @@ class TweetsInsightsView(TweetsView):
     pagination_class = None
 
     def get_serializer(self, *args, **kwargs):
+        start_date = datetime.date.fromisoformat(
+            self.request.GET.get(
+                "start_date",
+                str(
+                    (
+                        datetime.date.today()
+                        - datetime.timedelta(
+                            days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
+                        )
+                    )
+                ),
+            )
+        )
+        end_date = datetime.date.fromisoformat(
+            self.request.GET.get("end_date", str(datetime.date.today()))
+        )
+
         query_set = (
             self.get_queryset()
             .annotate(start_date=Trunc("deleted_at", "day"))
@@ -118,7 +135,18 @@ class TweetsInsightsView(TweetsView):
             {"date": str(query["start_date"].date()), "count": query["count"]}
             for query in query_set
         ]
-        serializer = TweetGraphSerializer(data=counts, many=True)
+        for day in range((end_date - start_date).days):
+            if not any(
+                [
+                    count["date"] == str(start_date + datetime.timedelta(days=day))
+                    for count in counts
+                ]
+            ):
+                counts.append(
+                    {"date": str(start_date + datetime.timedelta(days=day)), "count": 0}
+                )
+
+        serializer = TweetsInsightsSerializer(data=counts, many=True)
         serializer.is_valid(raise_exception=True)
         return serializer
 
