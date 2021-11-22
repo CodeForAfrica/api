@@ -38,7 +38,7 @@ class TweetSerializer(serializers.ModelSerializer):
         depth = 1
 
 
-class TweetGraphSerializer(serializers.Serializer):
+class TweetsInsightsSerializer(serializers.Serializer):
     date = serializers.DateField()
     count = serializers.IntegerField()
 

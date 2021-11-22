@@ -14,9 +14,9 @@ from twoopstracker.twoops.models import (
     UserProfile,
 )
 from twoopstracker.twoops.serializers import (
-    TweetGraphSerializer,
     TweetSearchSerializer,
     TweetSerializer,
+    TweetsInsightsSerializer,
     TwitterAccountListSerializer,
 )
 
@@ -100,13 +100,31 @@ class TweetsView(generics.ListAPIView):
         if location:
             tweets = tweets.filter(owner__location=location)
 
-        return tweets
+        return tweets.order_by("-deleted_at")
 
 
 class TweetsInsightsView(TweetsView):
     pagination_class = None
 
     def get_serializer(self, *args, **kwargs):
+        today = datetime.date.today()
+        start_date = datetime.date.fromisoformat(
+            self.request.GET.get(
+                "start_date",
+                str(
+                    (
+                        today
+                        - datetime.timedelta(
+                            days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
+                        )
+                    )
+                ),
+            )
+        )
+        end_date = datetime.date.fromisoformat(
+            self.request.GET.get("end_date", str(today))
+        )
+
         query_set = (
             self.get_queryset()
             .annotate(start_date=Trunc("deleted_at", "day"))
@@ -114,11 +132,18 @@ class TweetsInsightsView(TweetsView):
             .annotate(count=Count("start_date"))
             .order_by("start_date")
         )
-        counts = [
-            {"date": str(query["start_date"].date()), "count": query["count"]}
-            for query in query_set
-        ]
-        serializer = TweetGraphSerializer(data=counts, many=True)
+
+        insights = {
+            str(query["start_date"].date()): query["count"] for query in query_set
+        }
+        for day in range((end_date - start_date).days):
+            current_date = str(start_date + datetime.timedelta(days=day))
+            insights.setdefault(current_date, 0)
+
+        # we can now return it in the expected [{'date': xxx, 'count': xxx}, ...] structure
+        data = [{"date": i, "count": insights[i]} for i in sorted(insights)]
+
+        serializer = TweetsInsightsSerializer(data=data, many=True)
         serializer.is_valid(raise_exception=True)
         return serializer
 
