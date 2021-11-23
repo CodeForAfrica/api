@@ -14,6 +14,7 @@ from twoopstracker.twoops.models import (
     TwitterAccountsList,
 )
 from twoopstracker.twoops.serializers import (
+    SingleTwitterAccountListSerializer,
     TweetSearchSerializer,
     TweetSerializer,
     TweetsInsightsSerializer,
@@ -240,7 +241,7 @@ class AccountsList(generics.ListCreateAPIView):
 
 class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
     queryset = TwitterAccountsList.objects.all()
-    serializer_class = TwitterAccountListSerializer
+    serializer_class = SingleTwitterAccountListSerializer
 
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()

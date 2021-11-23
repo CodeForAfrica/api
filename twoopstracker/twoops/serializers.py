@@ -44,6 +44,20 @@ class TweetsInsightsSerializer(serializers.Serializer):
 
 
 class TwitterAccountListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TwitterAccountsList
+        fields = ["id", "name", "created_at", "is_private", "accounts"]
+        extra_kwargs = {
+            "accounts": {"write_only": True},
+        }
+
+
+class SingleTwitterAccountListSerializer(TwitterAccountListSerializer):
+    class Meta(TwitterAccountListSerializer.Meta):
+        extra_kwargs = {
+            "accounts": {"write_only": False},
+        }
+
     def get_accounts(self, obj):
         accounts = obj.accounts.all()
         data = []
@@ -60,10 +74,6 @@ class TwitterAccountListSerializer(serializers.ModelSerializer):
             )
 
         return data
-
-    class Meta:
-        model = TwitterAccountsList
-        fields = ["id", "name", "created_at", "is_private", "accounts"]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
