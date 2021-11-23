@@ -54,7 +54,7 @@ class TweetSearch(TimestampedModelMixin):
     )
 
     def __str__(self):
-        return f"{self.search_query}"
+        return f"{self.query}"
 
     class Meta:
         unique_together = ("query", "owner")
