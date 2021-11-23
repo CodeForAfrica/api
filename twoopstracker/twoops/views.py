@@ -12,7 +12,6 @@ from twoopstracker.twoops.models import (
     TweetSearch,
     TwitterAccount,
     TwitterAccountsList,
-    UserProfile,
 )
 from twoopstracker.twoops.serializers import (
     TweetSearchSerializer,
@@ -110,9 +109,8 @@ class TweetsView(generics.ListAPIView):
         user = self.request.user
 
         if user.is_authenticated:
-            user_profile = UserProfile.objects.get(user=user)
             twitter_accounts_lists = twitter_accounts_lists.union(
-                TwitterAccountsList.objects.filter(owner=user_profile)
+                TwitterAccountsList.objects.filter(owner=user.userprofile)
             )
 
         for twitter_accounts_list in twitter_accounts_lists:
@@ -213,20 +211,17 @@ class TweetSearchesView(generics.ListCreateAPIView):
     serializer_class = TweetSearchSerializer
 
     def get_queryset(self):
-        user_profile = UserProfile.objects.get(user=self.request.user)
-        return TweetSearch.objects.filter(owner=user_profile)
+        return TweetSearch.objects.filter(owner=self.request.user.userprofile)
 
     def perform_create(self, serializer):
-        user_profile = UserProfile.objects.get(user=self.request.user)
-        serializer.save(owner=user_profile)
+        serializer.save(owner=self.request.user.userprofile)
 
 
 class TweetSearchView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TweetSearchSerializer
 
     def get_queryset(self):
-        user_profile = UserProfile.objects.get(user=self.request.user)
-        return TweetSearch.objects.filter(owner=user_profile)
+        return TweetSearch.objects.filter(owner=self.request.user.userprofile)
 
 
 class AccountsList(generics.ListCreateAPIView):
@@ -240,8 +235,7 @@ class AccountsList(generics.ListCreateAPIView):
         return serializer_class(*args, **kwargs)
 
     def perform_create(self, serializer):
-        user_profile = UserProfile.objects.get(user=self.request.user)
-        serializer.save(owner=user_profile)
+        serializer.save(owner=self.request.user.userprofile)
 
 
 class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
