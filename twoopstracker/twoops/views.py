@@ -27,12 +27,10 @@ twitterclient = TwitterClient()
 def save_accounts(users):
     accounts_ids = []
 
-    twitter_accounts = [
-        TwitterAccount.objects.get_or_create(account_id=user.id)[0] for user in users
-    ]
-    for twitter_account in twitter_accounts:
-        user = [user for user in users if user.id == twitter_account.account_id][0]
-
+    accounts_ids = []
+    twitter_accounts = []
+    for user in users:
+        twitter_account, _ = TwitterAccount.objects.get_or_create(account_id=user.id)
         twitter_account.name = user.name
         twitter_account.screen_name = user.screen_name
         twitter_account.description = user.description
@@ -44,7 +42,8 @@ def save_accounts(users):
         twitter_account.favourites_count = user.favourites_count
         twitter_account.statuses_count = user.statuses_count
         twitter_account.profile_image_url = user.profile_image_url
-        accounts_ids.append(twitter_account.account_id)
+        twitter_accounts.append(twitter_account)
+        accounts_ids.append(user.id)
 
     TwitterAccount.objects.bulk_update(
         twitter_accounts,
