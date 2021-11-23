@@ -6,6 +6,7 @@ from django.db.models import Count
 from django.db.models.functions import Trunc
 from rest_framework import generics
 
+from twoopstracker.twitterclient.twitter_client import TwitterClient
 from twoopstracker.twoops.models import (
     Tweet,
     TweetSearch,
@@ -19,6 +20,50 @@ from twoopstracker.twoops.serializers import (
     TweetsInsightsSerializer,
     TwitterAccountListSerializer,
 )
+
+twitterclient = TwitterClient()
+
+
+def save_users(users):
+    accounts_ids = []
+
+    twitter_accounts = [
+        TwitterAccount.objects.get_or_create(account_id=user.id)[0] for user in users
+    ]
+    for twitter_account in twitter_accounts:
+        user = [user for user in users if user.id == twitter_account.account_id][0]
+
+        twitter_account.name = user.name
+        twitter_account.screen_name = user.screen_name
+        twitter_account.description = user.description
+        twitter_account.verified = user.verified
+        twitter_account.protected = user.protected
+        twitter_account.location = user.location
+        twitter_account.followers_count = user.followers_count
+        twitter_account.friends_count = user.friends_count
+        twitter_account.favourites_count = user.favourites_count
+        twitter_account.statuses_count = user.statuses_count
+        twitter_account.profile_image_url = user.profile_image_url
+        accounts_ids.append(twitter_account.account_id)
+
+    TwitterAccount.objects.bulk_update(
+        twitter_accounts,
+        [
+            "name",
+            "screen_name",
+            "description",
+            "verified",
+            "protected",
+            "location",
+            "followers_count",
+            "friends_count",
+            "favourites_count",
+            "statuses_count",
+            "profile_image_url",
+        ],
+    )
+
+    return accounts_ids
 
 
 def get_search_type(search_string):
@@ -41,11 +86,13 @@ def refromat_search_string(search_string):
 def update_kwargs_with_account_ids(kwargs):
     accounts_ids = []
     accounts = kwargs.get("data", {}).get("accounts", [])
-    for account in accounts:
-        account, _ = TwitterAccount.objects.get_or_create(
-            screen_name=account.get("screen_name")
-        )
-        accounts_ids.append(account.account_id)
+
+    screen_names = [account.get("screen_name") for account in accounts]
+    twitter_accounts = []
+    if screen_names:
+        twitter_accounts = twitterclient.get_users(screen_names)
+
+    accounts_ids = save_users(twitter_accounts)
 
     if accounts:
         kwargs["data"]["accounts"] = accounts_ids
