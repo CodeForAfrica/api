@@ -194,6 +194,7 @@ class TweetsInsightsView(TweetsView):
 
 class TweetSearchesView(generics.ListCreateAPIView):
     serializer_class = TweetSearchSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         user_profile = UserProfile.objects.get(user=self.request.user)
@@ -206,6 +207,7 @@ class TweetSearchesView(generics.ListCreateAPIView):
 
 class TweetSearchView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TweetSearchSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         user_profile = UserProfile.objects.get(user=self.request.user)
