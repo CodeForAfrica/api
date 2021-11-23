@@ -62,7 +62,20 @@ class TweetsView(generics.ListAPIView):
         end_date = self.request.GET.get("end_date")
         location = self.request.GET.get("location")
 
-        tweets = Tweet.objects.filter(deleted=True)
+        twitter_accounts = set()
+        user_profile = UserProfile.objects.get(user=self.request.user)
+
+        for twitter_accounts_list in TwitterAccountsList.objects.filter(
+            is_private=False
+        ).union(TwitterAccountsList.objects.filter(owner=user_profile)):
+            for twitter_account in twitter_accounts_list.accounts.all().values_list(
+                "account_id", flat=True
+            ):
+                twitter_accounts.add(twitter_account)
+
+        tweets = Tweet.objects.filter(
+            deleted=True, owner__account_id__in=twitter_accounts
+        )
 
         if not start_date:
             start_date = str(
