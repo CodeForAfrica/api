@@ -222,6 +222,10 @@ class AccountsList(generics.ListCreateAPIView):
 
         return serializer_class(*args, **kwargs)
 
+    def perform_create(self, serializer):
+        user_profile = UserProfile.objects.get(user=self.request.user)
+        serializer.save(owner=user_profile)
+
 
 class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
     queryset = TwitterAccountsList.objects.all()
