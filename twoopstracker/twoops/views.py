@@ -2,7 +2,7 @@ import datetime
 
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from rest_framework import generics
 
@@ -110,8 +110,8 @@ class TweetsView(generics.ListAPIView):
         user = self.request.user
 
         if user.is_authenticated:
-            twitter_accounts_lists = twitter_accounts_lists.union(
-                TwitterAccountsList.objects.filter(owner=user.userprofile)
+            twitter_accounts_lists = TwitterAccountsList.objects.filter(
+                Q(is_private=False) | Q(owner=user.userprofile)
             )
 
         for twitter_accounts_list in twitter_accounts_lists:
