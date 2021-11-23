@@ -62,12 +62,17 @@ class TweetsView(generics.ListAPIView):
         end_date = self.request.GET.get("end_date")
         location = self.request.GET.get("location")
 
+        twitter_accounts_lists = TwitterAccountsList.objects.filter(is_private=False)
         twitter_accounts = set()
-        user_profile = UserProfile.objects.get(user=self.request.user)
+        user = self.request.user
 
-        for twitter_accounts_list in TwitterAccountsList.objects.filter(
-            is_private=False
-        ).union(TwitterAccountsList.objects.filter(owner=user_profile)):
+        if user.is_authenticated:
+            user_profile = UserProfile.objects.get(user=user)
+            twitter_accounts_lists = twitter_accounts_lists.union(
+                TwitterAccountsList.objects.filter(owner=user_profile)
+            )
+
+        for twitter_accounts_list in twitter_accounts_lists:
             for twitter_account in twitter_accounts_list.accounts.all().values_list(
                 "account_id", flat=True
             ):
