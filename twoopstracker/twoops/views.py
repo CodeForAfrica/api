@@ -84,7 +84,6 @@ def refromat_search_string(search_string):
 
 
 def update_kwargs_with_account_ids(kwargs):
-    accounts_ids = []
     accounts = kwargs.get("data", {}).get("accounts", [])
 
     screen_names = [account.get("screen_name") for account in accounts]
@@ -92,10 +91,8 @@ def update_kwargs_with_account_ids(kwargs):
     if screen_names:
         twitter_accounts = twitterclient.get_users(screen_names)
 
-    accounts_ids = save_users(twitter_accounts)
-
     if accounts:
-        kwargs["data"]["accounts"] = accounts_ids
+        kwargs["data"]["accounts"] = save_users(twitter_accounts)
 
     return kwargs
 
