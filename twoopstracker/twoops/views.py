@@ -6,6 +6,7 @@ from django.db.models import Count
 from django.db.models.functions import Trunc
 from rest_framework import generics
 
+from twoopstracker.twitterclient.twitter_client import TwitterClient
 from twoopstracker.twoops.models import (
     Tweet,
     TweetSearch,
@@ -19,6 +20,49 @@ from twoopstracker.twoops.serializers import (
     TweetsInsightsSerializer,
     TwitterAccountListSerializer,
 )
+
+twitterclient = TwitterClient()
+
+
+def save_accounts(users):
+    accounts_ids = []
+
+    accounts_ids = []
+    twitter_accounts = []
+    for user in users:
+        twitter_account, _ = TwitterAccount.objects.get_or_create(account_id=user.id)
+        twitter_account.name = user.name
+        twitter_account.screen_name = user.screen_name
+        twitter_account.description = user.description
+        twitter_account.verified = user.verified
+        twitter_account.protected = user.protected
+        twitter_account.location = user.location
+        twitter_account.followers_count = user.followers_count
+        twitter_account.friends_count = user.friends_count
+        twitter_account.favourites_count = user.favourites_count
+        twitter_account.statuses_count = user.statuses_count
+        twitter_account.profile_image_url = user.profile_image_url
+        twitter_accounts.append(twitter_account)
+        accounts_ids.append(user.id)
+
+    TwitterAccount.objects.bulk_update(
+        twitter_accounts,
+        [
+            "name",
+            "screen_name",
+            "description",
+            "verified",
+            "protected",
+            "location",
+            "followers_count",
+            "friends_count",
+            "favourites_count",
+            "statuses_count",
+            "profile_image_url",
+        ],
+    )
+
+    return accounts_ids
 
 
 def get_search_type(search_string):
@@ -39,16 +83,15 @@ def refromat_search_string(search_string):
 
 
 def update_kwargs_with_account_ids(kwargs):
-    accounts_ids = []
     accounts = kwargs.get("data", {}).get("accounts", [])
-    for account in accounts:
-        account, _ = TwitterAccount.objects.get_or_create(
-            screen_name=account.get("screen_name")
-        )
-        accounts_ids.append(account.account_id)
 
-    if accounts:
-        kwargs["data"]["accounts"] = accounts_ids
+    screen_names = [acc.get("screen_name") for acc in accounts if "screen_name" in acc]
+    twitter_accounts = []
+    if screen_names:
+        twitter_accounts = twitterclient.get_users(screen_names)
+
+    if accounts and twitter_accounts:
+        kwargs["data"]["accounts"] = save_accounts(twitter_accounts)
 
     return kwargs
 
@@ -177,6 +220,10 @@ class AccountsList(generics.ListCreateAPIView):
         kwargs = update_kwargs_with_account_ids(kwargs)
 
         return serializer_class(*args, **kwargs)
+
+    def perform_create(self, serializer):
+        user_profile = UserProfile.objects.get(user=self.request.user)
+        serializer.save(owner=user_profile)
 
 
 class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
