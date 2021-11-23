@@ -32,3 +32,6 @@ class TwitterClient:
         except tweepy.errors.TweepyException as e:
             logger.error(e)
             return None
+
+    def get_users(self, screen_names):
+        return self.api.lookup_users(screen_name=screen_names)

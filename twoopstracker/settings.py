@@ -171,11 +171,16 @@ if TWOOPSTRACKER_USE_S3:
 # REST_FRAMEWORK
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.BasicAuthentication",
         "rest_framework.authentication.SessionAuthentication",
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ]
+    ],
+    "DEFAULT_PAGINATION_CLASS": "twoopstracker.twoops.pagination.TwoopsTrackerPagination",
 }
+
+TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK = env.int(
+    "TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK", 7
+)
 
 # OAuth2
 TWOOPSTRACKER_GOOGLE_OAUTH2_CLIENT_ID = env("TWOOPSTRACKER_GOOGLE_OAUTH2_CLIENT_ID")

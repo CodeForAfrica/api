@@ -1,6 +1,12 @@
+from django.db import IntegrityError
 from rest_framework import serializers
 
-from twoopstracker.twoops.models import Tweet, TwitterAccount, TwitterAccountsList
+from twoopstracker.twoops.models import (
+    Tweet,
+    TweetSearch,
+    TwitterAccount,
+    TwitterAccountsList,
+)
 
 
 class TwitterAccountSerializer(serializers.ModelSerializer):
@@ -32,6 +38,11 @@ class TweetSerializer(serializers.ModelSerializer):
         depth = 1
 
 
+class TweetsInsightsSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    count = serializers.IntegerField()
+
+
 class TwitterAccountListSerializer(serializers.ModelSerializer):
     def get_accounts(self, obj):
         accounts = obj.accounts.all()
@@ -42,6 +53,9 @@ class TwitterAccountListSerializer(serializers.ModelSerializer):
                     "name": account.name,
                     "account_id": account.account_id,
                     "screen_name": account.screen_name,
+                    "protected": account.protected,
+                    "created_at": account.created_at,
+                    "updated_at": account.updated_at,
                 }
             )
 
@@ -49,9 +63,22 @@ class TwitterAccountListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TwitterAccountsList
-        fields = ["id", "name", "created_at", "owner", "is_private", "accounts"]
+        fields = ["id", "name", "created_at", "is_private", "accounts"]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["accounts"] = self.get_accounts(instance)
         return data
+
+
+class TweetSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TweetSearch
+        fields = ["created_at", "updated_at", "owner", "name", "query"]
+        read_only_fields = ["created_at", "updated_at", "owner"]
+
+    def create(self, validated_data):
+        try:
+            return super().create(validated_data)
+        except IntegrityError as e:
+            raise serializers.ValidationError(e)
