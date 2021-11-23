@@ -63,7 +63,7 @@ class TwitterAccountListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TwitterAccountsList
-        fields = ["id", "name", "created_at", "owner", "is_private", "accounts"]
+        fields = ["id", "name", "created_at", "is_private", "accounts"]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
