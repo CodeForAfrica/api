@@ -24,7 +24,7 @@ from twoopstracker.twoops.serializers import (
 twitterclient = TwitterClient()
 
 
-def save_users(users):
+def save_accounts(users):
     accounts_ids = []
 
     twitter_accounts = [
@@ -92,7 +92,7 @@ def update_kwargs_with_account_ids(kwargs):
         twitter_accounts = twitterclient.get_users(screen_names)
 
     if accounts:
-        kwargs["data"]["accounts"] = save_users(twitter_accounts)
+        kwargs["data"]["accounts"] = save_accounts(twitter_accounts)
 
     return kwargs
 
