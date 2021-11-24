@@ -5,6 +5,7 @@ from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.db.models import Count
 from django.db.models.functions import Trunc
 from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
 
 from twoopstracker.twitterclient.twitter_client import TwitterClient
 from twoopstracker.twoops.models import (
@@ -193,6 +194,7 @@ class TweetsInsightsView(TweetsView):
 
 class TweetSearchesView(generics.ListCreateAPIView):
     serializer_class = TweetSearchSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         user_profile = UserProfile.objects.get(user=self.request.user)
@@ -205,6 +207,7 @@ class TweetSearchesView(generics.ListCreateAPIView):
 
 class TweetSearchView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TweetSearchSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         user_profile = UserProfile.objects.get(user=self.request.user)
@@ -214,6 +217,9 @@ class TweetSearchView(generics.RetrieveUpdateDestroyAPIView):
 class AccountsList(generics.ListCreateAPIView):
     queryset = TwitterAccountsList.objects.all()
     serializer_class = TwitterAccountListSerializer
+    permission_classes = [
+        IsAuthenticated,
+    ]
 
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
@@ -229,6 +235,9 @@ class AccountsList(generics.ListCreateAPIView):
 class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
     queryset = TwitterAccountsList.objects.all()
     serializer_class = TwitterAccountListSerializer
+    permission_classes = [
+        IsAuthenticated,
+    ]
 
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
