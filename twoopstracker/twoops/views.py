@@ -2,7 +2,7 @@ import datetime
 
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
@@ -13,13 +13,13 @@ from twoopstracker.twoops.models import (
     TweetSearch,
     TwitterAccount,
     TwitterAccountsList,
-    UserProfile,
 )
 from twoopstracker.twoops.serializers import (
     TweetSearchSerializer,
     TweetSerializer,
     TweetsInsightsSerializer,
-    TwitterAccountListSerializer,
+    TwitterAccountsListSerializer,
+    TwitterAccountsListsSerializer,
 )
 
 twitterclient = TwitterClient()
@@ -89,7 +89,11 @@ def update_kwargs_with_account_ids(kwargs):
     screen_names = [acc.get("screen_name") for acc in accounts if "screen_name" in acc]
     twitter_accounts = []
     if screen_names:
-        twitter_accounts = twitterclient.get_users(screen_names)
+        # Twitter API Returns fully-hydrated user objects for up to 100 users per request
+        while len(screen_names) > 100:
+            twitter_accounts.extend(twitterclient.get_users(screen_names[:100]))
+            screen_names = screen_names[100:]
+        twitter_accounts.extend(twitterclient.get_users(screen_names))
 
     if accounts and twitter_accounts:
         kwargs["data"]["accounts"] = save_accounts(twitter_accounts)
@@ -106,7 +110,24 @@ class TweetsView(generics.ListAPIView):
         end_date = self.request.GET.get("end_date")
         location = self.request.GET.get("location")
 
-        tweets = Tweet.objects.filter(deleted=True)
+        twitter_accounts_lists = TwitterAccountsList.objects.filter(is_private=False)
+        twitter_accounts = set()
+        user = self.request.user
+
+        if user.is_authenticated:
+            twitter_accounts_lists = TwitterAccountsList.objects.filter(
+                Q(is_private=False) | Q(owner=user.userprofile)
+            )
+
+        for twitter_accounts_list in twitter_accounts_lists:
+            for twitter_account in twitter_accounts_list.accounts.all().values_list(
+                "account_id", flat=True
+            ):
+                twitter_accounts.add(twitter_account)
+
+        tweets = Tweet.objects.filter(
+            deleted=True, owner__account_id__in=twitter_accounts
+        )
 
         if not start_date:
             start_date = str(
@@ -197,12 +218,10 @@ class TweetSearchesView(generics.ListCreateAPIView):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        user_profile = UserProfile.objects.get(user=self.request.user)
-        return TweetSearch.objects.filter(owner=user_profile)
+        return TweetSearch.objects.filter(owner=self.request.user.userprofile)
 
     def perform_create(self, serializer):
-        user_profile = UserProfile.objects.get(user=self.request.user)
-        serializer.save(owner=user_profile)
+        serializer.save(owner=self.request.user.userprofile)
 
 
 class TweetSearchView(generics.RetrieveUpdateDestroyAPIView):
@@ -210,13 +229,12 @@ class TweetSearchView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        user_profile = UserProfile.objects.get(user=self.request.user)
-        return TweetSearch.objects.filter(owner=user_profile)
+        return TweetSearch.objects.filter(owner=self.request.user.userprofile)
 
 
-class AccountsList(generics.ListCreateAPIView):
+class AccountsLists(generics.ListCreateAPIView):
     queryset = TwitterAccountsList.objects.all()
-    serializer_class = TwitterAccountListSerializer
+    serializer_class = TwitterAccountsListsSerializer
     permission_classes = [
         IsAuthenticated,
     ]
@@ -228,13 +246,12 @@ class AccountsList(generics.ListCreateAPIView):
         return serializer_class(*args, **kwargs)
 
     def perform_create(self, serializer):
-        user_profile = UserProfile.objects.get(user=self.request.user)
-        serializer.save(owner=user_profile)
+        serializer.save(owner=self.request.user.userprofile)
 
 
-class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
+class AccountsList(generics.RetrieveUpdateDestroyAPIView):
     queryset = TwitterAccountsList.objects.all()
-    serializer_class = TwitterAccountListSerializer
+    serializer_class = TwitterAccountsListSerializer
     permission_classes = [
         IsAuthenticated,
     ]
