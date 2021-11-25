@@ -105,7 +105,7 @@ class UserProfile(TimestampedModelMixin):
         return self.user.email
 
 
-class TwitterAccountsList(TimestampedModelMixin):
+class TwitterAccountsLists(TimestampedModelMixin):
     """
     List model
     """

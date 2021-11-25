@@ -12,14 +12,14 @@ from twoopstracker.twoops.models import (
     Tweet,
     TweetSearch,
     TwitterAccount,
-    TwitterAccountsList,
+    TwitterAccountsLists,
 )
 from twoopstracker.twoops.serializers import (
-    SingleTwitterAccountListSerializer,
     TweetSearchSerializer,
     TweetSerializer,
     TweetsInsightsSerializer,
-    TwitterAccountListSerializer,
+    TwitterAccountsListSerializer,
+    TwitterAccountsListsSerializer,
 )
 
 twitterclient = TwitterClient()
@@ -106,12 +106,12 @@ class TweetsView(generics.ListAPIView):
         end_date = self.request.GET.get("end_date")
         location = self.request.GET.get("location")
 
-        twitter_accounts_lists = TwitterAccountsList.objects.filter(is_private=False)
+        twitter_accounts_lists = TwitterAccountsLists.objects.filter(is_private=False)
         twitter_accounts = set()
         user = self.request.user
 
         if user.is_authenticated:
-            twitter_accounts_lists = TwitterAccountsList.objects.filter(
+            twitter_accounts_lists = TwitterAccountsLists.objects.filter(
                 Q(is_private=False) | Q(owner=user.userprofile)
             )
 
@@ -229,8 +229,8 @@ class TweetSearchView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class AccountsList(generics.ListCreateAPIView):
-    queryset = TwitterAccountsList.objects.all()
-    serializer_class = TwitterAccountListSerializer
+    queryset = TwitterAccountsLists.objects.all()
+    serializer_class = TwitterAccountsListsSerializer
     permission_classes = [
         IsAuthenticated,
     ]
@@ -246,8 +246,8 @@ class AccountsList(generics.ListCreateAPIView):
 
 
 class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
-    queryset = TwitterAccountsList.objects.all()
-    serializer_class = SingleTwitterAccountListSerializer
+    queryset = TwitterAccountsLists.objects.all()
+    serializer_class = TwitterAccountsListSerializer
     permission_classes = [
         IsAuthenticated,
     ]
