@@ -89,7 +89,11 @@ def update_kwargs_with_account_ids(kwargs):
     screen_names = [acc.get("screen_name") for acc in accounts if "screen_name" in acc]
     twitter_accounts = []
     if screen_names:
-        twitter_accounts = twitterclient.get_users(screen_names)
+        # Twitter API Returns fully-hydrated user objects for up to 100 users per request
+        while len(screen_names) > 100:
+            twitter_accounts.extend(twitterclient.get_users(screen_names[:100]))
+            screen_names = screen_names[100:]
+        twitter_accounts.extend(twitterclient.get_users(screen_names))
 
     if accounts and twitter_accounts:
         kwargs["data"]["accounts"] = save_accounts(twitter_accounts)
