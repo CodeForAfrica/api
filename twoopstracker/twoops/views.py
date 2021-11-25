@@ -232,7 +232,7 @@ class TweetSearchView(generics.RetrieveUpdateDestroyAPIView):
         return TweetSearch.objects.filter(owner=self.request.user.userprofile)
 
 
-class AccountsList(generics.ListCreateAPIView):
+class AccountsLists(generics.ListCreateAPIView):
     queryset = TwitterAccountsList.objects.all()
     serializer_class = TwitterAccountsListsSerializer
     permission_classes = [
@@ -249,7 +249,7 @@ class AccountsList(generics.ListCreateAPIView):
         serializer.save(owner=self.request.user.userprofile)
 
 
-class SingleTwitterList(generics.RetrieveUpdateDestroyAPIView):
+class AccountsList(generics.RetrieveUpdateDestroyAPIView):
     queryset = TwitterAccountsList.objects.all()
     serializer_class = TwitterAccountsListSerializer
     permission_classes = [
