@@ -105,7 +105,7 @@ class UserProfile(TimestampedModelMixin):
         return self.user.email
 
 
-class TwitterAccountsLists(TimestampedModelMixin):
+class TwitterAccountsList(TimestampedModelMixin):
     """
     List model
     """
@@ -114,7 +114,7 @@ class TwitterAccountsLists(TimestampedModelMixin):
     slug = models.CharField(max_length=255, help_text=_("Twitter List Slug"))
     owner = models.ForeignKey("UserProfile", on_delete=models.CASCADE)
     accounts = models.ManyToManyField("TwitterAccount", related_name="lists")
-    is_private = models.BooleanField(default=False)
+    is_private = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name

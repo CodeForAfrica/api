@@ -5,7 +5,7 @@ from twoopstracker.twoops.models import (
     Tweet,
     TweetSearch,
     TwitterAccount,
-    TwitterAccountsLists,
+    TwitterAccountsList,
 )
 
 
@@ -45,7 +45,7 @@ class TweetsInsightsSerializer(serializers.Serializer):
 
 class TwitterAccountsListsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TwitterAccountsLists
+        model = TwitterAccountsList
         fields = ["id", "name", "created_at", "is_private", "accounts"]
         extra_kwargs = {
             "accounts": {"write_only": True},

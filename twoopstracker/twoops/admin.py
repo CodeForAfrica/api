@@ -4,7 +4,7 @@ from twoopstracker.twoops.models import (
     Tweet,
     TweetSearch,
     TwitterAccount,
-    TwitterAccountsLists,
+    TwitterAccountsList,
     UserProfile,
 )
 
@@ -14,6 +14,6 @@ admin.site.register(
         TweetSearch,
         TwitterAccount,
         UserProfile,
-        TwitterAccountsLists,
+        TwitterAccountsList,
     ]
 )
