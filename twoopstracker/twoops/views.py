@@ -342,5 +342,11 @@ class FileUploadAPIView(generics.CreateAPIView):
                 twitter_accounts_list.save()
 
         return response.Response(
-            data={"errors": errors}, status=status.HTTP_201_CREATED
+            data={
+                "errors": {
+                    "message": "Accounts couldn't be uploaded due to missing evidence link",
+                    "accounts": errors,
+                }
+            },
+            status=status.HTTP_201_CREATED,
         )
