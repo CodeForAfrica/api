@@ -296,6 +296,7 @@ class FileUploadAPIView(generics.CreateAPIView):
             if not is_private and not evidence:
                 errors.append(
                     {
+                        "list_name": row["list_name"],
                         "username": row["username"],
                         "is_private": is_private,
                         "evidence": evidence,
@@ -330,6 +331,7 @@ class FileUploadAPIView(generics.CreateAPIView):
                 # Check if there is a screen_name we shouldn't save
                 for index, screen_name in enumerate(saved_screen_names):
                     if {
+                        "list_name": twitter_accounts_list.name,
                         "username": screen_name,
                         "is_private": twitter_accounts_list.is_private,
                         "evidence": "",
