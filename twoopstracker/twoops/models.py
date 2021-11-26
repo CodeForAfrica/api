@@ -116,5 +116,8 @@ class TwitterAccountsList(TimestampedModelMixin):
     accounts = models.ManyToManyField("TwitterAccount", related_name="lists")
     is_private = models.BooleanField(default=True)
 
+    class Meta:
+        unique_together = ("name", "owner", "is_private")
+
     def __str__(self):
         return self.name
