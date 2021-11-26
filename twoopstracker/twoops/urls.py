@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     AccountsList,
     AccountsLists,
+    FileUploadAPIView,
     TweetSearchesView,
     TweetSearchView,
     TweetsInsightsView,
@@ -20,4 +21,5 @@ urlpatterns = [
     ),
     path("lists/", AccountsLists.as_view(), name="accounts_list"),
     path("lists/<pk>", AccountsList.as_view(), name="single_account_list"),
+    path("upload", FileUploadAPIView.as_view(), name="accounts_list_upload"),
 ]

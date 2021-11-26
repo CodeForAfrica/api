@@ -1,10 +1,13 @@
+import csv
 import datetime
+import io
+from collections import defaultdict
 
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
-from rest_framework import generics
+from rest_framework import generics, response, status
 from rest_framework.permissions import IsAuthenticated
 
 from twoopstracker.twitterclient.twitter_client import TwitterClient
@@ -15,6 +18,7 @@ from twoopstracker.twoops.models import (
     TwitterAccountsList,
 )
 from twoopstracker.twoops.serializers import (
+    FileUploadSerializer,
     TweetSearchSerializer,
     TweetSerializer,
     TweetsInsightsSerializer,
@@ -27,9 +31,9 @@ twitterclient = TwitterClient()
 
 def save_accounts(users):
     accounts_ids = []
-
-    accounts_ids = []
     twitter_accounts = []
+    screen_names = []
+
     for user in users:
         twitter_account, _ = TwitterAccount.objects.get_or_create(account_id=user.id)
         twitter_account.name = user.name
@@ -45,6 +49,7 @@ def save_accounts(users):
         twitter_account.profile_image_url = user.profile_image_url
         twitter_accounts.append(twitter_account)
         accounts_ids.append(user.id)
+        screen_names.append(user.screen_name)
 
     TwitterAccount.objects.bulk_update(
         twitter_accounts,
@@ -63,7 +68,7 @@ def save_accounts(users):
         ],
     )
 
-    return accounts_ids
+    return accounts_ids, screen_names
 
 
 def get_search_type(search_string):
@@ -83,10 +88,7 @@ def refromat_search_string(search_string):
     return " | ".join(search_string.split(","))
 
 
-def update_kwargs_with_account_ids(kwargs):
-    accounts = kwargs.get("data", {}).get("accounts", [])
-
-    screen_names = [acc.get("screen_name") for acc in accounts if "screen_name" in acc]
+def get_twitter_accounts(screen_names):
     twitter_accounts = []
     if screen_names:
         # Twitter API Returns fully-hydrated user objects for up to 100 users per request
@@ -95,8 +97,17 @@ def update_kwargs_with_account_ids(kwargs):
             screen_names = screen_names[100:]
         twitter_accounts.extend(twitterclient.get_users(screen_names))
 
+    return twitter_accounts
+
+
+def update_kwargs_with_account_ids(kwargs):
+    accounts = kwargs.get("data", {}).get("accounts", [])
+
+    screen_names = [acc.get("screen_name") for acc in accounts if "screen_name" in acc]
+    twitter_accounts = get_twitter_accounts(screen_names)
+
     if accounts and twitter_accounts:
-        kwargs["data"]["accounts"] = save_accounts(twitter_accounts)
+        kwargs["data"]["accounts"], _ = save_accounts(twitter_accounts)
 
     return kwargs
 
@@ -261,3 +272,73 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
         kwargs = update_kwargs_with_account_ids(kwargs)
 
         return serializer_class(*args, **kwargs)
+
+
+class FileUploadAPIView(generics.CreateAPIView):
+    serializer_class = FileUploadSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        file = serializer.validated_data["file"]
+
+        decoded_file = file.read().decode()
+        io_string = io.StringIO(decoded_file)
+        reader = csv.DictReader(io_string)
+        account_lists = defaultdict(list)
+
+        errors = []
+
+        for row in reader:
+            repository = row.get("repository", "Private")
+            is_private = True if repository == "Private" else False
+            evidence = row.get("evidence", "")
+            if not is_private and not evidence:
+                errors.append(
+                    {
+                        "username": row["username"],
+                        "is_private": is_private,
+                        "evidence": evidence,
+                    }
+                )
+                continue
+            account_lists[f"{row['list_name']}_{repository}"].append(
+                {
+                    "username": row["username"],
+                    "is_private": is_private,
+                    "evidence": evidence,
+                }
+            )
+
+        for account_list in account_lists:
+            twitter_accounts_lists = set()
+            screen_names = []
+            for account in account_lists[account_list]:
+                twitter_accounts_lists.add(
+                    TwitterAccountsList.objects.get_or_create(
+                        name=account_list,
+                        owner=request.user.userprofile,
+                        is_private=account["is_private"],
+                    )[0]
+                )
+                screen_names.append(account["username"])
+
+            twitter_accounts = get_twitter_accounts(screen_names)
+            accounts_ids, saved_screen_names = save_accounts(twitter_accounts)
+
+            for twitter_accounts_list in twitter_accounts_lists:
+                # Check if there is a screen_name we shouldn't save
+                for index, screen_name in enumerate(saved_screen_names):
+                    if {
+                        "username": screen_name,
+                        "is_private": twitter_accounts_list.is_private,
+                        "evidence": "",
+                    } in errors:
+                        # remove the account id from the accounts_id
+                        accounts_ids.pop(index)
+                twitter_accounts_list.accounts.set(accounts_ids)
+                twitter_accounts_list.save()
+
+        return response.Response(
+            data={"errors": errors}, status=status.HTTP_201_CREATED
+        )
