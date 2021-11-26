@@ -276,6 +276,9 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
 
 class FileUploadAPIView(generics.CreateAPIView):
     serializer_class = FileUploadSerializer
+    permission_classes = [
+        IsAuthenticated,
+    ]
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
