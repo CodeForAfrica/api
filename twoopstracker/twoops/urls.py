@@ -20,6 +20,6 @@ urlpatterns = [
         name="single_saved_search",
     ),
     path("lists/", AccountsLists.as_view(), name="accounts_list"),
-    path("lists/<pk>", AccountsList.as_view(), name="single_account_list"),
     path("lists/upload", FileUploadAPIView.as_view(), name="accounts_list_upload"),
+    path("lists/<pk>", AccountsList.as_view(), name="single_account_list"),
 ]
