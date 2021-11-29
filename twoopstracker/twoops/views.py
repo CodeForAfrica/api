@@ -31,7 +31,6 @@ twitterclient = TwitterClient()
 
 
 def save_accounts(users):
-    accounts_ids = []
     twitter_accounts = []
     screen_names = []
 
@@ -49,7 +48,6 @@ def save_accounts(users):
         twitter_account.statuses_count = user.statuses_count
         twitter_account.profile_image_url = user.profile_image_url
         twitter_accounts.append(twitter_account)
-        accounts_ids.append(user.id)
         screen_names.append(user.screen_name)
 
     TwitterAccount.objects.bulk_update(
@@ -69,7 +67,7 @@ def save_accounts(users):
         ],
     )
 
-    return accounts_ids, screen_names
+    return screen_names
 
 
 def get_search_type(search_string):
@@ -342,21 +340,9 @@ class FileUploadAPIView(generics.CreateAPIView):
                     )
 
             twitter_accounts = get_twitter_accounts(screen_names)
-            accounts_ids, saved_screen_names = save_accounts(twitter_accounts)
+            accounts_ids = save_accounts(twitter_accounts)
 
             for twitter_accounts_list in twitter_accounts_lists:
-                # Check if there is a screen_name we shouldn't save
-                for index, screen_name in enumerate(saved_screen_names):
-                    if {
-                        "message": "Missing evidence for public account",
-                        "details": {
-                            "list_name": twitter_accounts_list.name,
-                            "username": screen_name,
-                            "evidence": "",
-                        },
-                    } in errors:
-                        # remove the account id from the accounts_id
-                        accounts_ids.pop(index)
                 twitter_accounts_list.accounts.set(accounts_ids)
                 twitter_accounts_list.save()
 
