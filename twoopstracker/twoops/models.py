@@ -117,7 +117,7 @@ class TwitterAccountsList(TimestampedModelMixin):
     is_private = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = ("name", "owner", "is_private")
+        unique_together = ("name", "owner")
 
     def __str__(self):
         return self.name
