@@ -1,9 +1,12 @@
+import csv
 import datetime
+import json
 
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
+from django.http import HttpResponse
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
@@ -211,6 +214,22 @@ class TweetsInsightsView(TweetsView):
         serializer = TweetsInsightsSerializer(data=data, many=True)
         serializer.is_valid(raise_exception=True)
         return serializer
+
+
+class TweetsDownloadView(TweetsView):
+    def get(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = "attachment; filename=tweets.csv"
+        fieldnames = list(serializer.data[0].keys())
+        writer = csv.DictWriter(response, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for data in serializer.data:
+            data["owner"] = json.dumps(data["owner"])
+            writer.writerow(data)
+        return response
 
 
 class TweetSearchesView(generics.ListCreateAPIView):
