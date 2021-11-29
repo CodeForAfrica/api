@@ -346,8 +346,9 @@ class FileUploadAPIView(generics.CreateAPIView):
                 twitter_accounts_list.accounts.set(accounts_ids)
                 twitter_accounts_list.save()
 
-        data = errors if errors else {"message": "Success"}
-        return response.Response(
-            data={"data": data},
-            status=status.HTTP_200_OK,
-        )
+        return_response = {}
+        if errors:
+            return_response["errors"] = errors
+        else:
+            return_response["message"] = "Successfully uploaded"
+        return response.Response(return_response, status=status.HTTP_200_OK)
