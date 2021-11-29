@@ -31,8 +31,8 @@ twitterclient = TwitterClient()
 
 
 def save_accounts(users):
+    accounts_ids = []
     twitter_accounts = []
-    screen_names = []
 
     for user in users:
         twitter_account, _ = TwitterAccount.objects.get_or_create(account_id=user.id)
@@ -48,7 +48,7 @@ def save_accounts(users):
         twitter_account.statuses_count = user.statuses_count
         twitter_account.profile_image_url = user.profile_image_url
         twitter_accounts.append(twitter_account)
-        screen_names.append(user.screen_name)
+        accounts_ids.append(user.id)
 
     TwitterAccount.objects.bulk_update(
         twitter_accounts,
@@ -67,7 +67,7 @@ def save_accounts(users):
         ],
     )
 
-    return screen_names
+    return accounts_ids
 
 
 def get_search_type(search_string):
@@ -106,7 +106,7 @@ def update_kwargs_with_account_ids(kwargs):
     twitter_accounts = get_twitter_accounts(screen_names)
 
     if accounts and twitter_accounts:
-        kwargs["data"]["accounts"], _ = save_accounts(twitter_accounts)
+        kwargs["data"]["accounts"] = save_accounts(twitter_accounts)
 
     return kwargs
 
