@@ -296,11 +296,11 @@ class FileUploadAPIView(generics.CreateAPIView):
             is_private = True if repository == "Private" else False
             evidence = row.get("evidence", "")
             if is_private or (not is_private and evidence):
-                account_lists[row["account"]].append(
+                account_lists[row["list_name"]].append(
                     {
+                        "username": row["username"],
                         "is_private": is_private,
                         "evidence": evidence,
-                        "position": position,
                     }
                 )
             else:
@@ -350,6 +350,9 @@ class FileUploadAPIView(generics.CreateAPIView):
         return_response = {}
         if errors:
             return_response["errors"] = errors
+            status_code = status.HTTP_207_MULTI_STATUS
         else:
             return_response["message"] = "Successfully uploaded"
-        return response.Response(return_response, status=status.HTTP_200_OK)
+            status_code = status.HTTP_201_CREATED
+
+        return response.Response(return_response, status=status_code)
