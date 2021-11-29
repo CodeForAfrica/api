@@ -291,7 +291,7 @@ class FileUploadAPIView(generics.CreateAPIView):
 
         errors = []
 
-        for row in reader:
+        for position, row in enumerate(reader, 1):
             repository = row.get("repository", "Private")
             is_private = True if repository == "Private" else False
             evidence = row.get("evidence", "")
@@ -303,6 +303,7 @@ class FileUploadAPIView(generics.CreateAPIView):
                             "list_name": row["list_name"],
                             "username": row["username"],
                             "evidence": evidence,
+                            "row": position,
                         },
                     }
                 )
