@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
+from django.db.utils import IntegrityError
 from rest_framework import generics, response, status
 from rest_framework.permissions import IsAuthenticated
 
@@ -299,14 +300,16 @@ class FileUploadAPIView(generics.CreateAPIView):
             if not is_private and not evidence:
                 errors.append(
                     {
-                        "list_name": row["list_name"],
-                        "username": row["username"],
-                        "is_private": is_private,
-                        "evidence": evidence,
+                        "message": "Missing evidence for public account",
+                        "details": {
+                            "list_name": row["list_name"],
+                            "username": row["username"],
+                            "evidence": evidence,
+                        },
                     }
                 )
                 continue
-            account_lists[f"{row['list_name']}_{repository}"].append(
+            account_lists[f"{row['list_name']}"].append(
                 {
                     "username": row["username"],
                     "is_private": is_private,
@@ -318,14 +321,25 @@ class FileUploadAPIView(generics.CreateAPIView):
             twitter_accounts_lists = set()
             screen_names = []
             for account in account_lists[account_list]:
-                twitter_accounts_lists.add(
-                    TwitterAccountsList.objects.get_or_create(
-                        name=account_list,
-                        owner=request.user.userprofile,
-                        is_private=account["is_private"],
-                    )[0]
-                )
-                screen_names.append(account["username"])
+                try:
+                    twitter_accounts_lists.add(
+                        TwitterAccountsList.objects.get_or_create(
+                            name=account_list,
+                            owner=request.user.userprofile,
+                            is_private=account["is_private"],
+                        )[0]
+                    )
+                    screen_names.append(account["username"])
+                except IntegrityError:
+                    errors.append(
+                        {
+                            "message": f"List {account_list} already exists for user\
+                                {request.user.email}",
+                            "details": {
+                                "list_name": account_list,
+                            },
+                        }
+                    )
 
             twitter_accounts = get_twitter_accounts(screen_names)
             accounts_ids, saved_screen_names = save_accounts(twitter_accounts)
@@ -334,22 +348,20 @@ class FileUploadAPIView(generics.CreateAPIView):
                 # Check if there is a screen_name we shouldn't save
                 for index, screen_name in enumerate(saved_screen_names):
                     if {
-                        "list_name": twitter_accounts_list.name,
-                        "username": screen_name,
-                        "is_private": twitter_accounts_list.is_private,
-                        "evidence": "",
+                        "message": "Missing evidence for public account",
+                        "details": {
+                            "list_name": twitter_accounts_list.name,
+                            "username": screen_name,
+                            "evidence": "",
+                        },
                     } in errors:
                         # remove the account id from the accounts_id
                         accounts_ids.pop(index)
                 twitter_accounts_list.accounts.set(accounts_ids)
                 twitter_accounts_list.save()
 
+        data = errors if errors else {"message": "Success"}
         return response.Response(
-            data={
-                "errors": {
-                    "message": "Accounts couldn't be uploaded due to missing evidence link",
-                    "accounts": errors,
-                }
-            },
-            status=status.HTTP_201_CREATED,
+            data={"data": data},
+            status=status.HTTP_200_OK,
         )
