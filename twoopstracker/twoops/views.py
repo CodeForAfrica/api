@@ -295,7 +295,15 @@ class FileUploadAPIView(generics.CreateAPIView):
             repository = row.get("repository", "Private")
             is_private = True if repository == "Private" else False
             evidence = row.get("evidence", "")
-            if not is_private and not evidence:
+            if is_private or (not is_private and evidence):
+                account_lists[row["account"]].append(
+                    {
+                        "is_private": is_private,
+                        "evidence": evidence,
+                        "position": position,
+                    }
+                )
+            else:
                 errors.append(
                     {
                         "message": "Missing evidence for public account",
@@ -307,14 +315,6 @@ class FileUploadAPIView(generics.CreateAPIView):
                         },
                     }
                 )
-                continue
-            account_lists[f"{row['list_name']}"].append(
-                {
-                    "username": row["username"],
-                    "is_private": is_private,
-                    "evidence": evidence,
-                }
-            )
 
         for account_list in account_lists:
             twitter_accounts_lists = set()
