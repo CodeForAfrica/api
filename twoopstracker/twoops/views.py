@@ -104,6 +104,21 @@ def update_kwargs_with_account_ids(kwargs):
     return kwargs
 
 
+def generate_csv(data, filename):
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f"attachment; filename={filename}.csv"
+    fieldnames = list(data[0].keys())
+    writer = csv.DictWriter(response, fieldnames=fieldnames)
+    writer.writeheader()
+    for row in data:
+        # For tweets, we need to convert the OrderedDict to a json
+        if row.get("owner"):
+            row["owner"] = json.dumps(row["owner"])
+        writer.writerow(row)
+
+    return response
+
+
 class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
 
@@ -220,15 +235,7 @@ class TweetsDownloadView(TweetsView):
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.get_queryset(), many=True)
 
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = "attachment; filename=tweets.csv"
-        fieldnames = list(serializer.data[0].keys())
-        writer = csv.DictWriter(response, fieldnames=fieldnames)
-        writer.writeheader()
-
-        for data in serializer.data:
-            data["owner"] = json.dumps(data["owner"])
-            writer.writerow(data)
+        response = generate_csv(serializer.data, "tweets")
         return response
 
 
@@ -280,3 +287,12 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
         kwargs = update_kwargs_with_account_ids(kwargs)
 
         return serializer_class(*args, **kwargs)
+
+
+class AccountsListsDownload(AccountsLists):
+    serializer_class = TwitterAccountsListSerializer
+
+    def get(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+        response = generate_csv(serializer.data, "accounts_lists")
+        return response
