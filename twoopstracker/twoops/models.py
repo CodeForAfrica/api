@@ -37,6 +37,30 @@ class Tweet(TimestampedModelMixin):
         return self.favorite_count + self.retweet_count + self.reply_count
 
 
+class TweetSearch(TimestampedModelMixin):
+    """
+    TweetSearch model
+    """
+
+    query = models.JSONField(help_text=_("Search Query"))
+    name = models.CharField(
+        help_text=_("The name of the Search Query"),
+        null=True,
+        blank=True,
+        max_length=255,
+    )
+    owner = models.ForeignKey(
+        "UserProfile", on_delete=models.CASCADE, related_name="tweet_searches"
+    )
+
+    def __str__(self):
+        return f"{self.query}"
+
+    class Meta:
+        unique_together = ("query", "owner")
+        verbose_name_plural = _("Tweet Searches")
+
+
 class TwitterAccount(TimestampedModelMixin):
     """
     Twitter Account model
@@ -90,7 +114,7 @@ class TwitterAccountsList(TimestampedModelMixin):
     slug = models.CharField(max_length=255, help_text=_("Twitter List Slug"))
     owner = models.ForeignKey("UserProfile", on_delete=models.CASCADE)
     accounts = models.ManyToManyField("TwitterAccount", related_name="lists")
-    is_private = models.BooleanField(default=False)
+    is_private = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name

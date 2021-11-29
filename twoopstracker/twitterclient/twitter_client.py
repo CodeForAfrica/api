@@ -77,6 +77,19 @@ class TwitterClient:
         except tweepy.errors.TweepyException:
             logger.error("Invalid credentials")
 
+    def get_user(self, user, key="screen_name"):
+        try:
+            if key == "screen_name":
+                return self.api.get_user(screen_name=user)
+            elif key == "id":
+                return self.api.get_user(user_id=user)
+        except tweepy.errors.TweepyException as e:
+            logger.error(e)
+            return None
+
+    def get_users(self, screen_names):
+        return self.api.lookup_users(screen_name=screen_names)
+    
     def stream_forever(self):
         stream = TweetListener(
             self.consumer_key,
