@@ -290,8 +290,9 @@ class FileUploadAPIView(generics.CreateAPIView):
         account_lists = defaultdict(list)
 
         errors = []
-
+        total_accounts = 0
         for position, row in enumerate(reader, 1):
+            total_accounts += 1
             repository = row.get("repository", "Private")
             is_private = True if repository == "Private" else False
             evidence = row.get("evidence", "")
@@ -349,8 +350,12 @@ class FileUploadAPIView(generics.CreateAPIView):
 
         return_response = {}
         if errors:
-            return_response["errors"] = errors
-            status_code = status.HTTP_207_MULTI_STATUS
+            if len(errors) < total_accounts:
+                return_response["errors"] = errors
+                status_code = status.HTTP_207_MULTI_STATUS
+            elif len(errors) == total_accounts:
+                return_response["errors"] = errors
+                status_code = status.HTTP_400_BAD_REQUEST
         else:
             return_response["message"] = "Successfully uploaded"
             status_code = status.HTTP_201_CREATED
