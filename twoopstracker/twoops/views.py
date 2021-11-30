@@ -350,11 +350,10 @@ class FileUploadAPIView(generics.CreateAPIView):
 
         return_response = {}
         if errors:
+            return_response["errors"] = errors
             if len(errors) < total_accounts:
-                return_response["errors"] = errors
                 status_code = status.HTTP_207_MULTI_STATUS
             elif len(errors) == total_accounts:
-                return_response["errors"] = errors
                 status_code = status.HTTP_400_BAD_REQUEST
         else:
             return_response["message"] = "Successfully uploaded"
