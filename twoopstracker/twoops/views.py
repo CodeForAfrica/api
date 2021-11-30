@@ -91,10 +91,11 @@ def get_twitter_accounts(screen_names):
     twitter_accounts = []
     if screen_names:
         # Twitter API Returns fully-hydrated user objects for up to 100 users per request
-        while len(screen_names) > 100:
-            twitter_accounts.extend(twitterclient.get_users(screen_names[:100]))
-            screen_names = screen_names[100:]
-        twitter_accounts.extend(twitterclient.get_users(screen_names))
+        screen_names_batch = [
+            screen_names[i : i + 100] for i in range(0, len(screen_names), 100)
+        ]
+        for screen_names in screen_names_batch:
+            twitter_accounts.extend(twitterclient.get_users(screen_names))
 
     return twitter_accounts
 
