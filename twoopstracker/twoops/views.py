@@ -91,10 +91,11 @@ def get_twitter_accounts(screen_names):
     twitter_accounts = []
     if screen_names:
         # Twitter API Returns fully-hydrated user objects for up to 100 users per request
-        while len(screen_names) > 100:
-            twitter_accounts.extend(twitterclient.get_users(screen_names[:100]))
-            screen_names = screen_names[100:]
-        twitter_accounts.extend(twitterclient.get_users(screen_names))
+        screen_names_batch = [
+            screen_names[i : i + 100] for i in range(0, len(screen_names), 100)
+        ]
+        for screen_names in screen_names_batch:
+            twitter_accounts.extend(twitterclient.get_users(screen_names))
 
     return twitter_accounts
 
@@ -290,8 +291,9 @@ class FileUploadAPIView(generics.CreateAPIView):
         account_lists = defaultdict(list)
 
         errors = []
-
+        total_accounts = 0
         for position, row in enumerate(reader, 1):
+            total_accounts += 1
             repository = row.get("repository", "Private")
             is_private = True if repository == "Private" else False
             evidence = row.get("evidence", "")
@@ -348,11 +350,14 @@ class FileUploadAPIView(generics.CreateAPIView):
                 twitter_accounts_list.save()
 
         return_response = {}
-        if errors:
+        if errors and account_lists:
             return_response["errors"] = errors
             status_code = status.HTTP_207_MULTI_STATUS
-        else:
+        elif account_lists:
             return_response["message"] = "Successfully uploaded"
             status_code = status.HTTP_201_CREATED
+        else:
+            return_response["errors"] = errors
+            status_code = status.HTTP_400_BAD_REQUEST
 
         return response.Response(return_response, status=status_code)
