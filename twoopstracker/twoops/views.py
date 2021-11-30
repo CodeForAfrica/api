@@ -265,6 +265,14 @@ class AccountsLists(generics.ListCreateAPIView):
         IsAuthenticated,
     ]
 
+    def get(self, request, *args, **kwargs):
+        if request.GET.get("download", "") == "csv":
+            serializer = TwitterAccountsListSerializer(self.get_queryset(), many=True)
+            response = generate_csv(serializer.data, "accounts_lists")
+            return response
+
+        return self.list(request, *args, **kwargs)
+
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
         kwargs = update_kwargs_with_account_ids(kwargs)
@@ -287,12 +295,3 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
         kwargs = update_kwargs_with_account_ids(kwargs)
 
         return serializer_class(*args, **kwargs)
-
-
-class AccountsListsDownload(AccountsLists):
-    serializer_class = TwitterAccountsListSerializer
-
-    def get(self, request, *args, **kwargs):
-        serializer = self.get_serializer(self.get_queryset(), many=True)
-        response = generate_csv(serializer.data, "accounts_lists")
-        return response
