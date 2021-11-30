@@ -92,3 +92,10 @@ class TweetSearchSerializer(serializers.ModelSerializer):
             return super().create(validated_data)
         except IntegrityError as e:
             raise serializers.ValidationError(e)
+
+
+class FileUploadSerializer(serializers.Serializer):
+    file = serializers.FileField()
+
+    class Meta:
+        fields = ("file",)
