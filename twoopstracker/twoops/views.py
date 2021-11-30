@@ -107,20 +107,28 @@ def update_kwargs_with_account_ids(kwargs):
 def generate_csv(data, filename):
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = f"attachment; filename={filename}.csv"
-    fieldnames = list(data[0].keys())
-    writer = csv.DictWriter(response, fieldnames=fieldnames)
-    writer.writeheader()
-    for row in data:
-        # For tweets, we need to convert the OrderedDict to a json
-        if row.get("owner"):
-            row["owner"] = json.dumps(row["owner"])
-        writer.writerow(row)
+    if data:
+        fieldnames = list(data[0].keys())
+        writer = csv.DictWriter(response, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in data:
+            # For tweets, we need to convert the OrderedDict to a json
+            if row.get("owner"):
+                row["owner"] = json.dumps(row["owner"])
+            writer.writerow(row)
 
     return response
 
 
 class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
+
+    def get(self, request, *args, **kwargs):
+        if request.GET.get("download", "") == "csv":
+            serializer = self.get_serializer(self.get_queryset(), many=True)
+            response = generate_csv(serializer.data, "tweets")
+            return response
+        return self.list(request, *args, **kwargs)
 
     def get_queryset(self):
         query = self.request.GET.get("query")
@@ -229,14 +237,6 @@ class TweetsInsightsView(TweetsView):
         serializer = TweetsInsightsSerializer(data=data, many=True)
         serializer.is_valid(raise_exception=True)
         return serializer
-
-
-class TweetsDownloadView(TweetsView):
-    def get(self, request, *args, **kwargs):
-        serializer = self.get_serializer(self.get_queryset(), many=True)
-
-        response = generate_csv(serializer.data, "tweets")
-        return response
 
 
 class TweetSearchesView(generics.ListCreateAPIView):

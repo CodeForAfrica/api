@@ -4,7 +4,6 @@ from .views import (
     AccountsList,
     AccountsLists,
     AccountsListsDownload,
-    TweetsDownloadView,
     TweetSearchesView,
     TweetSearchView,
     TweetsInsightsView,
@@ -13,7 +12,6 @@ from .views import (
 
 urlpatterns = [
     path("tweets/", TweetsView.as_view(), name="tweets"),
-    path("tweets/download", TweetsDownloadView.as_view(), name="tweets_download"),
     path("tweets/insights", TweetsInsightsView.as_view(), name="tweets_insights"),
     path("tweets/searches", TweetSearchesView.as_view(), name="tweets_searches"),
     path(
