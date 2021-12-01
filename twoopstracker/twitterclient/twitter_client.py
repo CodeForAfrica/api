@@ -90,7 +90,7 @@ class TwitterClient:
     def get_users(self, screen_names):
         return self.api.lookup_users(screen_name=screen_names)
 
-    def stream_forever(self):
+    def run(self):
         stream = TweetListener(
             self.consumer_key,
             self.consumer_secret,
@@ -98,6 +98,3 @@ class TwitterClient:
             self.access_token_secret,
         )
         stream.filter(follow=stream.get_accounts())
-
-    def run(self):
-        self.stream_forever()
