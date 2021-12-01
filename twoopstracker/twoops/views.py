@@ -126,10 +126,11 @@ def generate_csv(data, filename, fieldnames):
             accounts = row.get("accounts", [])
             # For tweets, we need to convert the OrderedDict to a json
             if row.get("owner"):
+                username = row["owner"]["screen_name"]
                 row[
                     "original_tweet"
-                ] = f"https://twitter.com/{row['owner']['screen_name']}/status/{row['tweet_id']}"
-                row["username"] = row["owner"]["screen_name"]
+                ] = f"https://twitter.com/{username}/status/{row['tweet_id']}"
+                row["username"] = username
                 row["owner"] = json.dumps(row["owner"])
                 writer.writerow(row)
             elif accounts:
