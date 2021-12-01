@@ -68,9 +68,9 @@ class TwitterClient:
 
         auth = tweepy.OAuthHandler(self.consumer_key, self.consumer_secret)
         auth.set_access_token(self.access_token, self.access_token_secret)
-        api = tweepy.API(auth)
+        self.api = tweepy.API(auth)
         try:
-            username = api.verify_credentials().screen_name
+            username = self.api.verify_credentials().screen_name
             logger.info("@" + username + " is authenticated")
         except tweepy.errors.TweepyException:
             logger.error("Invalid credentials")
