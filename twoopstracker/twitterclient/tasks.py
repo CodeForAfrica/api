@@ -1,26 +1,41 @@
+import logging
+
 from celery import shared_task
 from django.utils import timezone
 
 from twoopstracker.twoops.models import Tweet, TwitterAccount
 
+logger = logging.getLogger(__name__)
+
 
 @shared_task
 def save_tweet(tweet_data):
-    tweet = Tweet(
-        tweet_id=tweet_data.get("id"),
-        content=tweet_data.get("tweet_text"),
-        retweet_id=tweet_data.get("retweeted_status", {}).get("id"),
-        retweeted_user_id=tweet_data.get("retweeted_status", {})
-        .get("user", {})
-        .get("id"),
-        favorite_count=tweet_data.get("favorite_count"),
-        retweet_count=tweet_data.get("retweet_count"),
-        reply_count=tweet_data.get("reply_count"),
-        quote_count=tweet_data.get("quote_count"),
-        actual_tweet=tweet_data,
-        owner=TwitterAccount.objects.get(account_id=tweet_data.get("user").get("id")),
-    )
-    tweet.save()
+    owner = TwitterAccount.objects.filter(
+        account_id=tweet_data.get("user").get("id")
+    ).first()
+    if owner:
+        tweet = Tweet(
+            tweet_id=tweet_data.get("id"),
+            content=tweet_data.get("tweet_text"),
+            retweet_id=tweet_data.get("retweeted_status", {}).get("id"),
+            retweeted_user_id=tweet_data.get("retweeted_status", {})
+            .get("user", {})
+            .get("id"),
+            favorite_count=tweet_data.get("favorite_count"),
+            retweet_count=tweet_data.get("retweet_count"),
+            reply_count=tweet_data.get("reply_count"),
+            quote_count=tweet_data.get("quote_count"),
+            actual_tweet=tweet_data,
+            owner=TwitterAccount.objects.get(
+                account_id=tweet_data.get("user").get("id")
+            ),
+        )
+        tweet.save()
+    else:
+        logger.error(
+            f"Received a tweet for an \
+                account({ tweet_data.get('user').get('screen_name') }) we aren't tracking. "
+        )
 
 
 @shared_task

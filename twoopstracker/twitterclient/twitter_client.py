@@ -16,7 +16,7 @@ class TweetListener(tweepy.Stream):
         accounts = TwitterAccount.objects.filter(deleted=False).values_list(
             "account_id", flat=True
         )
-        return list(accounts)
+        return list(accounts)[:5000]
 
     def on_connect(self):
         logger.info("Stream listener connected.")
