@@ -1,4 +1,3 @@
-import json
 import logging
 
 import tweepy
@@ -26,31 +25,30 @@ class TweetListener(tweepy.Stream):
         logger.error("Stream listener encountered a connection error.")
         return True
 
-    def on_data(self, data):
-        logger.info("Tweet data received.")
-        tweet = json.loads(data)
-        if "delete" in tweet:
-            logger.info(
-                f'Queued delete notification for user {tweet.get("delete").get("status").get("user_id")} \
-                    for tweet {tweet.get("delete").get("status").get("id")}'
+    def on_status(self, tweet):
+        # Create the tweet in to our database
+        tweet = tweet._json
+        tweet_text = tweet.get("extended_tweet", {}).get("full_text", tweet.get("text"))
+        if tweet.get("retweeted_status"):
+            tweet_text = (
+                tweet.get("retweeted_status")
+                .get("extended_tweet", {})
+                .get("full_text", tweet.get("text"))
             )
-            # Mark the tweet as Deleted
-            mark_tweet_as_deleted.delay(tweet.get("delete").get("status").get("id"))
-        else:
-            # Create the tweet in to our database
-            tweet_text = tweet.get("extended_tweet", {}).get(
-                "full_text", tweet.get("text")
-            )
-            if tweet.get("retweeted_status"):
-                tweet_text = (
-                    tweet.get("retweeted_status")
-                    .get("extended_tweet", {})
-                    .get("full_text", tweet.get("text"))
-                )
 
-            tweet["tweet_text"] = tweet_text
-            save_tweet.delay(tweet)
-        return True
+        tweet["tweet_text"] = tweet_text
+        save_tweet.delay(tweet)
+
+    def on_delete(self, status_id, user_id):
+        logger.info(
+            f"Queued delete notification for user {user_id} \
+                for tweet {status_id}"
+        )
+        # Mark the tweet as Deleted
+        mark_tweet_as_deleted.delay(status_id)
+
+    def on_data(self, data):
+        super().on_data(data)
 
     def on_error(self, status_code):
         logger.error(

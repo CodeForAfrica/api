@@ -31,6 +31,7 @@ def save_tweet(tweet_data):
             ),
         )
         tweet.save()
+        logger.info(f"Tweet {tweet.tweet_id} saved")
     else:
         logger.error(
             f"Received a tweet for an \
