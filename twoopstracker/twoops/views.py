@@ -126,6 +126,10 @@ def generate_csv(data, filename, fieldnames):
             accounts = row.get("accounts", [])
             # For tweets, we need to convert the OrderedDict to a json
             if row.get("owner"):
+                row[
+                    "original_tweet"
+                ] = f"https://twitter.com/{row['owner']['screen_name']}/status/{row['tweet_id']}"
+                row["username"] = row["owner"]["screen_name"]
                 row["owner"] = json.dumps(row["owner"])
                 writer.writerow(row)
             elif accounts:
@@ -149,7 +153,10 @@ class TweetsView(generics.ListAPIView):
         if request.GET.get("download", "") == "csv":
             serializer = self.get_serializer(self.get_queryset(), many=True)
             data = serializer.data
-            fieldnames = list(data[0].keys())
+            fieldnames = [
+                "original_tweet",
+                "username",
+            ] + list(data[0].keys())
             response = generate_csv(data, "tweets", fieldnames)
             return response
         return self.list(request, *args, **kwargs)
