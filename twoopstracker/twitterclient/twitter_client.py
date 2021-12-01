@@ -89,7 +89,7 @@ class TwitterClient:
 
     def get_users(self, screen_names):
         return self.api.lookup_users(screen_name=screen_names)
-    
+
     def stream_forever(self):
         stream = TweetListener(
             self.consumer_key,
