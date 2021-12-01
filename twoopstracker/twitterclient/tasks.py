@@ -26,9 +26,7 @@ def save_tweet(tweet_data):
             reply_count=tweet_data.get("reply_count"),
             quote_count=tweet_data.get("quote_count"),
             actual_tweet=tweet_data,
-            owner=TwitterAccount.objects.get(
-                account_id=tweet_data.get("user").get("id")
-            ),
+            owner=owner,
         )
         tweet.save()
         logger.info(f"Tweet {tweet.tweet_id} saved")
