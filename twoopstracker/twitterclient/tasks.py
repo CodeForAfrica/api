@@ -25,8 +25,6 @@ def save_tweet(tweet_data):
 
 @shared_task
 def mark_tweet_as_deleted(tweet_id):
-    tweet = Tweet.objects.filter(tweet_id=tweet_id).first()
-    if tweet:
-        tweet.deleted = True
-        tweet.deleted_at = timezone.now()
-        tweet.save()
+    Tweet.objects.filter(tweet_id=tweet_id).update(
+        deleted=True, deleted_at=timezone.now()
+    )
