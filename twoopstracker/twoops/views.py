@@ -312,6 +312,15 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
         IsAuthenticated,
     ]
 
+    def get(self, request, *args, **kwargs):
+        if request.GET.get("download", "") == "csv":
+            serializer = self.get_serializer(self.get_object())
+            fieldnames = ["list_name", "username", "repository", "evidence"]
+            response = generate_csv([serializer.data], "accounts_list", fieldnames)
+            return response
+
+        return self.retrieve(request, *args, **kwargs)
+
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
         kwargs = update_kwargs_with_account_ids(kwargs)
