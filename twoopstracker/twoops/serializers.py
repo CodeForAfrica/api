@@ -70,6 +70,7 @@ class TwitterAccountsListSerializer(TwitterAccountsListsSerializer):
                     "protected": account.protected,
                     "created_at": account.created_at,
                     "updated_at": account.updated_at,
+                    "evidence": account.evidence,
                 }
             )
 

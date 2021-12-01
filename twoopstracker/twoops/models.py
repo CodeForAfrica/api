@@ -87,6 +87,13 @@ class TwitterAccount(TimestampedModelMixin):
         default=False,
         help_text=_("When deleted is true, we aren't tracking this account anymore."),
     )
+    evidence = models.URLField(
+        help_text=_(
+            "URL to evidence showing that this account can belong to a public list"
+        ),
+        null=True,
+        blank=True,
+    )
 
     def __str__(self):
         return self.screen_name

@@ -32,7 +32,7 @@ from twoopstracker.twoops.serializers import (
 twitterclient = TwitterClient()
 
 
-def save_accounts(users):
+def save_accounts(users, evidence_links={}):
     accounts_ids = []
     twitter_accounts = []
 
@@ -49,6 +49,7 @@ def save_accounts(users):
         twitter_account.favourites_count = user.favourites_count
         twitter_account.statuses_count = user.statuses_count
         twitter_account.profile_image_url = user.profile_image_url
+        twitter_account.evidence = evidence_links.get(user.screen_name, "")
         twitter_accounts.append(twitter_account)
         accounts_ids.append(user.id)
 
@@ -66,6 +67,7 @@ def save_accounts(users):
             "favourites_count",
             "statuses_count",
             "profile_image_url",
+            "evidence",
         ],
     )
 
@@ -134,6 +136,7 @@ def generate_csv(data, filename, fieldnames):
                 for acc in accounts:
                     row["username"] = acc.get("screen_name")
                     row["repository"] = repository
+                    row["evidence"] = acc.get("evidence")
                     writer.writerow(row)
 
     return response
@@ -373,6 +376,7 @@ class FileUploadAPIView(generics.CreateAPIView):
         for account_list in account_lists:
             twitter_accounts_lists = set()
             screen_names = []
+            evidence_links = {}
             for account in account_lists[account_list]:
                 try:
                     twitter_accounts_lists.add(
@@ -383,6 +387,8 @@ class FileUploadAPIView(generics.CreateAPIView):
                         )[0]
                     )
                     screen_names.append(account["username"])
+                    evidence_links[account["username"]] = account["evidence"]
+
                 except IntegrityError:
                     errors.append(
                         {
@@ -395,7 +401,7 @@ class FileUploadAPIView(generics.CreateAPIView):
                     )
 
             twitter_accounts = get_twitter_accounts(screen_names)
-            accounts_ids = save_accounts(twitter_accounts)
+            accounts_ids = save_accounts(twitter_accounts, evidence_links)
 
             for twitter_accounts_list in twitter_accounts_lists:
                 twitter_accounts_list.accounts.set(accounts_ids)
