@@ -114,18 +114,27 @@ def update_kwargs_with_account_ids(kwargs):
     return kwargs
 
 
-def generate_csv(data, filename):
+def generate_csv(data, filename, fieldnames):
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = f"attachment; filename={filename}.csv"
     if data:
-        fieldnames = list(data[0].keys())
         writer = csv.DictWriter(response, fieldnames=fieldnames)
         writer.writeheader()
         for row in data:
+            accounts = row.get("accounts", [])
             # For tweets, we need to convert the OrderedDict to a json
             if row.get("owner"):
                 row["owner"] = json.dumps(row["owner"])
-            writer.writerow(row)
+                writer.writerow(row)
+            elif accounts:
+                # Convert to the UPLOAD csv format
+                repository = "Private" if row.get("is_private") else "Public"
+                row = {"list_name": row["name"]}
+
+                for acc in accounts:
+                    row["username"] = acc.get("screen_name")
+                    row["repository"] = repository
+                    writer.writerow(row)
 
     return response
 
@@ -136,7 +145,9 @@ class TweetsView(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         if request.GET.get("download", "") == "csv":
             serializer = self.get_serializer(self.get_queryset(), many=True)
-            response = generate_csv(serializer.data, "tweets")
+            data = serializer.data
+            fieldnames = list(data[0].keys())
+            response = generate_csv(data, "tweets", fieldnames)
             return response
         return self.list(request, *args, **kwargs)
 
@@ -278,7 +289,8 @@ class AccountsLists(generics.ListCreateAPIView):
     def get(self, request, *args, **kwargs):
         if request.GET.get("download", "") == "csv":
             serializer = TwitterAccountsListSerializer(self.get_queryset(), many=True)
-            response = generate_csv(serializer.data, "accounts_lists")
+            fieldnames = ["list_name", "username", "repository", "evidence"]
+            response = generate_csv(serializer.data, "accounts_lists", fieldnames)
             return response
 
         return self.list(request, *args, **kwargs)
@@ -324,9 +336,7 @@ class FileUploadAPIView(generics.CreateAPIView):
         account_lists = defaultdict(list)
 
         errors = []
-        total_accounts = 0
         for position, row in enumerate(reader, 1):
-            total_accounts += 1
             repository = row.get("repository", "Private")
             is_private = True if repository == "Private" else False
             evidence = row.get("evidence", "")
