@@ -31,8 +31,8 @@ def save_tweet(tweet_data):
         tweet.save()
         logger.info(f"Tweet {tweet.tweet_id} saved")
     else:
-        logger.error(
-            f"Received a tweet for an \
+        logger.warning(
+            f"Received a tweet {tweet_data.get('tweet_text')} for an \
                 account({ tweet_data.get('user').get('screen_name') }) we aren't tracking. "
         )
 
