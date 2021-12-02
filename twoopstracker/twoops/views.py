@@ -21,6 +21,7 @@ from twoopstracker.twoops.models import (
     TwitterAccount,
     TwitterAccountsList,
 )
+from twoopstracker.twoops.permissions import IsOwner
 from twoopstracker.twoops.serializers import (
     FileUploadSerializer,
     TweetSearchSerializer,
@@ -300,7 +301,6 @@ class TweetSearchView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class AccountsLists(generics.ListCreateAPIView):
-    queryset = TwitterAccountsList.objects.all()
     serializer_class = TwitterAccountsListsSerializer
     permission_classes = [
         IsAuthenticated,
@@ -314,6 +314,8 @@ class AccountsLists(generics.ListCreateAPIView):
             return response
 
         return self.list(request, *args, **kwargs)
+    def get_queryset(self):
+        return TwitterAccountsList.objects.filter(owner=self.request.user.userprofile)
 
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
@@ -329,7 +331,7 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
     queryset = TwitterAccountsList.objects.all()
     serializer_class = TwitterAccountsListSerializer
     permission_classes = [
-        IsAuthenticated,
+        IsOwner,
     ]
 
     def get(self, request, *args, **kwargs):
