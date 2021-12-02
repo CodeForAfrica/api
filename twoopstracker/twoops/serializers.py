@@ -2,6 +2,7 @@ from django.db import IntegrityError
 from rest_framework import serializers
 
 from twoopstracker.twoops.models import (
+    Evidence,
     Tweet,
     TweetSearch,
     TwitterAccount,
@@ -42,6 +43,12 @@ class TweetsInsightsSerializer(serializers.Serializer):
     count = serializers.IntegerField()
 
 
+class EvidenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Evidence
+        fields = ["url"]
+
+
 class TwitterAccountsListsSerializer(serializers.ModelSerializer):
     class Meta:
         model = TwitterAccountsList
@@ -61,6 +68,7 @@ class TwitterAccountsListSerializer(TwitterAccountsListsSerializer):
         accounts = obj.accounts.all()
         data = []
         for account in accounts:
+            evidences = EvidenceSerializer(account.evidence, many=True).data
             data.append(
                 {
                     "name": account.name,
@@ -69,7 +77,7 @@ class TwitterAccountsListSerializer(TwitterAccountsListsSerializer):
                     "protected": account.protected,
                     "created_at": account.created_at,
                     "updated_at": account.updated_at,
-                    "evidence": account.evidence,
+                    "evidences": evidences,
                 }
             )
 
