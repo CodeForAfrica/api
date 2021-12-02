@@ -15,6 +15,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from twoopstracker.twitterclient.twitter_client import TwitterClient
 from twoopstracker.twoops.models import (
+    Evidence,
     Tweet,
     TweetSearch,
     TwitterAccount,
@@ -49,9 +50,11 @@ def save_accounts(users, evidence_links={}):
         twitter_account.favourites_count = user.favourites_count
         twitter_account.statuses_count = user.statuses_count
         twitter_account.profile_image_url = user.profile_image_url
-        twitter_account.evidence = evidence_links.get(user.screen_name, "")
         twitter_accounts.append(twitter_account)
         accounts_ids.append(user.id)
+        evidence_link = evidence_links.get(user.screen_name)
+        if evidence_link:
+            Evidence.objects.get_or_create(account=twitter_account, url=evidence_link)
 
     TwitterAccount.objects.bulk_update(
         twitter_accounts,
@@ -67,7 +70,6 @@ def save_accounts(users, evidence_links={}):
             "favourites_count",
             "statuses_count",
             "profile_image_url",
-            "evidence",
         ],
     )
 
@@ -141,7 +143,14 @@ def generate_csv(data, filename, fieldnames):
                 for acc in accounts:
                     row["username"] = acc.get("screen_name")
                     row["repository"] = repository
-                    row["evidence"] = acc.get("evidence")
+                    row["evidence"] = "\n".join(
+                        list(
+                            acc.get("evidence")
+                            .all()
+                            .values_list("url", flat=True)
+                            .distinct()
+                        )
+                    )
                     writer.writerow(row)
 
     return response
@@ -356,7 +365,9 @@ class FileUploadAPIView(generics.CreateAPIView):
         account_lists = defaultdict(list)
 
         errors = []
+        total_accounts = 0
         for position, row in enumerate(reader, 1):
+            total_accounts += 1
             repository = row.get("repository", "Private")
             is_private = True if repository == "Private" else False
             evidence = row.get("evidence", "")
