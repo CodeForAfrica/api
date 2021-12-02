@@ -87,16 +87,27 @@ class TwitterAccount(TimestampedModelMixin):
         default=False,
         help_text=_("When deleted is true, we aren't tracking this account anymore."),
     )
-    evidence = models.URLField(
-        help_text=_(
-            "URL to evidence showing that this account can belong to a public list"
-        ),
-        null=True,
-        blank=True,
-    )
 
     def __str__(self):
         return self.screen_name
+
+
+class Evidence(TimestampedModelMixin):
+    """
+    Evidence model
+    """
+
+    account = models.ForeignKey(
+        "TwitterAccount", on_delete=models.CASCADE, related_name="evidence"
+    )
+    url = models.URLField(
+        help_text=_(
+            "URL to evidence showing that this account can belong to a public list"
+        ),
+    )
+
+    def __str__(self):
+        return f"{self.url}"
 
 
 class UserProfile(TimestampedModelMixin):
