@@ -349,7 +349,13 @@ class FileUploadAPIView(generics.CreateAPIView):
                 twitter_accounts_list.accounts.set(accounts_ids)
                 twitter_accounts_list.save()
 
-        return_response = {}
+        failed_uploads = len(errors)
+        return_response = {
+            "lists_proccessed": {
+                "success": total_accounts - failed_uploads,
+                "failed": failed_uploads,
+            }
+        }
         if errors and account_lists:
             return_response["errors"] = errors
             status_code = status.HTTP_207_MULTI_STATUS
