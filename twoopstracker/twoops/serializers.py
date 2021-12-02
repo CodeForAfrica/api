@@ -30,7 +30,6 @@ class TweetSerializer(serializers.ModelSerializer):
             "number_of_interactions",
             "favorite_count",
             "retweet_count",
-            "retweet_count",
             "deleted",
             "deleted_at",
             "owner",
