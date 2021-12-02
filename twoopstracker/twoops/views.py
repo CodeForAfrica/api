@@ -303,6 +303,7 @@ class FileUploadAPIView(generics.CreateAPIView):
                         "username": row["username"],
                         "is_private": is_private,
                         "evidence": evidence,
+                        "repo": repository,
                     }
                 )
             else:
@@ -332,10 +333,11 @@ class FileUploadAPIView(generics.CreateAPIView):
                     )
                     screen_names.append(account["username"])
                 except IntegrityError:
+                    user = request.user.email
+                    msg = f"A {account['repo']} list {account_list} already exists for {user}"
                     errors.append(
                         {
-                            "message": f"List {account_list} already exists for user\
-                                {request.user.email}",
+                            "message": msg,
                             "details": {
                                 "list_name": account_list,
                             },
