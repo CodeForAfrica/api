@@ -11,8 +11,7 @@ class Tweet(TimestampedModelMixin):
     """
 
     tweet_id = models.BigIntegerField(primary_key=True)
-    # https://developer.twitter.com/en/docs/counting-characters
-    content = models.CharField(max_length=280, help_text=_("Tweet Content"))
+    content = models.CharField(max_length=1024, help_text=_("Tweet Content"))
     deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(blank=True, null=True)
     retweet_id = models.BigIntegerField(blank=True, null=True)
@@ -23,9 +22,10 @@ class Tweet(TimestampedModelMixin):
         blank=True,
         null=True,
     )
-    likes_count = models.IntegerField(default=0)
-    retweets_count = models.IntegerField(default=0)
-    replies_count = models.IntegerField(default=0)
+    favorite_count = models.IntegerField(default=0)
+    retweet_count = models.IntegerField(default=0)
+    reply_count = models.IntegerField(default=0)
+    quote_count = models.IntegerField(default=0)
     actual_tweet = models.JSONField()
     owner = models.ForeignKey("TwitterAccount", on_delete=models.CASCADE)
 
@@ -34,7 +34,7 @@ class Tweet(TimestampedModelMixin):
 
     @property
     def number_of_interactions(self):
-        return self.likes_count + self.retweets_count + self.replies_count
+        return self.favorite_count + self.retweet_count + self.reply_count
 
 
 class TweetSearch(TimestampedModelMixin):
