@@ -303,6 +303,7 @@ class FileUploadAPIView(generics.CreateAPIView):
                         "username": row["username"],
                         "is_private": is_private,
                         "evidence": evidence,
+                        "repo": repository,
                     }
                 )
             else:
@@ -332,10 +333,11 @@ class FileUploadAPIView(generics.CreateAPIView):
                     )
                     screen_names.append(account["username"])
                 except IntegrityError:
+                    user = request.user.email
+                    msg = f"A {account['repo']} list {account_list} already exists for {user}"
                     errors.append(
                         {
-                            "message": f"List {account_list} already exists for user\
-                                {request.user.email}",
+                            "message": msg,
                             "details": {
                                 "list_name": account_list,
                             },
@@ -349,7 +351,13 @@ class FileUploadAPIView(generics.CreateAPIView):
                 twitter_accounts_list.accounts.set(accounts_ids)
                 twitter_accounts_list.save()
 
-        return_response = {}
+        failed_uploads = len(errors)
+        return_response = {
+            "lists_proccessed": {
+                "success": total_accounts - failed_uploads,
+                "failed": failed_uploads,
+            }
+        }
         if errors and account_lists:
             return_response["errors"] = errors
             status_code = status.HTTP_207_MULTI_STATUS
