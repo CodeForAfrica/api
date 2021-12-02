@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "twoopstracker.db",
     "twoopstracker.authentication",
     "twoopstracker.twoops",
+    "twoopstracker.twitterclient",
 ]
 
 MIDDLEWARE = [
@@ -150,6 +151,9 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 # Celery
 CELERY_BROKER_URL = env.str("TWOOPSTRACKER_CELERY_BROKER_URL", "")
+TWOOPTRACKER_STREAM_LISTENER_INTERVAL = env.int(
+    "TWOOPTRACKER_STREAM_LISTENER_INTERVAL", 15
+)
 
 # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
 
