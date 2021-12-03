@@ -1,6 +1,7 @@
 import csv
 import datetime
 import io
+import json
 from collections import defaultdict
 
 from django.conf import settings
@@ -8,11 +9,13 @@ from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.db.utils import IntegrityError
+from django.http import HttpResponse
 from rest_framework import generics, response, status
 from rest_framework.permissions import IsAuthenticated
 
 from twoopstracker.twitterclient.twitter_client import TwitterClient
 from twoopstracker.twoops.models import (
+    Evidence,
     Tweet,
     TweetSearch,
     TwitterAccount,
@@ -31,7 +34,7 @@ from twoopstracker.twoops.serializers import (
 twitterclient = TwitterClient()
 
 
-def save_accounts(users):
+def save_accounts(users, evidence_links={}):
     accounts_ids = []
     twitter_accounts = []
 
@@ -50,6 +53,9 @@ def save_accounts(users):
         twitter_account.profile_image_url = user.profile_image_url
         twitter_accounts.append(twitter_account)
         accounts_ids.append(user.id)
+        evidence_link = evidence_links.get(user.screen_name)
+        if evidence_link:
+            Evidence.objects.get_or_create(account=twitter_account, url=evidence_link)
 
     TwitterAccount.objects.bulk_update(
         twitter_accounts,
@@ -113,8 +119,58 @@ def update_kwargs_with_account_ids(kwargs):
     return kwargs
 
 
+def generate_csv(data, filename, fieldnames):
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f"attachment; filename={filename}.csv"
+    if data:
+        writer = csv.DictWriter(response, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in data:
+            accounts = row.get("accounts", [])
+            # For tweets, we need to convert the OrderedDict to a json
+            if row.get("owner"):
+                username = row["owner"]["screen_name"]
+                row[
+                    "original_tweet"
+                ] = f"https://twitter.com/{username}/status/{row['tweet_id']}"
+                row["username"] = username
+                row["owner"] = json.dumps(row["owner"])
+                writer.writerow(row)
+            elif accounts:
+                # Convert to the UPLOAD csv format
+                repository = "Private" if row.get("is_private") else "Public"
+                row = {"list_name": row["name"]}
+
+                for acc in accounts:
+                    row["username"] = acc.get("screen_name")
+                    row["repository"] = repository
+                    row["evidence"] = "\n".join(
+                        list(
+                            acc.get("evidence")
+                            .all()
+                            .values_list("url", flat=True)
+                            .distinct()
+                        )
+                    )
+                    writer.writerow(row)
+
+    return response
+
+
 class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
+
+    def get(self, request, *args, **kwargs):
+        if request.GET.get("download", "") == "csv":
+            serializer = self.get_serializer(self.get_queryset(), many=True)
+            data = serializer.data
+            fieldnames = [
+                "original_tweet",
+                "username",
+            ] + list(data[0].keys())
+            response = generate_csv(data, "tweets", fieldnames)
+            return response
+        return self.list(request, *args, **kwargs)
 
     def get_queryset(self):
         query = self.request.GET.get("query")
@@ -250,6 +306,15 @@ class AccountsLists(generics.ListCreateAPIView):
         IsAuthenticated,
     ]
 
+    def get(self, request, *args, **kwargs):
+        if request.GET.get("download", "") == "csv":
+            serializer = TwitterAccountsListSerializer(self.get_queryset(), many=True)
+            fieldnames = ["list_name", "username", "repository", "evidence"]
+            response = generate_csv(serializer.data, "accounts_lists", fieldnames)
+            return response
+
+        return self.list(request, *args, **kwargs)
+
     def get_queryset(self):
         return TwitterAccountsList.objects.filter(owner=self.request.user.userprofile)
 
@@ -269,6 +334,15 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [
         IsOwner,
     ]
+
+    def get(self, request, *args, **kwargs):
+        if request.GET.get("download", "") == "csv":
+            serializer = self.get_serializer(self.get_object())
+            fieldnames = ["list_name", "username", "repository", "evidence"]
+            response = generate_csv([serializer.data], "accounts_list", fieldnames)
+            return response
+
+        return self.retrieve(request, *args, **kwargs)
 
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
@@ -325,6 +399,7 @@ class FileUploadAPIView(generics.CreateAPIView):
         for account_list in account_lists:
             twitter_accounts_lists = set()
             screen_names = []
+            evidence_links = {}
             for account in account_lists[account_list]:
                 try:
                     twitter_accounts_lists.add(
@@ -335,6 +410,8 @@ class FileUploadAPIView(generics.CreateAPIView):
                         )[0]
                     )
                     screen_names.append(account["username"])
+                    evidence_links[account["username"]] = account["evidence"]
+
                 except IntegrityError:
                     user = request.user.email
                     msg = f"A {account['repo']} list {account_list} already exists for {user}"
@@ -348,7 +425,7 @@ class FileUploadAPIView(generics.CreateAPIView):
                     )
 
             twitter_accounts = get_twitter_accounts(screen_names)
-            accounts_ids = save_accounts(twitter_accounts)
+            accounts_ids = save_accounts(twitter_accounts, evidence_links)
 
             for twitter_accounts_list in twitter_accounts_lists:
                 twitter_accounts_list.accounts.set(accounts_ids)

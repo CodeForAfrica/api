@@ -92,6 +92,24 @@ class TwitterAccount(TimestampedModelMixin):
         return self.screen_name
 
 
+class Evidence(TimestampedModelMixin):
+    """
+    Evidence model
+    """
+
+    account = models.ForeignKey(
+        "TwitterAccount", on_delete=models.CASCADE, related_name="evidence"
+    )
+    url = models.URLField(
+        help_text=_(
+            "URL to evidence showing that this account can belong to a public list"
+        ),
+    )
+
+    def __str__(self):
+        return f"{self.url}"
+
+
 class UserProfile(TimestampedModelMixin):
     """
     User Profile model
