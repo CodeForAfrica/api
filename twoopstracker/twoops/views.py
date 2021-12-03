@@ -314,6 +314,7 @@ class AccountsLists(generics.ListCreateAPIView):
             return response
 
         return self.list(request, *args, **kwargs)
+
     def get_queryset(self):
         return TwitterAccountsList.objects.filter(owner=self.request.user.userprofile)
 
