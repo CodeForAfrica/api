@@ -65,7 +65,9 @@ class TwitterClient:
         self.consumer_secret = settings.TWOOPSTRACKER_CONSUMER_SECRET
         self.access_token = settings.TWOOPSTRACKER_ACCESS_TOKEN
         self.access_token_secret = settings.TWOOPSTRACKER_ACCESS_TOKEN_SECRET
-
+        if hasattr(self, "stream"):
+            self.stream.disconnect()
+            return
         auth = tweepy.OAuthHandler(self.consumer_key, self.consumer_secret)
         auth.set_access_token(self.access_token, self.access_token_secret)
         self.api = tweepy.API(auth)
@@ -89,10 +91,10 @@ class TwitterClient:
         return self.api.lookup_users(screen_name=screen_names)
 
     def run(self):
-        stream = TweetListener(
+        self.stream = TweetListener(
             self.consumer_key,
             self.consumer_secret,
             self.access_token,
             self.access_token_secret,
         )
-        stream.filter(follow=stream.get_accounts())
+        self.stream.filter(follow=self.stream.get_accounts(), threaded=True)
