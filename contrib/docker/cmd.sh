@@ -10,7 +10,16 @@ touch /app/logs/celery.log
 tail -n 0 -f /app/logs/*.log &
 
 # Start celery worker
-celery -A twoopstracker worker -l INFO --without-gossip &> /app/logs/celery.log &
+celery -A twoopstracker worker -l INFO &> /app/logs/celery.log &
+
+until timeout 10s celery -A twoopstracker inspect ping; do
+    >&2 echo "Celery workers not available"
+done
+
+echo 'Starting flower'
+celery -A project flower
+
+celery -A twoopstracker flower -l INFO &> /app/logs/celery.log &
 
 # everytime the container is restarted, the scheduler will reset
 rm -rf celerybeat-schedule
