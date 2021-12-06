@@ -66,6 +66,7 @@ class TwitterClient:
         self.access_token = settings.TWOOPSTRACKER_ACCESS_TOKEN
         self.access_token_secret = settings.TWOOPSTRACKER_ACCESS_TOKEN_SECRET
         if hasattr(self, "stream"):
+            logger.info("Disconnecting existing stream listener.")
             self.stream.disconnect()
             return
         auth = tweepy.OAuthHandler(self.consumer_key, self.consumer_secret)
@@ -98,3 +99,6 @@ class TwitterClient:
             self.access_token_secret,
         )
         self.stream.filter(follow=self.stream.get_accounts(), threaded=True)
+
+    def disconnect(self):
+        self.stream.disconnect()
