@@ -12,6 +12,7 @@ from django.db.models.functions import Trunc
 from django.db.utils import IntegrityError
 from django.http import HttpResponse
 from rest_framework import generics, response, status
+from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from twoopstracker.twitterclient.twitter_client import TwitterClient
@@ -210,6 +211,11 @@ class TweetsView(generics.ListAPIView):
             )
             response = generate_file(data, "tweets", fieldnames, download)
             return response
+        elif download:
+            return_response = { "message": f"{download} not supported"}
+            status_code = status.HTTP_400_BAD_REQUEST
+
+            return Response(return_response, status=status_code)
 
         return self.list(request, *args, **kwargs)
 
@@ -357,6 +363,12 @@ class AccountsLists(generics.ListCreateAPIView):
                 serializer.data, "accounts_lists", fieldnames, download
             )
             return response
+        elif download:
+            return_response = { "message": f"{download} not supported"}
+            status_code = status.HTTP_400_BAD_REQUEST
+
+            return Response(return_response, status=status_code)
+
 
         return self.list(request, *args, **kwargs)
 
@@ -390,6 +402,12 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
                 [serializer.data], "accounts_lists", fieldnames, download
             )
             return response
+
+        elif download:
+            return_response = { "message": f"{download} not supported"}
+            status_code = status.HTTP_400_BAD_REQUEST
+
+            return Response(return_response, status=status_code)
 
         return self.retrieve(request, *args, **kwargs)
 
