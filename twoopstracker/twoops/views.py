@@ -160,21 +160,18 @@ def process_file_data(data):
 
 def generate_file(data, filename, fieldnames, fileformat):
     content_type = ""
-    file_extension = ""
 
     if fileformat == "csv":
         content_type = "text/csv"
-        file_extension = "csv"
-    elif fileformat == "excel" or fileformat == "xlsx":
+    else:
         content_type = (
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-        file_extension = "xlsx"
 
     response = HttpResponse(content_type=content_type)
     response[
         "Content-Disposition"
-    ] = f"attachment; filename={filename}.{file_extension}"
+    ] = f"attachment; filename={filename}.{fileformat}"
 
     file_data = process_file_data(data)
     list_val = []
@@ -184,10 +181,7 @@ def generate_file(data, filename, fieldnames, fileformat):
         list_val.append(ordered_row)
 
     table = tablib.Dataset(*list_val, headers=fieldnames)
-    if file_extension == "csv":
-        response.write(table.csv)
-    elif file_extension == "xlsx":
-        response.write(table.xlsx)
+    response.write(table.export(fileformat))
 
     return response
 
