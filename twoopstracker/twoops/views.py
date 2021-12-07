@@ -198,7 +198,7 @@ class TweetsView(generics.ListAPIView):
             fieldnames = [
                 "original_tweet",
                 "username",
-            ] + list(data[0].keys())
+            ] + list(data[0].keys()) if len(data) > 1 else []
             if download == "csv":
                 response = generate_csv(data, "tweets", fieldnames)
                 return response
