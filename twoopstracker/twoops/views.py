@@ -12,8 +12,8 @@ from django.db.models.functions import Trunc
 from django.db.utils import IntegrityError
 from django.http import HttpResponse
 from rest_framework import generics, response, status
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from twoopstracker.twitterclient.twitter_client import TwitterClient
 from twoopstracker.twoops.models import (
@@ -168,9 +168,7 @@ def generate_file(data, filename, fieldnames, fileformat):
         )
 
     response = HttpResponse(content_type=content_type)
-    response[
-        "Content-Disposition"
-    ] = f"attachment; filename={filename}.{fileformat}"
+    response["Content-Disposition"] = f"attachment; filename={filename}.{fileformat}"
 
     file_data = process_file_data(data)
     list_val = []
@@ -190,7 +188,7 @@ class TweetsView(generics.ListAPIView):
 
     def get(self, request, *args, **kwargs):
         download = request.GET.get("download", "").lower()
-        if download in ['csv', 'xlsx']:
+        if download in ["csv", "xlsx"]:
             serializer = self.get_serializer(self.get_queryset(), many=True)
             data = serializer.data
             fieldnames = (
@@ -205,7 +203,7 @@ class TweetsView(generics.ListAPIView):
             response = generate_file(data, "tweets", fieldnames, download)
             return response
         elif download:
-            return_response = { "message": f"{download} not supported"}
+            return_response = {"message": f"{download} not supported"}
             status_code = status.HTTP_400_BAD_REQUEST
 
             return Response(return_response, status=status_code)
@@ -348,7 +346,7 @@ class AccountsLists(generics.ListCreateAPIView):
 
     def get(self, request, *args, **kwargs):
         download = request.GET.get("download", "").lower()
-        if download in ['csv', 'xlsx']:
+        if download in ["csv", "xlsx"]:
             serializer = TwitterAccountsListSerializer(self.get_queryset(), many=True)
             fieldnames = ["list_name", "username", "repository", "evidence"]
 
@@ -357,11 +355,10 @@ class AccountsLists(generics.ListCreateAPIView):
             )
             return response
         elif download:
-            return_response = { "message": f"{download} not supported"}
+            return_response = {"message": f"{download} not supported"}
             status_code = status.HTTP_400_BAD_REQUEST
 
             return Response(return_response, status=status_code)
-
 
         return self.list(request, *args, **kwargs)
 
@@ -387,7 +384,7 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
 
     def get(self, request, *args, **kwargs):
         download = request.GET.get("download", "").lower()
-        if download in ['csv', 'xlsx']:
+        if download in ["csv", "xlsx"]:
             serializer = self.get_serializer(self.get_object())
             fieldnames = ["list_name", "username", "repository", "evidence"]
 
@@ -397,7 +394,7 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
             return response
 
         elif download:
-            return_response = { "message": f"{download} not supported"}
+            return_response = {"message": f"{download} not supported"}
             status_code = status.HTTP_400_BAD_REQUEST
 
             return Response(return_response, status=status_code)
