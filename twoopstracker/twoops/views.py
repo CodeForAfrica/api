@@ -29,6 +29,7 @@ from twoopstracker.twoops.serializers import (
     TweetsInsightsSerializer,
     TwitterAccountsListSerializer,
     TwitterAccountsListsSerializer,
+    TwitterAccountsSerializer,
 )
 
 twitterclient = TwitterClient()
@@ -349,6 +350,16 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
         kwargs = update_kwargs_with_account_ids(kwargs)
 
         return serializer_class(*args, **kwargs)
+
+
+class TwitterAccountsView(generics.ListAPIView):
+    serializer_class = TwitterAccountsSerializer
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    def get_queryset(self):
+        return TwitterAccount.objects.filter(lists__owner=self.request.user.userprofile)
 
 
 class FileUploadAPIView(generics.CreateAPIView):

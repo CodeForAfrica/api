@@ -89,6 +89,19 @@ class TwitterAccountsListSerializer(TwitterAccountsListsSerializer):
         return data
 
 
+class TwitterAccountsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TwitterAccount
+        fields = [
+            "name",
+            "account_id",
+            "screen_name",
+            "protected",
+            "created_at",
+            "updated_at",
+        ]
+
+
 class TweetSearchSerializer(serializers.ModelSerializer):
     class Meta:
         model = TweetSearch
