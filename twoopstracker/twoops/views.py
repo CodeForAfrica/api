@@ -162,7 +162,7 @@ def generate_file(data, filename, fieldnames, fileformat):
     file_extension = ""
 
     if fileformat == "csv":
-        constent_type = "text/csv"
+        content_type = "text/csv"
         file_extension = "csv"
     elif fileformat == "excel" or fileformat == "xlsx":
         content_type = (
