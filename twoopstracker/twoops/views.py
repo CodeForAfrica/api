@@ -205,7 +205,7 @@ class TweetsView(generics.ListAPIView):
                     "username",
                 ]
                 + list(data[0].keys())
-                if len(data) > 1
+                if len(data) > 0
                 else []
             )
             response = generate_file(data, "tweets", fieldnames, download)
