@@ -3,8 +3,6 @@ import datetime
 import io
 import json
 from collections import defaultdict
-from openpyxl import Workbook
-from openpyxl.writer.excel import save_virtual_workbook
 
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
@@ -12,6 +10,8 @@ from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.db.utils import IntegrityError
 from django.http import HttpResponse
+from openpyxl import Workbook
+from openpyxl.writer.excel import save_virtual_workbook
 from rest_framework import generics, response, status
 from rest_framework.permissions import IsAuthenticated
 
@@ -120,6 +120,7 @@ def update_kwargs_with_account_ids(kwargs):
 
     return kwargs
 
+
 def process_file_data(data):
     result = []
     if data:
@@ -155,7 +156,6 @@ def process_file_data(data):
     return result
 
 
-
 def generate_csv(data, filename, fieldnames):
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = f"attachment; filename={filename}.csv"
@@ -164,24 +164,28 @@ def generate_csv(data, filename, fieldnames):
     writer = csv.DictWriter(response, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(file_data)
-        
+
     return response
 
-def generate_excel(data, filename, fieldnames):    
+
+def generate_excel(data, filename, fieldnames):
     file_data = process_file_data(data)
     wb = Workbook()
-    ws = wb. active # Get the active worksheet
+    ws = wb.active  # Get the active worksheet
     ws.title = "Sheet 1"
 
     # Append column names
     ws.append(fieldnames)
 
-    #Order rows as per column name and append to excel
+    # Order rows as per column name and append to excel
     for row in file_data:
         ordered_row = [row[k] for k in fieldnames]
         ws.append(ordered_row)
 
-    response = HttpResponse(save_virtual_workbook(wb), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response = HttpResponse(
+        save_virtual_workbook(wb),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
     response["Content-Disposition"] = f"attachment; filename={filename}.xlsx"
 
     return response
@@ -195,10 +199,15 @@ class TweetsView(generics.ListAPIView):
         if download:
             serializer = self.get_serializer(self.get_queryset(), many=True)
             data = serializer.data
-            fieldnames = [
-                "original_tweet",
-                "username",
-            ] + list(data[0].keys()) if len(data) > 1 else []
+            fieldnames = (
+                [
+                    "original_tweet",
+                    "username",
+                ]
+                + list(data[0].keys())
+                if len(data) > 1
+                else []
+            )
             if download == "csv":
                 response = generate_csv(data, "tweets", fieldnames)
                 return response
@@ -385,7 +394,9 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
                 response = generate_csv([serializer.data], "accounts_lists", fieldnames)
                 return response
             elif download == "excel":
-                response = generate_excel([serializer.data], "accounts_lists", fieldnames)
+                response = generate_excel(
+                    [serializer.data], "accounts_lists", fieldnames
+                )
                 return response
 
         return self.retrieve(request, *args, **kwargs)
