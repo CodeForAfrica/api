@@ -123,38 +123,37 @@ def update_kwargs_with_account_ids(kwargs):
 
 def process_file_data(data):
     result = []
-    if data:
-        for row in data:
-            accounts = row.get("accounts", [])
-            # For tweets, we need to convert the OrderedDict to a json
-            if row.get("owner"):
-                username = row["owner"]["screen_name"]
-                row[
-                    "original_tweet"
-                ] = f"https://twitter.com/{username}/status/{row['tweet_id']}"
-                row["username"] = username
-                row["owner"] = json.dumps(row["owner"])
-                result.append(row)
+    for row in data:
+        accounts = row.get("accounts", [])
+        # For tweets, we need to convert the OrderedDict to a json
+        if row.get("owner"):
+            username = row["owner"]["screen_name"]
+            row[
+                "original_tweet"
+            ] = f"https://twitter.com/{username}/status/{row['tweet_id']}"
+            row["username"] = username
+            row["owner"] = json.dumps(row["owner"])
+            result.append(row)
 
-            elif accounts:
-                # Convert to the UPLOAD csv format
-                repository = "Private" if row.get("is_private") else "Public"
-                row = {"list_name": row["name"]}
+        elif accounts:
+            # Convert to the UPLOAD csv format
+            repository = "Private" if row.get("is_private") else "Public"
+            row = {"list_name": row["name"]}
 
-                for acc in accounts:
-                    row["username"] = acc.get("screen_name")
-                    row["repository"] = repository
-                    row["evidence"] = "\n".join(
-                        list(
-                            acc.get("evidence")
-                            .all()
-                            .values_list("url", flat=True)
-                            .distinct()
-                            if acc.get("evidence")
-                            else ""
-                        )
+            for acc in accounts:
+                row["username"] = acc.get("screen_name")
+                row["repository"] = repository
+                row["evidence"] = "\n".join(
+                    list(
+                        acc.get("evidence")
+                        .all()
+                        .values_list("url", flat=True)
+                        .distinct()
+                        if acc.get("evidence")
+                        else ""
                     )
-                    result.append(row)
+                )
+                result.append(row)
     return result
 
 
