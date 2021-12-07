@@ -4,6 +4,7 @@ import io
 import json
 from collections import defaultdict
 
+import tablib
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.db.models import Count, Q
@@ -12,7 +13,6 @@ from django.db.utils import IntegrityError
 from django.http import HttpResponse
 from rest_framework import generics, response, status
 from rest_framework.permissions import IsAuthenticated
-import tablib
 
 from twoopstracker.twitterclient.twitter_client import TwitterClient
 from twoopstracker.twoops.models import (
@@ -148,11 +148,14 @@ def process_file_data(data):
                             acc.get("evidence")
                             .all()
                             .values_list("url", flat=True)
-                            .distinct() if acc.get("evidence") else ""
+                            .distinct()
+                            if acc.get("evidence")
+                            else ""
                         )
                     )
                     result.append(row)
     return result
+
 
 def generate_file(data, filename, fieldnames, fileformat):
     content_type = ""
@@ -162,11 +165,15 @@ def generate_file(data, filename, fieldnames, fileformat):
         constent_type = "text/csv"
         file_extension = "csv"
     elif fileformat == "excel" or fileformat == "xlsx":
-        content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        content_type = (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
         file_extension = "xlsx"
 
     response = HttpResponse(content_type=content_type)
-    response["Content-Disposition"] = f"attachment; filename={filename}.{file_extension}"
+    response[
+        "Content-Disposition"
+    ] = f"attachment; filename={filename}.{file_extension}"
 
     file_data = process_file_data(data)
     list_val = []
@@ -346,7 +353,9 @@ class AccountsLists(generics.ListCreateAPIView):
             serializer = TwitterAccountsListSerializer(self.get_queryset(), many=True)
             fieldnames = ["list_name", "username", "repository", "evidence"]
 
-            response = generate_file(serializer.data, "accounts_lists", fieldnames, download)
+            response = generate_file(
+                serializer.data, "accounts_lists", fieldnames, download
+            )
             return response
 
         return self.list(request, *args, **kwargs)
@@ -377,7 +386,9 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
             serializer = self.get_serializer(self.get_object())
             fieldnames = ["list_name", "username", "repository", "evidence"]
 
-            response = generate_file([serializer.data], "accounts_lists", fieldnames, download)
+            response = generate_file(
+                [serializer.data], "accounts_lists", fieldnames, download
+            )
             return response
 
         return self.retrieve(request, *args, **kwargs)
