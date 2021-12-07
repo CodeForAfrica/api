@@ -195,8 +195,8 @@ class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
 
     def get(self, request, *args, **kwargs):
-        download = request.GET.get("download")
-        if download:
+        download = request.GET.get("download", "").lower()
+        if download in ['csv', 'xlsx']:
             serializer = self.get_serializer(self.get_queryset(), many=True)
             data = serializer.data
             fieldnames = (
@@ -348,8 +348,8 @@ class AccountsLists(generics.ListCreateAPIView):
     ]
 
     def get(self, request, *args, **kwargs):
-        download = request.GET.get("download")
-        if download:
+        download = request.GET.get("download", "").lower()
+        if download in ['csv', 'xlsx']:
             serializer = TwitterAccountsListSerializer(self.get_queryset(), many=True)
             fieldnames = ["list_name", "username", "repository", "evidence"]
 
@@ -381,8 +381,8 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
     ]
 
     def get(self, request, *args, **kwargs):
-        download = request.GET.get("download")
-        if download:
+        download = request.GET.get("download", "").lower()
+        if download in ['csv', 'xlsx']:
             serializer = self.get_serializer(self.get_object())
             fieldnames = ["list_name", "username", "repository", "evidence"]
 
