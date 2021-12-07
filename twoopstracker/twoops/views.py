@@ -10,10 +10,9 @@ from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.db.utils import IntegrityError
 from django.http import HttpResponse
-from openpyxl import Workbook
-from openpyxl.writer.excel import save_virtual_workbook
 from rest_framework import generics, response, status
 from rest_framework.permissions import IsAuthenticated
+import tablib
 
 from twoopstracker.twitterclient.twitter_client import TwitterClient
 from twoopstracker.twoops.models import (
@@ -149,44 +148,38 @@ def process_file_data(data):
                             acc.get("evidence")
                             .all()
                             .values_list("url", flat=True)
-                            .distinct()
+                            .distinct() if acc.get("evidence") else ""
                         )
                     )
                     result.append(row)
     return result
 
+def generate_file(data, filename, fieldnames, fileformat):
+    content_type = ""
+    file_extension = ""
 
-def generate_csv(data, filename, fieldnames):
-    response = HttpResponse(content_type="text/csv")
-    response["Content-Disposition"] = f"attachment; filename={filename}.csv"
+    if fileformat == "csv":
+        constent_type = "text/csv"
+        file_extension = "csv"
+    elif fileformat == "excel" or fileformat == "xlsx":
+        content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        file_extension = "xlsx"
+
+    response = HttpResponse(content_type=content_type)
+    response["Content-Disposition"] = f"attachment; filename={filename}.{file_extension}"
 
     file_data = process_file_data(data)
-    writer = csv.DictWriter(response, fieldnames=fieldnames)
-    writer.writeheader()
-    writer.writerows(file_data)
-
-    return response
-
-
-def generate_excel(data, filename, fieldnames):
-    file_data = process_file_data(data)
-    wb = Workbook()
-    ws = wb.active  # Get the active worksheet
-    ws.title = "Sheet 1"
-
-    # Append column names
-    ws.append(fieldnames)
-
-    # Order rows as per column name and append to excel
+    list_val = []
+    # Order rows as per column order
     for row in file_data:
         ordered_row = [row[k] for k in fieldnames]
-        ws.append(ordered_row)
+        list_val.append(ordered_row)
 
-    response = HttpResponse(
-        save_virtual_workbook(wb),
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-    response["Content-Disposition"] = f"attachment; filename={filename}.xlsx"
+    table = tablib.Dataset(*list_val, headers=fieldnames)
+    if file_extension == "csv":
+        response.write(table.csv)
+    elif file_extension == "xlsx":
+        response.write(table.xlsx)
 
     return response
 
@@ -208,12 +201,8 @@ class TweetsView(generics.ListAPIView):
                 if len(data) > 1
                 else []
             )
-            if download == "csv":
-                response = generate_csv(data, "tweets", fieldnames)
-                return response
-            elif download == "excel":
-                response = generate_excel(data, "tweets", fieldnames)
-                return response
+            response = generate_file(data, "tweets", fieldnames, download)
+            return response
 
         return self.list(request, *args, **kwargs)
 
@@ -356,12 +345,9 @@ class AccountsLists(generics.ListCreateAPIView):
         if download:
             serializer = TwitterAccountsListSerializer(self.get_queryset(), many=True)
             fieldnames = ["list_name", "username", "repository", "evidence"]
-            if download == "csv":
-                response = generate_csv(serializer.data, "accounts_lists", fieldnames)
-                return response
-            elif download == "excel":
-                response = generate_excel(serializer.data, "accounts_lists", fieldnames)
-                return response
+
+            response = generate_file(serializer.data, "accounts_lists", fieldnames, download)
+            return response
 
         return self.list(request, *args, **kwargs)
 
@@ -390,14 +376,9 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
         if download:
             serializer = self.get_serializer(self.get_object())
             fieldnames = ["list_name", "username", "repository", "evidence"]
-            if download == "csv":
-                response = generate_csv([serializer.data], "accounts_lists", fieldnames)
-                return response
-            elif download == "excel":
-                response = generate_excel(
-                    [serializer.data], "accounts_lists", fieldnames
-                )
-                return response
+
+            response = generate_file([serializer.data], "accounts_lists", fieldnames, download)
+            return response
 
         return self.retrieve(request, *args, **kwargs)
 
