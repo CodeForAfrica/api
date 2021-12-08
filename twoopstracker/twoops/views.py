@@ -200,13 +200,12 @@ class TweetsView(generics.ListAPIView):
                 if len(data) > 0
                 else []
             )
-            response = generate_file(data, "tweets", fieldnames, download)
-            return response
+            return generate_file(data, "tweets", fieldnames, download)
         elif download:
-            return_response = {"message": f"{download} not supported"}
+            content = {"message": f"{download} not supported"}
             status_code = status.HTTP_400_BAD_REQUEST
 
-            return Response(return_response, status=status_code)
+            return Response(content, status=status_code)
 
         return self.list(request, *args, **kwargs)
 
@@ -350,15 +349,14 @@ class AccountsLists(generics.ListCreateAPIView):
             serializer = TwitterAccountsListSerializer(self.get_queryset(), many=True)
             fieldnames = ["list_name", "username", "repository", "evidence"]
 
-            response = generate_file(
+            return generate_file(
                 serializer.data, "accounts_lists", fieldnames, download
             )
-            return response
         elif download:
-            return_response = {"message": f"{download} not supported"}
+            content = {"message": f"{download} not supported"}
             status_code = status.HTTP_400_BAD_REQUEST
 
-            return Response(return_response, status=status_code)
+            return Response(content, status=status_code)
 
         return self.list(request, *args, **kwargs)
 
@@ -388,16 +386,15 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
             serializer = self.get_serializer(self.get_object())
             fieldnames = ["list_name", "username", "repository", "evidence"]
 
-            response = generate_file(
+            return generate_file(
                 [serializer.data], "accounts_lists", fieldnames, download
             )
-            return response
 
         elif download:
-            return_response = {"message": f"{download} not supported"}
+            content = {"message": f"{download} not supported"}
             status_code = status.HTTP_400_BAD_REQUEST
 
-            return Response(return_response, status=status_code)
+            return Response(content, status=status_code)
 
         return self.retrieve(request, *args, **kwargs)
 
