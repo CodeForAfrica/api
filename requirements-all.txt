@@ -14,4 +14,5 @@ greenlet==1.1.2
 gunicorn[gevent, setproctitle]==20.1.0
 redis==3.5.3
 requests==2.26.0
+tablib==3.1.0
 tweepy==4.2.0
