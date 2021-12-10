@@ -39,7 +39,7 @@ from twoopstracker.twoops.serializers import (
 twitterclient = TwitterClient()
 
 
-def save_accounts(users, evidence_links={}):
+def save_accounts(users, evidence_links={}, categories={}):
     accounts_ids = []
     twitter_accounts = []
 
@@ -56,6 +56,10 @@ def save_accounts(users, evidence_links={}):
         twitter_account.favourites_count = user.favourites_count
         twitter_account.statuses_count = user.statuses_count
         twitter_account.profile_image_url = user.profile_image_url
+        category = categories.get(user.screen_name)
+        category = Category.objects.filter(name__iexact=category).first()
+        if category:
+            category.twitter_accounts.add(twitter_account)
         twitter_accounts.append(twitter_account)
         accounts_ids.append(user.id)
         evidence_link = evidence_links.get(user.screen_name)
@@ -449,32 +453,47 @@ class FileUploadAPIView(generics.CreateAPIView):
             repository = row.get("repository", "Private")
             is_private = True if repository == "Private" else False
             evidence = row.get("evidence", "")
-            if is_private or (not is_private and evidence):
-                account_lists[row["list_name"]].append(
-                    {
-                        "username": row["username"],
-                        "is_private": is_private,
-                        "evidence": evidence,
-                        "repo": repository,
-                    }
-                )
-            else:
+            category = row.get("category", "")
+            if category and not Category.objects.filter(name__iexact=category).exists():
                 errors.append(
                     {
-                        "message": "Missing evidence for public account",
+                        "message": f"The category '{category}' isn't currently supported",
                         "details": {
-                            "list_name": row["list_name"],
-                            "username": row["username"],
-                            "evidence": evidence,
                             "row": position,
+                            "username": row["username"],
+                            "category": category,
                         },
                     }
                 )
+            else:
+                if is_private or (not is_private and evidence):
+                    account_lists[row["list_name"]].append(
+                        {
+                            "username": row["username"],
+                            "is_private": is_private,
+                            "evidence": evidence,
+                            "repo": repository,
+                            "category": category,
+                        }
+                    )
+                else:
+                    errors.append(
+                        {
+                            "message": "Missing evidence for public account",
+                            "details": {
+                                "list_name": row["list_name"],
+                                "username": row["username"],
+                                "evidence": evidence,
+                                "row": position,
+                            },
+                        }
+                    )
 
         for account_list in account_lists:
             twitter_accounts_lists = set()
             screen_names = []
             evidence_links = {}
+            categories = {}
             for account in account_lists[account_list]:
                 try:
                     twitter_accounts_lists.add(
@@ -486,6 +505,7 @@ class FileUploadAPIView(generics.CreateAPIView):
                     )
                     screen_names.append(account["username"])
                     evidence_links[account["username"]] = account["evidence"]
+                    categories[account["username"]] = account["category"]
 
                 except IntegrityError:
                     user = request.user.email
@@ -500,7 +520,7 @@ class FileUploadAPIView(generics.CreateAPIView):
                     )
 
             twitter_accounts = get_twitter_accounts(screen_names)
-            accounts_ids = save_accounts(twitter_accounts, evidence_links)
+            accounts_ids = save_accounts(twitter_accounts, evidence_links, categories)
 
             for twitter_accounts_list in twitter_accounts_lists:
                 twitter_accounts_list.accounts.set(accounts_ids)

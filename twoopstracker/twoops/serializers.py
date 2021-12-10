@@ -79,6 +79,7 @@ class TwitterAccountsListSerializer(TwitterAccountsListsSerializer):
                     "created_at": account.created_at,
                     "updated_at": account.updated_at,
                     "evidences": evidences,
+                    "categories": account.category.values_list("name", flat=True),
                 }
             )
 
