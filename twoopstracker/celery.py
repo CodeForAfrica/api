@@ -1,6 +1,5 @@
 import logging
 import os
-import time
 
 from celery import Celery
 from celery.schedules import crontab
@@ -26,9 +25,6 @@ def start_stream_listener():
     logger.info("Starting stream listener")
     client = TwitterClient()
     client.run()
-    time.sleep((settings.TWOOPTRACKER_STREAM_LISTENER_INTERVAL * 60) - 5)
-    # disconnect stream listener since it will be restarted
-    client.disconnect()
 
 
 app.conf.beat_schedule = {

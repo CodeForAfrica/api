@@ -1,4 +1,5 @@
 import logging
+import time
 
 import tweepy
 from django.conf import settings
@@ -19,6 +20,7 @@ class TweetListener(tweepy.Stream):
 
     def on_connect(self):
         logger.info("Stream listener connected.")
+        self.start_time = time.time()
         return True
 
     def on_connection_error(self):
@@ -48,7 +50,16 @@ class TweetListener(tweepy.Stream):
         mark_tweet_as_deleted.delay(status_id)
 
     def on_data(self, data):
+        if (time.time() - self.start_time) > (
+            settings.TWOOPTRACKER_STREAM_LISTENER_INTERVAL * 60
+        ) - 5:  # disconnect 5 seconds before the restart
+            logger.info(
+                "Disconnecting Stream listener since it will restart in a few seconds."
+            )
+            self.disconnect()
+            return False
         super().on_data(data)
+        return True
 
     def on_error(self, status_code):
         logger.error(
@@ -99,6 +110,3 @@ class TwitterClient:
             self.access_token_secret,
         )
         self.stream.filter(follow=self.stream.get_accounts(), threaded=True)
-
-    def disconnect(self):
-        self.stream.disconnect()
