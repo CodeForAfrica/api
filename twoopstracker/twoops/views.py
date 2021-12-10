@@ -422,7 +422,9 @@ class TwitterAccountsView(generics.ListAPIView):
     ]
 
     def get_queryset(self):
-        return TwitterAccount.objects.filter(lists__owner=self.request.user.userprofile)
+        return TwitterAccount.objects.filter(
+            lists__owner=self.request.user.userprofile
+        ).distinct()
 
 
 class TwitterAccountCategoriesView(generics.ListAPIView):
