@@ -215,6 +215,7 @@ class TweetsView(generics.ListAPIView):
         start_date = self.request.GET.get("start_date")
         end_date = self.request.GET.get("end_date")
         location = self.request.GET.get("location")
+        category = self.request.GET.get("category")
 
         twitter_accounts_lists = TwitterAccountsList.objects.filter(is_private=False)
         twitter_accounts = set()
@@ -248,6 +249,8 @@ class TweetsView(generics.ListAPIView):
             start_date = datetime.date.fromisoformat(start_date)
         if end_date:
             end_date = datetime.date.fromisoformat(end_date)
+        if category:
+            tweets = tweets.filter(owner__category__name=category)
 
         if query:
             if query.startswith("@"):
