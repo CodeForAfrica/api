@@ -17,6 +17,7 @@ from rest_framework.response import Response
 
 from twoopstracker.twitterclient.twitter_client import TwitterClient
 from twoopstracker.twoops.models import (
+    Category,
     Evidence,
     Tweet,
     TweetSearch,
@@ -29,6 +30,7 @@ from twoopstracker.twoops.serializers import (
     TweetSearchSerializer,
     TweetSerializer,
     TweetsInsightsSerializer,
+    TwitterAccountCategoriesSerializer,
     TwitterAccountsListSerializer,
     TwitterAccountsListsSerializer,
     TwitterAccountsSerializer,
@@ -417,6 +419,11 @@ class TwitterAccountsView(generics.ListAPIView):
 
     def get_queryset(self):
         return TwitterAccount.objects.filter(lists__owner=self.request.user.userprofile)
+
+
+class TwitterAccountCategoriesView(generics.ListAPIView):
+    serializer_class = TwitterAccountCategoriesSerializer
+    queryset = Category.objects.all()
 
 
 class FileUploadAPIView(generics.CreateAPIView):

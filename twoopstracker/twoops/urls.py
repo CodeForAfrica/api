@@ -8,6 +8,7 @@ from .views import (
     TweetSearchView,
     TweetsInsightsView,
     TweetsView,
+    TwitterAccountCategoriesView,
     TwitterAccountsView,
 )
 
@@ -24,4 +25,9 @@ urlpatterns = [
     path("lists/upload", FileUploadAPIView.as_view(), name="accounts_list_upload"),
     path("lists/<pk>", AccountsList.as_view(), name="single_account_list"),
     path("accounts/", TwitterAccountsView.as_view(), name="accounts"),
+    path(
+        "accounts/categories/",
+        TwitterAccountCategoriesView.as_view(),
+        name="categories",
+    ),
 ]
