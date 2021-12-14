@@ -100,7 +100,7 @@ class Category(TimestampedModelMixin):
     Twitter Account Category model
     """
 
-    name = models.CharField(max_length=255, help_text=_("Category Name"))
+    name = models.CharField(max_length=255, unique=True, help_text=_("Category Name"))
 
     class Meta:
         verbose_name_plural = _("Categories")
