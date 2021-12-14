@@ -19,7 +19,7 @@ services:
 
   redis:
     restart: always
-    image: redis:latest
+    image: redis:6.2
     expose:
       - "6379"
 
@@ -42,7 +42,7 @@ services:
       - TWOOPSTRACKER_DEBUG=${TWOOPSTRACKER_DEBUG:-True}
       - TWOOPSTRACKER_CELERY_BROKER_URL=${TWOOPSTRACKER_CELERY_BROKER_URL:-redis://redis:6379/0}
       # psql connection parameters (used in wait-for-postgrsql.sh)
-      # see: https://www.postgresql.org/docs/9.6/libpq-envars.html
+      # see: https://www.postgresql.org/docs/13.4/libpq-envars.html
       - PGHOST=db
       - PGUSER=twoops_tracker
       - PGPASSWORD=twoops_tracker
@@ -52,7 +52,7 @@ services:
     command: ["/wait-for-postgres.sh", "/cmd.sh"]
 
   nginx:
-    image: nginx:1.20.0
+    image: nginx:1.20
     restart: unless-stopped
     volumes:
       - ./contrib/docker-compose/nginx:/etc/nginx/conf.d
