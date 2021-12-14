@@ -4,6 +4,7 @@ import io
 import json
 from collections import defaultdict
 
+import tablib
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.db.models import Count, Q
@@ -12,6 +13,7 @@ from django.db.utils import IntegrityError
 from django.http import HttpResponse
 from rest_framework import generics, response, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from twoopstracker.twitterclient.twitter_client import TwitterClient
 from twoopstracker.twoops.models import (
@@ -29,6 +31,7 @@ from twoopstracker.twoops.serializers import (
     TweetsInsightsSerializer,
     TwitterAccountsListSerializer,
     TwitterAccountsListsSerializer,
+    TwitterAccountsSerializer,
 )
 
 twitterclient = TwitterClient()
@@ -119,40 +122,64 @@ def update_kwargs_with_account_ids(kwargs):
     return kwargs
 
 
-def generate_csv(data, filename, fieldnames):
-    response = HttpResponse(content_type="text/csv")
-    response["Content-Disposition"] = f"attachment; filename={filename}.csv"
-    if data:
-        writer = csv.DictWriter(response, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in data:
-            accounts = row.get("accounts", [])
-            # For tweets, we need to convert the OrderedDict to a json
-            if row.get("owner"):
-                username = row["owner"]["screen_name"]
-                row[
-                    "original_tweet"
-                ] = f"https://twitter.com/{username}/status/{row['tweet_id']}"
-                row["username"] = username
-                row["owner"] = json.dumps(row["owner"])
-                writer.writerow(row)
-            elif accounts:
-                # Convert to the UPLOAD csv format
-                repository = "Private" if row.get("is_private") else "Public"
-                row = {"list_name": row["name"]}
+def process_file_data(data):
+    result = []
+    for row in data:
+        accounts = row.get("accounts", [])
+        # For tweets, we need to convert the OrderedDict to a json
+        if row.get("owner"):
+            username = row["owner"]["screen_name"]
+            row[
+                "original_tweet"
+            ] = f"https://twitter.com/{username}/status/{row['tweet_id']}"
+            row["username"] = username
+            row["owner"] = json.dumps(row["owner"])
+            result.append(row)
 
-                for acc in accounts:
-                    row["username"] = acc.get("screen_name")
-                    row["repository"] = repository
-                    row["evidence"] = "\n".join(
-                        list(
-                            acc.get("evidence")
-                            .all()
-                            .values_list("url", flat=True)
-                            .distinct()
-                        )
+        elif accounts:
+            # Convert to the UPLOAD csv format
+            repository = "Private" if row.get("is_private") else "Public"
+            row = {"list_name": row["name"]}
+
+            for acc in accounts:
+                row["username"] = acc.get("screen_name")
+                row["repository"] = repository
+                row["evidence"] = "\n".join(
+                    list(
+                        acc.get("evidence")
+                        .all()
+                        .values_list("url", flat=True)
+                        .distinct()
+                        if acc.get("evidence")
+                        else ""
                     )
-                    writer.writerow(row)
+                )
+                result.append(row)
+    return result
+
+
+def generate_file(data, filename, fieldnames, fileformat):
+    content_type = ""
+
+    if fileformat == "csv":
+        content_type = "text/csv"
+    else:
+        content_type = (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    response = HttpResponse(content_type=content_type)
+    response["Content-Disposition"] = f"attachment; filename={filename}.{fileformat}"
+
+    file_data = process_file_data(data)
+    list_val = []
+    # Order rows as per column order
+    for row in file_data:
+        ordered_row = [row[k] for k in fieldnames]
+        list_val.append(ordered_row)
+
+    table = tablib.Dataset(*list_val, headers=fieldnames)
+    response.write(table.export(fileformat))
 
     return response
 
@@ -161,15 +188,26 @@ class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
 
     def get(self, request, *args, **kwargs):
-        if request.GET.get("download", "") == "csv":
+        download = request.GET.get("download", "").lower()
+        if download in ["csv", "xlsx"]:
             serializer = self.get_serializer(self.get_queryset(), many=True)
             data = serializer.data
-            fieldnames = [
-                "original_tweet",
-                "username",
-            ] + list(data[0].keys())
-            response = generate_csv(data, "tweets", fieldnames)
-            return response
+            fieldnames = (
+                [
+                    "original_tweet",
+                    "username",
+                ]
+                + list(data[0].keys())
+                if len(data) > 0
+                else []
+            )
+            return generate_file(data, "tweets", fieldnames, download)
+        elif download:
+            content = {"message": f"{download} not supported"}
+            status_code = status.HTTP_400_BAD_REQUEST
+
+            return Response(content, status=status_code)
+
         return self.list(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -307,11 +345,19 @@ class AccountsLists(generics.ListCreateAPIView):
     ]
 
     def get(self, request, *args, **kwargs):
-        if request.GET.get("download", "") == "csv":
+        download = request.GET.get("download", "").lower()
+        if download in ["csv", "xlsx"]:
             serializer = TwitterAccountsListSerializer(self.get_queryset(), many=True)
             fieldnames = ["list_name", "username", "repository", "evidence"]
-            response = generate_csv(serializer.data, "accounts_lists", fieldnames)
-            return response
+
+            return generate_file(
+                serializer.data, "accounts_lists", fieldnames, download
+            )
+        elif download:
+            content = {"message": f"{download} not supported"}
+            status_code = status.HTTP_400_BAD_REQUEST
+
+            return Response(content, status=status_code)
 
         return self.list(request, *args, **kwargs)
 
@@ -336,11 +382,20 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
     ]
 
     def get(self, request, *args, **kwargs):
-        if request.GET.get("download", "") == "csv":
+        download = request.GET.get("download", "").lower()
+        if download in ["csv", "xlsx"]:
             serializer = self.get_serializer(self.get_object())
             fieldnames = ["list_name", "username", "repository", "evidence"]
-            response = generate_csv([serializer.data], "accounts_list", fieldnames)
-            return response
+
+            return generate_file(
+                [serializer.data], "accounts_lists", fieldnames, download
+            )
+
+        elif download:
+            content = {"message": f"{download} not supported"}
+            status_code = status.HTTP_400_BAD_REQUEST
+
+            return Response(content, status=status_code)
 
         return self.retrieve(request, *args, **kwargs)
 
@@ -349,6 +404,16 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
         kwargs = update_kwargs_with_account_ids(kwargs)
 
         return serializer_class(*args, **kwargs)
+
+
+class TwitterAccountsView(generics.ListAPIView):
+    serializer_class = TwitterAccountsSerializer
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    def get_queryset(self):
+        return TwitterAccount.objects.filter(lists__owner=self.request.user.userprofile)
 
 
 class FileUploadAPIView(generics.CreateAPIView):
