@@ -18,7 +18,7 @@ def save_tweet(tweet_data):
             tweet_id=tweet_data.get("id"),
             content=tweet_data.get("tweet_text"),
             retweet_id=tweet_data.get("retweeted_status", {}).get("id"),
-            retweeted_user_screen_name=tweet_data.get("retweeted_user_screen_name", {})
+            retweeted_user_screen_name=tweet_data.get("retweeted_status", {})
             .get("user", {})
             .get("screen_name"),
             retweeted_user_id=tweet_data.get("retweeted_status", {})
