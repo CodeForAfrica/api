@@ -8,7 +8,7 @@ import tablib
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.db.models import Count, Q
-from django.db.models.functions import Trunc
+from django.db.models.functions import Lower, Trunc
 from django.db.utils import IntegrityError
 from django.http import HttpResponse
 from rest_framework import generics, response, status
@@ -450,13 +450,16 @@ class FileUploadAPIView(generics.CreateAPIView):
 
         errors = []
         total_accounts = 0
+        all_categories = Category.objects.values_list(
+            Lower("name"), flat=True
+        ).distinct()
         for position, row in enumerate(reader, 1):
             total_accounts += 1
             repository = row.get("repository", "Private")
             is_private = True if repository == "Private" else False
             evidence = row.get("evidence", "")
             category = row.get("category", "")
-            if category and not Category.objects.filter(name__iexact=category).exists():
+            if category and category.lower() not in all_categories:
                 errors.append(
                     {
                         "message": f"The category '{category}' isn't currently supported",
