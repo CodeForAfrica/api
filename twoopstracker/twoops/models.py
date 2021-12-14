@@ -87,7 +87,7 @@ class TwitterAccount(TimestampedModelMixin):
         default=False,
         help_text=_("When deleted is true, we aren't tracking this account anymore."),
     )
-    category = models.ManyToManyField(
+    categories = models.ManyToManyField(
         "Category", related_name="twitter_accounts", blank=True
     )
 
