@@ -17,8 +17,14 @@ class TwitterAccountSerializer(serializers.ModelSerializer):
 
 
 class TweetSerializer(serializers.ModelSerializer):
+    original_retweet_link = serializers.SerializerMethodField()
+
     def get_number_of_interactions(self, obj):
         return obj.number_of_interactions
+
+    def get_original_retweet_link(self, obj):
+        if obj.retweet_id:
+            return f"https://twitter.com/{obj.retweeted_user_screen_name}/status/{obj.retweet_id}"
 
     class Meta:
         model = Tweet
@@ -26,6 +32,7 @@ class TweetSerializer(serializers.ModelSerializer):
             "tweet_id",
             "retweet_id",
             "retweeted_user_screen_name",
+            "original_retweet_link",
             "created_at",
             "content",
             "number_of_interactions",
@@ -77,6 +84,7 @@ class TwitterAccountsListSerializer(TwitterAccountsListsSerializer):
                     "protected": account.protected,
                     "created_at": account.created_at,
                     "updated_at": account.updated_at,
+                    "profile_image_url": account.profile_image_url,
                     "evidences": evidences,
                 }
             )
