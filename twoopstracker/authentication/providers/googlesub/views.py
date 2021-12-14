@@ -1,10 +1,9 @@
-from django.conf import settings
-
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.views import (
     OAuth2CallbackView,
     OAuth2LoginView,
 )
+from django.conf import settings
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 
