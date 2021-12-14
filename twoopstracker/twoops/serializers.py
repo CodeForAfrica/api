@@ -84,6 +84,7 @@ class TwitterAccountsListSerializer(TwitterAccountsListsSerializer):
                     "protected": account.protected,
                     "created_at": account.created_at,
                     "updated_at": account.updated_at,
+                    "profile_image_url": account.profile_image_url,
                     "evidences": evidences,
                 }
             )
