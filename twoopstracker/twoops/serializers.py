@@ -2,6 +2,7 @@ from django.db import IntegrityError
 from rest_framework import serializers
 
 from twoopstracker.twoops.models import (
+    Category,
     Evidence,
     Tweet,
     TweetSearch,
@@ -123,7 +124,13 @@ class TweetSearchSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(e)
 
 
-class FileUploadSerializer(serializers.Serializer):
+class TwitterAccountCategoriesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = "__all__"
+
+
+class AccountsListUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
 
     class Meta:

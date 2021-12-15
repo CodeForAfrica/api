@@ -8,7 +8,7 @@ import tablib
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.db.models import Count, Q
-from django.db.models.functions import Trunc
+from django.db.models.functions import Lower, Trunc
 from django.db.utils import IntegrityError
 from django.http import HttpResponse
 from rest_framework import generics, response, status
@@ -17,6 +17,7 @@ from rest_framework.response import Response
 
 from twoopstracker.twitterclient.twitter_client import TwitterClient
 from twoopstracker.twoops.models import (
+    Category,
     Evidence,
     Tweet,
     TweetSearch,
@@ -25,10 +26,11 @@ from twoopstracker.twoops.models import (
 )
 from twoopstracker.twoops.permissions import IsOwner
 from twoopstracker.twoops.serializers import (
-    FileUploadSerializer,
+    AccountsListUploadSerializer,
     TweetSearchSerializer,
     TweetSerializer,
     TweetsInsightsSerializer,
+    TwitterAccountCategoriesSerializer,
     TwitterAccountsListSerializer,
     TwitterAccountsListsSerializer,
     TwitterAccountsSerializer,
@@ -37,7 +39,7 @@ from twoopstracker.twoops.serializers import (
 twitterclient = TwitterClient()
 
 
-def save_accounts(users, evidence_links={}):
+def save_accounts(users, evidence_links={}, categories={}):
     accounts_ids = []
     twitter_accounts = []
 
@@ -54,6 +56,10 @@ def save_accounts(users, evidence_links={}):
         twitter_account.favourites_count = user.favourites_count
         twitter_account.statuses_count = user.statuses_count
         twitter_account.profile_image_url = user.profile_image_url
+        category = categories.get(user.screen_name)
+        category = Category.objects.filter(name__iexact=category).first()
+        if category:
+            category.twitter_accounts.add(twitter_account)
         twitter_accounts.append(twitter_account)
         accounts_ids.append(user.id)
         evidence_link = evidence_links.get(user.screen_name)
@@ -215,6 +221,7 @@ class TweetsView(generics.ListAPIView):
         start_date = self.request.GET.get("start_date")
         end_date = self.request.GET.get("end_date")
         location = self.request.GET.get("location")
+        category = self.request.GET.get("category")
 
         twitter_accounts_lists = TwitterAccountsList.objects.filter(is_private=False)
         twitter_accounts = set()
@@ -248,6 +255,8 @@ class TweetsView(generics.ListAPIView):
             start_date = datetime.date.fromisoformat(start_date)
         if end_date:
             end_date = datetime.date.fromisoformat(end_date)
+        if category:
+            tweets = tweets.filter(owner__category__name=category)
 
         if query:
             if query.startswith("@"):
@@ -413,11 +422,18 @@ class TwitterAccountsView(generics.ListAPIView):
     ]
 
     def get_queryset(self):
-        return TwitterAccount.objects.filter(lists__owner=self.request.user.userprofile)
+        return TwitterAccount.objects.filter(
+            lists__owner=self.request.user.userprofile
+        ).distinct()
 
 
-class FileUploadAPIView(generics.CreateAPIView):
-    serializer_class = FileUploadSerializer
+class TwitterAccountCategoriesView(generics.ListAPIView):
+    serializer_class = TwitterAccountCategoriesSerializer
+    queryset = Category.objects.all()
+
+
+class AccountsListUploadAPIView(generics.CreateAPIView):
+    serializer_class = AccountsListUploadSerializer
     permission_classes = [
         IsAuthenticated,
     ]
@@ -434,18 +450,34 @@ class FileUploadAPIView(generics.CreateAPIView):
 
         errors = []
         total_accounts = 0
+        all_categories = Category.objects.values_list(
+            Lower("name"), flat=True
+        ).distinct()
         for position, row in enumerate(reader, 1):
             total_accounts += 1
             repository = row.get("repository", "Private")
             is_private = True if repository == "Private" else False
             evidence = row.get("evidence", "")
-            if is_private or (not is_private and evidence):
+            category = row.get("category", "")
+            if category and category.lower() not in all_categories:
+                errors.append(
+                    {
+                        "message": f"The category '{category}' isn't currently supported",
+                        "details": {
+                            "row": position,
+                            "username": row["username"],
+                            "category": category,
+                        },
+                    }
+                )
+            elif is_private or (not is_private and evidence):
                 account_lists[row["list_name"]].append(
                     {
                         "username": row["username"],
                         "is_private": is_private,
                         "evidence": evidence,
                         "repo": repository,
+                        "category": category,
                     }
                 )
             else:
@@ -465,6 +497,7 @@ class FileUploadAPIView(generics.CreateAPIView):
             twitter_accounts_lists = set()
             screen_names = []
             evidence_links = {}
+            categories = {}
             for account in account_lists[account_list]:
                 try:
                     twitter_accounts_lists.add(
@@ -476,6 +509,7 @@ class FileUploadAPIView(generics.CreateAPIView):
                     )
                     screen_names.append(account["username"])
                     evidence_links[account["username"]] = account["evidence"]
+                    categories[account["username"]] = account["category"]
 
                 except IntegrityError:
                     user = request.user.email
@@ -490,7 +524,7 @@ class FileUploadAPIView(generics.CreateAPIView):
                     )
 
             twitter_accounts = get_twitter_accounts(screen_names)
-            accounts_ids = save_accounts(twitter_accounts, evidence_links)
+            accounts_ids = save_accounts(twitter_accounts, evidence_links, categories)
 
             for twitter_accounts_list in twitter_accounts_lists:
                 twitter_accounts_list.accounts.set(accounts_ids)

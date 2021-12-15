@@ -3,11 +3,12 @@ from django.urls import path
 from .views import (
     AccountsList,
     AccountsLists,
-    FileUploadAPIView,
+    AccountsListUploadAPIView,
     TweetSearchesView,
     TweetSearchView,
     TweetsInsightsView,
     TweetsView,
+    TwitterAccountCategoriesView,
     TwitterAccountsView,
 )
 
@@ -21,7 +22,14 @@ urlpatterns = [
         name="single_saved_search",
     ),
     path("lists/", AccountsLists.as_view(), name="accounts_list"),
-    path("lists/upload", FileUploadAPIView.as_view(), name="accounts_list_upload"),
+    path(
+        "lists/upload", AccountsListUploadAPIView.as_view(), name="accounts_list_upload"
+    ),
     path("lists/<pk>", AccountsList.as_view(), name="single_account_list"),
     path("accounts/", TwitterAccountsView.as_view(), name="accounts"),
+    path(
+        "accounts/categories/",
+        TwitterAccountCategoriesView.as_view(),
+        name="categories",
+    ),
 ]
