@@ -81,16 +81,18 @@ def save_accounts(users, evidence_links={}):
 
 
 def get_search_type(search_string):
-    search_type = ""
+    # TODO : Add more search types
+    # search_type = ""
 
-    if search_string.startswith('"') and search_string.endswith('"'):
-        return "phrase"
-    elif search_string.startswith("(") and search_string.endswith(")"):
-        return "websearch"
-    elif "," in search_string:
-        return "raw"
-    else:
-        return search_type
+    # if search_string.startswith('"') and search_string.endswith('"'):
+    #     return "phrase"
+    # elif search_string.startswith("(") and search_string.endswith(")"):
+    #     return "websearch"
+    # elif "," in search_string:
+    #     return "raw"
+    # else:
+    #     return search_type
+    return "websearch"
 
 
 def refromat_search_string(search_string):
@@ -257,7 +259,7 @@ class TweetsView(generics.ListAPIView):
                 search_type = get_search_type(query)
                 if search_type == "raw":
                     query = refromat_search_string(query)
-                vector = SearchVector("content", "actual_tweet")
+                vector = SearchVector("content")
                 if search_type:
                     search_query = SearchQuery(query, search_type=search_type)
                 else:
