@@ -26,7 +26,7 @@ from twoopstracker.twoops.models import (
 )
 from twoopstracker.twoops.permissions import IsOwner
 from twoopstracker.twoops.serializers import (
-    FileUploadSerializer,
+    AccountsListUploadSerializer,
     TweetSearchSerializer,
     TweetSerializer,
     TweetsInsightsSerializer,
@@ -432,8 +432,8 @@ class TwitterAccountCategoriesView(generics.ListAPIView):
     queryset = Category.objects.all()
 
 
-class FileUploadAPIView(generics.CreateAPIView):
-    serializer_class = FileUploadSerializer
+class AccountsListUploadAPIView(generics.CreateAPIView):
+    serializer_class = AccountsListUploadSerializer
     permission_classes = [
         IsAuthenticated,
     ]

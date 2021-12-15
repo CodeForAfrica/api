@@ -122,7 +122,7 @@ class TwitterAccountCategoriesSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class FileUploadSerializer(serializers.Serializer):
+class AccountsListUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
 
     class Meta:
