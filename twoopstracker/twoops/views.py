@@ -470,29 +470,28 @@ class AccountsListUploadAPIView(generics.CreateAPIView):
                         },
                     }
                 )
+            elif is_private or (not is_private and evidence):
+                account_lists[row["list_name"]].append(
+                    {
+                        "username": row["username"],
+                        "is_private": is_private,
+                        "evidence": evidence,
+                        "repo": repository,
+                        "category": category,
+                    }
+                )
             else:
-                if is_private or (not is_private and evidence):
-                    account_lists[row["list_name"]].append(
-                        {
+                errors.append(
+                    {
+                        "message": "Missing evidence for public account",
+                        "details": {
+                            "list_name": row["list_name"],
                             "username": row["username"],
-                            "is_private": is_private,
                             "evidence": evidence,
-                            "repo": repository,
-                            "category": category,
-                        }
-                    )
-                else:
-                    errors.append(
-                        {
-                            "message": "Missing evidence for public account",
-                            "details": {
-                                "list_name": row["list_name"],
-                                "username": row["username"],
-                                "evidence": evidence,
-                                "row": position,
-                            },
-                        }
-                    )
+                            "row": position,
+                        },
+                    }
+                )
 
         for account_list in account_lists:
             twitter_accounts_lists = set()
