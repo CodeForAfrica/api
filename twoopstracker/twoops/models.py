@@ -87,9 +87,26 @@ class TwitterAccount(TimestampedModelMixin):
         default=False,
         help_text=_("When deleted is true, we aren't tracking this account anymore."),
     )
+    categories = models.ManyToManyField(
+        "Category", related_name="twitter_accounts", blank=True
+    )
 
     def __str__(self):
         return self.screen_name
+
+
+class Category(TimestampedModelMixin):
+    """
+    Twitter Account Category model
+    """
+
+    name = models.CharField(max_length=255, unique=True, help_text=_("Category Name"))
+
+    class Meta:
+        verbose_name_plural = _("Categories")
+
+    def __str__(self):
+        return f"{self.name}"
 
 
 class Evidence(TimestampedModelMixin):
