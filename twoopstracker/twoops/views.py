@@ -81,7 +81,7 @@ def save_accounts(users, evidence_links={}):
 
 
 def get_search_type(search_string):
-    # TODO : Add more search types
+    # TODO(esirk) : Add more search types
     # search_type = ""
 
     # if search_string.startswith('"') and search_string.endswith('"'):
