@@ -256,7 +256,7 @@ class TweetsView(generics.ListAPIView):
         if end_date:
             end_date = datetime.date.fromisoformat(end_date)
         if category:
-            tweets = tweets.filter(owner__category__name=category)
+            tweets = tweets.filter(owner__categories__name=category)
 
         if query:
             if query.startswith("@"):
