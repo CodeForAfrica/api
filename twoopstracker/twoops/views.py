@@ -255,7 +255,7 @@ class TweetsView(generics.ListAPIView):
                 tweets = tweets.filter(owner__screen_name__iexact=query[1:])
             else:
                 search_type = get_search_type(query)
-                vector = SearchVector("content")
+                vector = SearchVector("content", "owner__screen_name", "owner__name")
                 if search_type:
                     search_query = SearchQuery(query, search_type=search_type)
                 else:
