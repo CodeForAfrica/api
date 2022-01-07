@@ -11,7 +11,7 @@ from django.db.models import Count, Q
 from django.db.models.functions import Lower, Trunc
 from django.db.utils import IntegrityError
 from django.http import HttpResponse
-from rest_framework import generics, response, status
+from rest_framework import filters, generics, response, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -192,6 +192,8 @@ def generate_file(data, filename, fieldnames, fileformat):
 
 class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = ["owner__screen_name", "deleted_at"]
 
     def get(self, request, *args, **kwargs):
         download = request.GET.get("download", "").lower()
