@@ -194,6 +194,7 @@ class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
     filter_backends = (filters.OrderingFilter,)
     ordering_fields = ["owner__screen_name", "deleted_at", "created_at"]
+    ordering = ["-deleted_at"]
 
     def get(self, request, *args, **kwargs):
         download = request.GET.get("download", "").lower()
@@ -280,7 +281,7 @@ class TweetsView(generics.ListAPIView):
         if location:
             tweets = tweets.filter(owner__location=location)
 
-        return tweets.order_by("-deleted_at")
+        return tweets
 
 
 class TweetsInsightsView(TweetsView):
