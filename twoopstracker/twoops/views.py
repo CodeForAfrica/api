@@ -193,7 +193,7 @@ def generate_file(data, filename, fieldnames, fileformat):
 class TweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
     filter_backends = (filters.OrderingFilter,)
-    ordering_fields = ["owner__screen_name", "deleted_at"]
+    ordering_fields = ["owner__screen_name", "deleted_at", "created_at"]
 
     def get(self, request, *args, **kwargs):
         download = request.GET.get("download", "").lower()
