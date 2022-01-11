@@ -13,7 +13,10 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 from pathlib import Path
 from typing import List
 
+import sentry_sdk
 from environs import Env
+from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.django import DjangoIntegration
 
 env = Env()
 env.read_env()
@@ -24,6 +27,14 @@ env.read_env()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Sentry
+SENTRY_DSN = env.str("TWOOPSTRACKER_SENTRY_DSN", "")
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration(), CeleryIntegration()],
+        send_default_pii=True,
+    )
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
