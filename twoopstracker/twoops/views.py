@@ -14,6 +14,7 @@ from django.http import HttpResponse
 from rest_framework import filters, generics, response, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from sentry_sdk import capture_exception
 
 from twoopstracker.twitterclient.twitter_client import TwitterClient
 from twoopstracker.twoops.models import (
@@ -515,14 +516,14 @@ class AccountsListUploadAPIView(generics.CreateAPIView):
                 except IntegrityError:
                     user = request.user.email
                     msg = f"A {account['repo']} list {account_list} already exists for {user}"
-                    errors.append(
-                        {
-                            "message": msg,
-                            "details": {
-                                "list_name": account_list,
-                            },
-                        }
-                    )
+                    message = {
+                        "message": msg,
+                        "details": {
+                            "list_name": account_list,
+                        },
+                    }
+                    errors.append(message)
+                    capture_exception(message)
 
             twitter_accounts = get_twitter_accounts(screen_names)
             accounts_ids = save_accounts(twitter_accounts, evidence_links, categories)
