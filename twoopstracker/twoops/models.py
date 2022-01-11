@@ -156,3 +156,20 @@ class TwitterAccountsList(TimestampedModelMixin):
 
     def __str__(self):
         return self.name
+
+
+class Team(TimestampedModelMixin):
+    name = models.CharField(max_length=255, help_text=_("Name of Team"))
+    owner = models.ForeignKey(
+        "UserProfile", on_delete=models.CASCADE, help_text="Owner of the group"
+    )
+    twitter_accounts_lists = models.ManyToManyField(
+        "TwitterAccountsList", related_name="teams"
+    )
+    members = models.ManyToManyField("UserProfile", related_name="teams")
+
+    class Meta:
+        unique_together = ("name", "owner")
+
+    def __str__(self):
+        return self.name
