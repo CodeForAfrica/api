@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
                 ("updated_at", models.DateTimeField(auto_now=True)),
                 (
                     "name",
-                    models.CharField(help_text="Name of Account Group", max_length=255),
+                    models.CharField(help_text="Name of Team", max_length=255),
                 ),
                 (
                     "twitter_accounts_lists",

@@ -159,7 +159,7 @@ class TwitterAccountsList(TimestampedModelMixin):
 
 
 class Team(TimestampedModelMixin):
-    name = models.CharField(max_length=255, help_text=_("Name of Account Group"))
+    name = models.CharField(max_length=255, help_text=_("Name of Team"))
     owner = models.ForeignKey(
         "UserProfile", on_delete=models.CASCADE, help_text="Owner of the group"
     )
