@@ -231,10 +231,11 @@ class TweetsView(generics.ListAPIView):
         user = self.request.user
 
         if user.is_authenticated:
-            teams = user.userprofile.teams.all()
             twitter_accounts_lists = TwitterAccountsList.objects.filter(
-                Q(is_private=False) | Q(owner=user.userprofile) | Q(teams__in=teams)
-            )
+                Q(is_private=False)
+                | Q(owner=user.userprofile)
+                | Q(teams__members__user_id=user.userprofile.user_id)
+            ).distinct()
 
         for twitter_accounts_list in twitter_accounts_lists:
             for twitter_account in twitter_accounts_list.accounts.all().values_list(
