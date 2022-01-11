@@ -1,9 +1,9 @@
 from django.contrib import admin
 
 from twoopstracker.twoops.models import (
-    AccountGroup,
     Category,
     Evidence,
+    Team,
     Tweet,
     TweetSearch,
     TwitterAccount,
@@ -19,7 +19,7 @@ admin.site.register(
         Evidence,
         UserProfile,
         TwitterAccountsList,
-        AccountGroup,
+        Team,
         Category,
     ]
 )

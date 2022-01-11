@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="AccountGroup",
+            name="Team",
             fields=[
                 (
                     "id",
@@ -30,9 +30,9 @@ class Migration(migrations.Migration):
                     models.CharField(help_text="Name of Account Group", max_length=255),
                 ),
                 (
-                    "accounts_lists",
+                    "twitter_accounts_lists",
                     models.ManyToManyField(
-                        related_name="account_groups", to="twoops.TwitterAccountsList"
+                        related_name="teams", to="twoops.TwitterAccountsList"
                     ),
                 ),
                 (
@@ -44,9 +44,9 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "users_profiles",
+                    "members",
                     models.ManyToManyField(
-                        related_name="account_groups", to="twoops.UserProfile"
+                        related_name="teams", to="twoops.UserProfile"
                     ),
                 ),
             ],
