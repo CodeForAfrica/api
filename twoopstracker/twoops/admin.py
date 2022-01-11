@@ -3,6 +3,7 @@ from django.contrib import admin
 from twoopstracker.twoops.models import (
     Category,
     Evidence,
+    Team,
     Tweet,
     TweetSearch,
     TwitterAccount,
@@ -18,6 +19,7 @@ admin.site.register(
         Evidence,
         UserProfile,
         TwitterAccountsList,
+        Team,
         Category,
     ]
 )
