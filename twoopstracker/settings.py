@@ -29,11 +29,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Sentry
 SENTRY_DSN = env.str("TWOOPSTRACKER_SENTRY_DSN", "")
-sentry_sdk.init(
-    dsn=SENTRY_DSN,
-    integrations=[DjangoIntegration(), CeleryIntegration()],
-    send_default_pii=True,
-)
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration(), CeleryIntegration()],
+        send_default_pii=True,
+    )
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/

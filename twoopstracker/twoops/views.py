@@ -516,14 +516,15 @@ class AccountsListUploadAPIView(generics.CreateAPIView):
                 except IntegrityError:
                     user = request.user.email
                     msg = f"A {account['repo']} list {account_list} already exists for {user}"
-                    message = {
-                        "message": msg,
-                        "details": {
-                            "list_name": account_list,
-                        },
-                    }
-                    errors.append(message)
-                    capture_exception(message)
+                    errors.append(
+                        {
+                            "message": msg,
+                            "details": {
+                                "list_name": account_list,
+                            },
+                        }
+                    )
+                    capture_exception(msg)
 
             twitter_accounts = get_twitter_accounts(screen_names)
             accounts_ids = save_accounts(twitter_accounts, evidence_links, categories)
