@@ -2,6 +2,7 @@ import logging
 
 import tweepy
 from django.conf import settings
+from sentry_sdk import capture_exception
 
 from twoopstracker.twoops.models import TwitterAccount
 
@@ -73,6 +74,7 @@ class TwitterClient:
             username = self.api.verify_credentials().screen_name
             logger.info("@" + username + " is authenticated")
         except tweepy.errors.TweepyException:
+            capture_exception("Invalid credentials")
             logger.error("Invalid credentials")
 
     def get_user(self, user, key="screen_name"):
@@ -82,6 +84,7 @@ class TwitterClient:
             elif key == "id":
                 return self.api.get_user(user_id=user)
         except tweepy.errors.TweepyException as e:
+            capture_exception(e)
             logger.error(e)
             return None
 
