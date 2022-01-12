@@ -421,14 +421,18 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
 
 class TwitterAccountsView(generics.ListAPIView):
     serializer_class = TwitterAccountsSerializer
-    permission_classes = [
-        IsAuthenticated,
-    ]
 
     def get_queryset(self):
-        return TwitterAccount.objects.filter(
-            lists__owner=self.request.user.userprofile
-        ).distinct()
+        if self.request.user.is_authenticated:
+            return TwitterAccount.objects.filter(
+                Q(lists__owner=self.request.user.userprofile)
+                | Q(lists__is_private=False)
+                | Q(
+                    lists__teams__members__user_id=self.request.user.userprofile.user_id
+                )
+            ).distinct()
+
+        return TwitterAccount.objects.filter(lists__is_private=False)
 
 
 class TwitterAccountCategoriesView(generics.ListAPIView):
