@@ -228,7 +228,6 @@ ACCOUNT_CONFIRM_EMAIL_ON_GET = env.bool("TWOOPSTRACKER_DEBUG", False)
 LOGIN_URL = env("LOGIN_URL")
 
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = env("EMAIL_HOST")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", True)
 EMAIL_PORT = env("EMAIL_PORT")
