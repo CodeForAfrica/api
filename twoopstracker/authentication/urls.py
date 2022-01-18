@@ -1,4 +1,4 @@
-from dj_rest_auth.registration.views import ConfirmEmailView, VerifyEmailView
+from dj_rest_auth.registration.views import VerifyEmailView
 from django.conf.urls import include
 from django.urls import path
 
@@ -11,7 +11,6 @@ urlpatterns = [
         name="account_email_verification_sent",
     ),
     path("google/", GoogleLogin.as_view(), name="google_login"),
-    path("registration/account-confirm-email/<str:key>/", ConfirmEmailView.as_view()),
     path("registration/", include("dj_rest_auth.registration.urls")),
     path("", include("dj_rest_auth.urls")),
 ]
