@@ -5,7 +5,7 @@ from django.urls import path
 from .views import GoogleLogin
 
 urlpatterns = [
-    path("verify-email/", VerifyEmailView.as_view(), name="rest_verify_email"),
+    # path("verify-email/", VerifyEmailView.as_view(), name="rest_verify_email"),
     path(
         "account-confirm-email/",
         VerifyEmailView.as_view(),
