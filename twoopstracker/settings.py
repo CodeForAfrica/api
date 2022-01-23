@@ -224,9 +224,9 @@ ACCOUNT_EMAIL_VERIFICATION = env.str("ACCOUNT_EMAIL_VERIFICATION", "none")
 SOCIALACCOUNT_EMAIL_VERIFICATION = env.str("SOCIALACCOUNT_EMAIL_VERIFICATION", "none")
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_USERNAME_REQUIRED = False
-LOGIN_URL = env("LOGIN_URL", "http://localhost:3000/api/user/confirm-email")
+LOGIN_URL = env("LOGIN_URL", "http://localhost:3000/api/auth/confirm-email")
 
-
+DEFAULT_FROM_EMAIL = "jikopoint@nukta.co.tz"
 EMAIL_HOST = env("EMAIL_HOST", "")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", True)
 EMAIL_PORT = env.int("EMAIL_PORT", 587)
