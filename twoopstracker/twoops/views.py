@@ -427,7 +427,12 @@ class AccountsListDetailView(generics.ListAPIView):
         id = self.kwargs["pk"]
         twitter_account_list = TwitterAccountsList.objects.get(id=id)
         if twitter_account_list.is_private:
-            if twitter_account_list.owner.user != self.request.user:
+            if (
+                twitter_account_list.owner.user != self.request.user
+                and not twitter_account_list.teams.filter(
+                    members__user_id=self.request.user
+                ).exists()
+            ):
                 raise PermissionDenied()
 
         return twitter_account_list.accounts.all()
