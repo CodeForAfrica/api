@@ -390,7 +390,7 @@ class AccountsLists(generics.ListCreateAPIView):
 
 class AccountsList(generics.RetrieveUpdateDestroyAPIView):
     queryset = TwitterAccountsList.objects.all()
-    serializer_class = TwitterAccountsListSerializer
+    serializer_class = TwitterAccountsListsSerializer
     permission_classes = [
         IsOwner,
     ]
