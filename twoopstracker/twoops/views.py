@@ -420,28 +420,24 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
         return serializer_class(*args, **kwargs)
 
 
-class AccountsListDetailView(generics.ListAPIView):
-    serializer_class = TwitterAccountsSerializer
-
-    def get_queryset(self):
-        id = self.kwargs["pk"]
-        twitter_account_list = TwitterAccountsList.objects.get(id=id)
-        if twitter_account_list.is_private:
-            if (
-                twitter_account_list.owner.user != self.request.user
-                and not twitter_account_list.teams.filter(
-                    members__user_id=self.request.user
-                ).exists()
-            ):
-                raise PermissionDenied()
-
-        return twitter_account_list.accounts.all()
-
-
 class TwitterAccountsView(generics.ListAPIView):
     serializer_class = TwitterAccountsSerializer
 
     def get_queryset(self):
+        list_id = self.request.query_params.get("list_id")
+        twitter_accounts_list = TwitterAccountsList.objects.filter(id=list_id).first()
+        if twitter_accounts_list:
+            twitter_accounts = twitter_accounts_list.accounts.all()
+            if twitter_accounts_list.is_private:
+                if (
+                    twitter_accounts_list.owner.user != self.request.user
+                    and not twitter_accounts_list.teams.filter(
+                        members__user_id=self.request.user
+                    ).exists()
+                ):
+                    raise PermissionDenied()
+            return twitter_accounts
+
         if self.request.user.is_authenticated:
             user_profile = self.request.user.userprofile
             return TwitterAccount.objects.filter(
