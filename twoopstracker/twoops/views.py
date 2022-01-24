@@ -7,6 +7,7 @@ from collections import defaultdict
 import tablib
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.db.models.functions import Lower, Trunc
 from django.db.utils import IntegrityError
@@ -417,6 +418,19 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
         kwargs = update_kwargs_with_account_ids(kwargs)
 
         return serializer_class(*args, **kwargs)
+
+
+class AccountsListDetailView(generics.ListAPIView):
+    serializer_class = TwitterAccountsSerializer
+
+    def get_queryset(self):
+        id = self.kwargs["pk"]
+        twitter_account_list = TwitterAccountsList.objects.get(id=id)
+        if twitter_account_list.is_private:
+            if twitter_account_list.owner.user != self.request.user:
+                raise PermissionDenied()
+
+        return twitter_account_list.accounts.all()
 
 
 class TwitterAccountsView(generics.ListAPIView):
