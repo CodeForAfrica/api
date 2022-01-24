@@ -229,6 +229,7 @@ TWOOPSTRACKER_CONFIRM_EMAIL_URL = env.str(
     "TWOOPSTRACKER_CONFIRM_EMAIL_URL", "http://localhost:3000/api/auth/confirm-email"
 )
 
+DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", "no-reply@trolltracker.investigate.africa")
 EMAIL_HOST = env("EMAIL_HOST", "")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", True)
 EMAIL_PORT = env.int("EMAIL_PORT", 587)
