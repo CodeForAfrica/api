@@ -228,6 +228,10 @@ LOGIN_URL = env("LOGIN_URL", "http://localhost:3000/login")
 TWOOPSTRACKER_CONFIRM_EMAIL_URL = env.str(
     "TWOOPSTRACKER_CONFIRM_EMAIL_URL", "http://localhost:3000/api/auth/confirm-email"
 )
+TWOOPSTRACKER_CONFIRM_RESET_PASSWORD_URL = env.str(
+    "TWOOPSTRACKER_CONFIRM_RESET_PASSWORD_URL",
+    "http://localhost:3000/api/auth/reset-password/confirm",
+)
 
 # Custom Register Serializer
 # https://dj-rest-auth.readthedocs.io/en/latest/configuration.html
