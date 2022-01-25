@@ -149,13 +149,13 @@ def process_file_data(data):
             repository = "Private" if row.get("is_private") else "Public"
 
             for acc in accounts:
-                dat_row = {"list_name": row["name"]}
-                dat_row["username"] = acc.get("screen_name")
-                dat_row["repository"] = repository
-                dat_row["evidence"] = "\n".join(
+                column_data = {"list_name": row["name"]}
+                column_data["username"] = acc.get("screen_name")
+                column_data["repository"] = repository
+                column_data["evidence"] = "\n".join(
                     [evidence["url"] for evidence in acc.get("evidences", [])]
                 )
-                result.append(dat_row)
+                result.append(column_data)
     return result
 
 
