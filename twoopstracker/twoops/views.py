@@ -7,7 +7,6 @@ from collections import defaultdict
 import tablib
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchVector
-from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.db.models.functions import Lower, Trunc
 from django.db.utils import IntegrityError
@@ -417,29 +416,22 @@ class TwitterAccountsView(generics.ListAPIView):
     serializer_class = TwitterAccountsSerializer
 
     def get_queryset(self):
-        list_id = self.request.query_params.get("list_id")
-        twitter_accounts_list = TwitterAccountsList.objects.filter(id=list_id).first()
-        if twitter_accounts_list:
-            twitter_accounts = twitter_accounts_list.accounts.all()
-            if twitter_accounts_list.is_private:
-                if (
-                    twitter_accounts_list.owner.user != self.request.user
-                    and not twitter_accounts_list.teams.filter(
-                        members__user_id=self.request.user
-                    ).exists()
-                ):
-                    raise PermissionDenied()
-            return twitter_accounts
-
+        filter_ids = Q()
+        # User can easily request for multiple lists as in
+        # /accounts/?list[]=10&list[]=2
+        ids = self.request.query_params.getlist("list[]")
+        if len(ids):
+            filter_ids = Q(lists__id__in=ids)
+        filter_access = Q(lists__is_private=False)
         if self.request.user.is_authenticated:
             user_profile = self.request.user.userprofile
-            return TwitterAccount.objects.filter(
-                Q(lists__is_private=False)
+            filter_access = (
+                filter_access
                 | Q(lists__owner=user_profile)
                 | Q(lists__teams__members__user_id=user_profile.user_id)
-            ).distinct()
+            )
 
-        return TwitterAccount.objects.filter(lists__is_private=False).distinct()
+        return TwitterAccount.objects.filter(filter_ids, filter_access).distinct()
 
 
 class TwitterAccountCategoriesView(generics.ListAPIView):
