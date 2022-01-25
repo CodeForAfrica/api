@@ -11,6 +11,18 @@ from .tasks import mark_tweet_as_deleted, save_tweet
 logger = logging.getLogger(__name__)
 
 
+def singleton(class_):
+    instances = {}
+
+    def get_instance(*args, **kwargs):
+        if class_ not in instances:
+            instances[class_] = class_(*args, **kwargs)
+        return instances[class_]
+
+    return get_instance
+
+
+@singleton
 class TweetListener(tweepy.Stream):
     def get_accounts(self):
         accounts = TwitterAccount.objects.filter(deleted=False).values_list(
@@ -50,6 +62,7 @@ class TweetListener(tweepy.Stream):
 
     def on_data(self, data):
         super().on_data(data)
+        return True
 
     def on_error(self, status_code):
         logger.error(
@@ -60,13 +73,17 @@ class TweetListener(tweepy.Stream):
         logger.error("Stream listener timed out.")
 
 
+@singleton
 class TwitterClient:
     def __init__(self):
         self.consumer_key = settings.TWOOPSTRACKER_CONSUMER_KEY
         self.consumer_secret = settings.TWOOPSTRACKER_CONSUMER_SECRET
         self.access_token = settings.TWOOPSTRACKER_ACCESS_TOKEN
         self.access_token_secret = settings.TWOOPSTRACKER_ACCESS_TOKEN_SECRET
-
+        if hasattr(self, "stream"):
+            logger.info("Disconnecting existing stream listener")
+            self.stream.disconnect()
+            return
         auth = tweepy.OAuthHandler(self.consumer_key, self.consumer_secret)
         auth.set_access_token(self.access_token, self.access_token_secret)
         self.api = tweepy.API(auth)
@@ -92,10 +109,15 @@ class TwitterClient:
         return self.api.lookup_users(screen_name=screen_names)
 
     def run(self):
-        stream = TweetListener(
-            self.consumer_key,
-            self.consumer_secret,
-            self.access_token,
-            self.access_token_secret,
-        )
-        stream.filter(follow=stream.get_accounts())
+        # Incase of a restart, first disconnect the stream listener
+        if hasattr(self, "stream"):
+            self.stream.disconnect()
+        else:
+            self.stream = TweetListener(
+                self.consumer_key,
+                self.consumer_secret,
+                self.access_token,
+                self.access_token_secret,
+            )
+        self.stream.filter(follow=self.stream.get_accounts(), threaded=True)
+        logger.info("stream listener running.")
