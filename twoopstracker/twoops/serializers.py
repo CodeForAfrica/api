@@ -94,7 +94,8 @@ class TwitterAccountsListSerializer(TwitterAccountsListsSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        if self.context.get("request", {}).GET.get("download"):
+        request = self.context.get("request")
+        if hasattr(request, "GET") and request.GET.get("download"):
             data["accounts"] = self.get_accounts(instance)
         else:
             data.pop("accounts", None)
