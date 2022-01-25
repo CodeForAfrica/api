@@ -236,7 +236,7 @@ REST_AUTH_REGISTER_SERIALIZERS = {
 }
 
 DEFAULT_FROM_EMAIL = env.str(
-    "DEFAULT_FROM_EMAIL", "no-reply@trolltracker.investigate.africa"
+    "DEFAULT_FROM_EMAIL", "webmaster@localhost"
 )
 EMAIL_HOST = env("EMAIL_HOST", "")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", True)
