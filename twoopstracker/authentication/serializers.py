@@ -1,12 +1,12 @@
 from dj_rest_auth.registration.serializers import RegisterSerializer
-from rest_framework import serializers
 
 
 class CustomRegisterSerializer(RegisterSerializer):
-    first_name = serializers.CharField()
-    last_name = serializers.CharField()
-
-    def custom_signup(self, request, user):
-        user.first_name = self.validated_data.get("first_name", "")
-        user.last_name = self.validated_data.get("last_name", "")
-        user.save(update_fields=["first_name", "last_name"])
+    def get_cleaned_data(self):
+        return {
+            "username": self.validated_data.get("username", ""),
+            "password1": self.validated_data.get("password1", ""),
+            "email": self.validated_data.get("email", ""),
+            "first_name": self.validated_data.get("first_name", ""),
+            "last_name": self.validated_data.get("last_name", ""),
+        }
