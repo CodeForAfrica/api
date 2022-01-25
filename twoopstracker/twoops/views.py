@@ -147,22 +147,15 @@ def process_file_data(data):
         elif accounts:
             # Convert to the UPLOAD csv format
             repository = "Private" if row.get("is_private") else "Public"
-            row = {"list_name": row["name"]}
 
             for acc in accounts:
-                row["username"] = acc.get("screen_name")
-                row["repository"] = repository
-                row["evidence"] = "\n".join(
-                    list(
-                        acc.get("evidence")
-                        .all()
-                        .values_list("url", flat=True)
-                        .distinct()
-                        if acc.get("evidence")
-                        else ""
-                    )
+                dat_row = {"list_name": row["name"]}
+                dat_row["username"] = acc.get("screen_name")
+                dat_row["repository"] = repository
+                dat_row["evidence"] = "\n".join(
+                    [evidence["url"] for evidence in acc.get("evidences", [])]
                 )
-                result.append(row)
+                result.append(dat_row)
     return result
 
 
