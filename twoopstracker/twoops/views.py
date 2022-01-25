@@ -353,7 +353,9 @@ class AccountsLists(generics.ListCreateAPIView):
     def get(self, request, *args, **kwargs):
         download = request.GET.get("download", "").lower()
         if download in ["csv", "xlsx"]:
-            serializer = TwitterAccountsListSerializer(self.get_queryset(), many=True)
+            serializer = TwitterAccountsListSerializer(
+                self.get_queryset(), many=True, context={"request": request}
+            )
             fieldnames = ["list_name", "username", "repository", "evidence"]
 
             return generate_file(
@@ -382,7 +384,7 @@ class AccountsLists(generics.ListCreateAPIView):
 
 class AccountsList(generics.RetrieveUpdateDestroyAPIView):
     queryset = TwitterAccountsList.objects.all()
-    serializer_class = TwitterAccountsListsSerializer
+    serializer_class = TwitterAccountsListSerializer
     permission_classes = [
         IsOwner,
     ]
