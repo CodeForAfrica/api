@@ -97,7 +97,7 @@ class TwitterAccountsListSerializer(TwitterAccountsListsSerializer):
         if self.context.get("request", {}).GET.get("download"):
             data["accounts"] = self.get_accounts(instance)
         else:
-            del data["accounts"]
+            data.pop("accounts", None)
         return data
 
 
