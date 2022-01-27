@@ -408,10 +408,10 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
         return self.retrieve(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
-        accounts = self.request.data.get("accounts", [])
+        accounts_ids = self.request.query_params.getlist("accounts[]")
         instance = self.get_object()
-        if accounts:
-            instance.accounts.remove(*accounts)
+        if accounts_ids:
+            instance.accounts.remove(*accounts_ids)
         else:
             instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
