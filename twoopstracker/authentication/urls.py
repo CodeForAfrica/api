@@ -4,12 +4,12 @@ from django.conf.urls import include
 from django.urls import path
 from django.views.generic.base import RedirectView
 
-from .views import CusstomPasswordResetConfirmView, GoogleLogin
+from .views import CustomPasswordResetConfirmView, GoogleLogin
 
 urlpatterns = [
     path(
         "password/reset/confirm/<uid>/<token>/",
-        CusstomPasswordResetConfirmView.as_view(),
+        CustomPasswordResetConfirmView.as_view(),
         name="password_reset_confirm",
     ),
     path(

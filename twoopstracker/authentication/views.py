@@ -12,7 +12,7 @@ class GoogleLogin(SocialLoginView):
     client_class = OAuth2Client
 
 
-class CusstomPasswordResetConfirmView(PasswordResetConfirmView):
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     def get(self, request, *args, **kwargs):
         uid = kwargs["uid"]
         token = kwargs["token"]
