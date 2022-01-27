@@ -407,6 +407,16 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
 
         return self.retrieve(request, *args, **kwargs)
 
+    def delete(self, request, *args, **kwargs):
+        accounts = self.request.data.get("accounts", [])
+        instance = self.get_object()
+        if accounts:
+            accounts_instances = TwitterAccount.objects.filter(account_id__in=accounts)
+            instance.accounts.remove(*accounts_instances)
+        else:
+            instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
         kwargs = update_kwargs_with_account_ids(kwargs)
