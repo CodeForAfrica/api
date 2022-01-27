@@ -146,22 +146,15 @@ def process_file_data(data):
         elif accounts:
             # Convert to the UPLOAD csv format
             repository = "Private" if row.get("is_private") else "Public"
-            row = {"list_name": row["name"]}
 
             for acc in accounts:
-                row["username"] = acc.get("screen_name")
-                row["repository"] = repository
-                row["evidence"] = "\n".join(
-                    list(
-                        acc.get("evidence")
-                        .all()
-                        .values_list("url", flat=True)
-                        .distinct()
-                        if acc.get("evidence")
-                        else ""
-                    )
+                column_data = {"list_name": row["name"]}
+                column_data["username"] = acc.get("screen_name")
+                column_data["repository"] = repository
+                column_data["evidence"] = "\n".join(
+                    [evidence["url"] for evidence in acc.get("evidences", [])]
                 )
-                result.append(row)
+                result.append(column_data)
     return result
 
 
@@ -360,7 +353,9 @@ class AccountsLists(generics.ListCreateAPIView):
     def get(self, request, *args, **kwargs):
         download = request.GET.get("download", "").lower()
         if download in ["csv", "xlsx"]:
-            serializer = TwitterAccountsListSerializer(self.get_queryset(), many=True)
+            serializer = TwitterAccountsListSerializer(
+                self.get_queryset(), many=True, context={"request": request}
+            )
             fieldnames = ["list_name", "username", "repository", "evidence"]
 
             return generate_file(
@@ -423,15 +418,22 @@ class TwitterAccountsView(generics.ListAPIView):
     serializer_class = TwitterAccountsSerializer
 
     def get_queryset(self):
+        filter_ids = Q()
+        # User can easily request for multiple lists as in
+        # /accounts/?list[]=10&list[]=2
+        ids = self.request.query_params.getlist("list[]")
+        if len(ids):
+            filter_ids = Q(lists__id__in=ids)
+        filter_access = Q(lists__is_private=False)
         if self.request.user.is_authenticated:
             user_profile = self.request.user.userprofile
-            return TwitterAccount.objects.filter(
-                Q(lists__is_private=False)
+            filter_access = (
+                filter_access
                 | Q(lists__owner=user_profile)
                 | Q(lists__teams__members__user_id=user_profile.user_id)
-            ).distinct()
+            )
 
-        return TwitterAccount.objects.filter(lists__is_private=False).distinct()
+        return TwitterAccount.objects.filter(filter_ids, filter_access).distinct()
 
 
 class TwitterAccountCategoriesView(generics.ListAPIView):
