@@ -411,8 +411,7 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
         accounts = self.request.data.get("accounts", [])
         instance = self.get_object()
         if accounts:
-            accounts_instances = TwitterAccount.objects.filter(account_id__in=accounts)
-            instance.accounts.remove(*accounts_instances)
+            instance.accounts.remove(*accounts)
         else:
             instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
