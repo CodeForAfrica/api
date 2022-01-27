@@ -16,5 +16,6 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     def get(self, request, *args, **kwargs):
         uid = kwargs["uid"]
         token = kwargs["token"]
-        url = f"{settings.TWOOPSTRACKER_CONFIRM_RESET_PASSWORD_URL}/{uid}/{token}"
+        uri = settings.TWOOPSTRACKER_CONFIRM_RESET_PASSWORD_URL.rstrip("/")
+        url = f"{uri}/{uid}/{token}"
         return redirect(url)
