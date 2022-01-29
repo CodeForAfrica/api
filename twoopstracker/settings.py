@@ -228,13 +228,7 @@ LOGIN_URL = env("LOGIN_URL", "http://localhost:3000/login")
 TWOOPSTRACKER_FRONTEND_API_URL = env.str(
     "TWOOPSTRACKER_FRONTEND_API_URL", "http://localhost:3000/api"
 )
-TWOOPSTRACKER_CONFIRM_EMAIL_URL = env.str(
-    "TWOOPSTRACKER_CONFIRM_EMAIL_URL", "http://localhost:3000/api/auth/confirm-email"
-)
-TWOOPSTRACKER_CONFIRM_RESET_PASSWORD_URL = env.str(
-    "TWOOPSTRACKER_CONFIRM_RESET_PASSWORD_URL",
-    "http://localhost:3000/api/auth/reset-password/confirm",
-)
+
 TWOOPSTRACKER_SIGNUP_URL = env.str(
     "TWOOPSTRACKER_SIGNUP_URL", "http://localhost:3000/signup"
 )
