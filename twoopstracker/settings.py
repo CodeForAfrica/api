@@ -235,7 +235,9 @@ TWOOPSTRACKER_CONFIRM_RESET_PASSWORD_URL = env.str(
     "TWOOPSTRACKER_CONFIRM_RESET_PASSWORD_URL",
     "http://localhost:3000/api/auth/reset-password/confirm",
 )
-TWOOPSTRACKER_SIGNUP_URL = env.str("TWOOPSTRACKER_SIGNUP_URL", "http://localhost:3000/signup")
+TWOOPSTRACKER_SIGNUP_URL = env.str(
+    "TWOOPSTRACKER_SIGNUP_URL", "http://localhost:3000/signup"
+)
 
 # Custom Register Serializer
 # https://dj-rest-auth.readthedocs.io/en/latest/configuration.html
@@ -246,6 +248,9 @@ REST_AUTH_REGISTER_SERIALIZERS = {
 REST_AUTH_SERIALIZERS = {
     "PASSWORD_RESET_SERIALIZER": "twoopstracker.authentication.serializers.CustomPasswordResetSerializer"
 }
+# Custom Redirects
+# https://django-allauth.readthedocs.io/en/latest/advanced.html#custom-redirects
+ACCOUNT_ADAPTER = "twoopstracker.authentication.adapter.CustomAccountAdapter"
 
 DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", "webmaster@localhost")
 EMAIL_HOST = env("EMAIL_HOST", "")
