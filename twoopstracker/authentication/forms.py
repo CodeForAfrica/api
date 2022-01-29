@@ -41,8 +41,8 @@ class CustomResetPasswordForm(DefaultPasswordResetForm):
                 "password_reset_confirm",
                 args=[user_pk_to_url_str(user), temp_key],
             )
-            frontend_url = settings.TWOOPSTRACKER_FRONTEND_API_URL.rstrip("/")
-            password_reset_url = f"{frontend_url}{path}"
+            frontend_api_url = settings.TWOOPSTRACKER_FRONTEND_API_URL.rstrip("/")
+            password_reset_url = f"{frontend_api_url}{path}"
 
             context = {
                 "current_site": current_site,
