@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from .forms import CustomResetPasswordForm
 
+
 class CustomPasswordResetSerializer(PasswordResetSerializer):
     def validate_email(self, value):
         # Create PasswordResetForm with the serializer
@@ -12,6 +13,7 @@ class CustomPasswordResetSerializer(PasswordResetSerializer):
             raise serializers.ValidationError(self.reset_form.errors)
 
         return value
+
 
 class CustomRegisterSerializer(RegisterSerializer):
     def get_cleaned_data(self):

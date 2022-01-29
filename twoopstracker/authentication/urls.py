@@ -1,7 +1,7 @@
 from dj_rest_auth.registration.views import VerifyEmailView
+from dj_rest_auth.views import PasswordResetConfirmView
 from django.conf import settings
 from django.conf.urls import include
-from dj_rest_auth.views import PasswordResetConfirmView
 from django.urls import path
 from django.views.generic.base import RedirectView
 
