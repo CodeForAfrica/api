@@ -14,9 +14,7 @@ class CustomResetPasswordForm(DefaultPasswordResetForm):
         if not self.users:
             self._send_unknown_account_mail(request, email)
         else:
-            self._send_password_reset_mail(
-                request, email, self.users, **kwargs
-            )
+            self._send_password_reset_mail(request, email, self.users, **kwargs)
         return
 
     def _send_unknown_account_mail(self, request, email):
