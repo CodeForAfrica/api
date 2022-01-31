@@ -2,13 +2,13 @@ from django.urls import path
 
 from .views import (
     AccountsList,
-    AccountsLists,
     AccountsListUploadAPIView,
     TweetSearchesView,
     TweetSearchView,
     TweetsInsightsView,
     TweetsView,
     TwitterAccountCategoriesView,
+    TwitterAccountsLists,
     TwitterAccountsView,
 )
 
@@ -21,7 +21,7 @@ urlpatterns = [
         TweetSearchView.as_view(),
         name="single_saved_search",
     ),
-    path("lists/", AccountsLists.as_view(), name="accounts_list"),
+    path("lists/", TwitterAccountsLists.as_view(), name="twitter_accounts_list-list"),
     path(
         "lists/upload", AccountsListUploadAPIView.as_view(), name="accounts_list_upload"
     ),
