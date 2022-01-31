@@ -344,11 +344,14 @@ class TweetSearchView(generics.RetrieveUpdateDestroyAPIView):
         return TweetSearch.objects.filter(owner=self.request.user.userprofile)
 
 
-class AccountsLists(generics.ListCreateAPIView):
+class TwitterAccountsLists(generics.ListCreateAPIView):
     serializer_class = TwitterAccountsListsSerializer
     permission_classes = [
         IsAuthenticated,
     ]
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = ["name", "created_at"]
+    ordering = ["name"]
 
     def get(self, request, *args, **kwargs):
         download = request.GET.get("download", "").lower()
