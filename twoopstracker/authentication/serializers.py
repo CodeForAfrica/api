@@ -7,7 +7,6 @@ from .forms import CustomResetPasswordForm
 
 class CustomPasswordResetSerializer(PasswordResetSerializer):
     def validate_email(self, value):
-        # Create PasswordResetForm with the serializer
         self.reset_form = CustomResetPasswordForm(data=self.initial_data)
         if not self.reset_form.is_valid():
             raise serializers.ValidationError(self.reset_form.errors)
