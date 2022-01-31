@@ -407,6 +407,15 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
 
         return self.retrieve(request, *args, **kwargs)
 
+    def delete(self, request, *args, **kwargs):
+        accounts_ids = self.request.query_params.getlist("accounts[]")
+        instance = self.get_object()
+        if accounts_ids:
+            instance.accounts.remove(*accounts_ids)
+        else:
+            instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
         kwargs = update_kwargs_with_account_ids(kwargs)

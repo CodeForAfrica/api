@@ -110,6 +110,7 @@ class TwitterAccountsSerializer(serializers.ModelSerializer):
             "account_id",
             "screen_name",
             "protected",
+            "profile_image_url",
             "created_at",
             "updated_at",
         ]
