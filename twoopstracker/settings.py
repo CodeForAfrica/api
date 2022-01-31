@@ -226,10 +226,12 @@ ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_USERNAME_REQUIRED = False
 LOGIN_URL = env("LOGIN_URL", "http://localhost:3000/login")
 TWOOPSTRACKER_EMAIL_CONFRIMATION_URL = env.str(
-    "TWOOPSTRACKER_EMAIL_CONFRIMATION_URL", "http://localhost:3000/api/auth/registration/confirm-email"
+    "TWOOPSTRACKER_EMAIL_CONFRIMATION_URL",
+    "http://localhost:3000/api/auth/registration/confirm-email",
 )
 TWOOPSTRACKER_PASSWORD_RESET_URL = env.str(
-    "TWOOPSTRACKER_PASSWORD_RESET_URL", "http://localhost:3000/api/auth/password/reset/confirm"
+    "TWOOPSTRACKER_PASSWORD_RESET_URL",
+    "http://localhost:3000/api/auth/password/reset/confirm",
 )
 TWOOPSTRACKER_SIGNUP_URL = env.str(
     "TWOOPSTRACKER_SIGNUP_URL", "http://localhost:3000/signup"
