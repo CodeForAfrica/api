@@ -10,27 +10,26 @@ from django.contrib.sites.shortcuts import get_current_site
 class CustomResetPasswordForm(DefaultPasswordResetForm):
     def save(self, request, **kwargs):
         email = self.cleaned_data["email"]
-        current_site = get_current_site(request)
 
         if not self.users:
-            self._send_unknown_account_mail(request, email, current_site)
+            self._send_unknown_account_mail(request, email)
         else:
             self._send_password_reset_mail(
-                request, email, current_site, self.users, **kwargs
+                request, email, self.users, **kwargs
             )
         return
 
-    def _send_unknown_account_mail(self, request, email, current_site):
+    def _send_unknown_account_mail(self, request, email):
         signup_url = settings.TWOOPSTRACKER_SIGNUP_URL
         context = {
-            "current_site": current_site,
+            "current_site": get_current_site(request),
             "email": email,
             "request": request,
             "signup_url": signup_url,
         }
         get_adapter(request).send_mail("account/email/unknown_account", email, context)
 
-    def _send_password_reset_mail(self, request, email, current_site, users, **kwargs):
+    def _send_password_reset_mail(self, request, email, users, **kwargs):
         token_generator = kwargs.get("token_generator", default_token_generator)
 
         for user in users:
@@ -41,7 +40,7 @@ class CustomResetPasswordForm(DefaultPasswordResetForm):
             password_reset_url = f"{frontend_url}/{uid}/{token}"
 
             context = {
-                "current_site": current_site,
+                "current_site": get_current_site(request),
                 "user": user,
                 "password_reset_url": password_reset_url,
                 "request": request,
