@@ -1,12 +1,10 @@
 from allauth.account.adapter import DefaultAccountAdapter
 from django.conf import settings
-from django.urls import reverse
 
 
 class CustomAccountAdapter(DefaultAccountAdapter):
     def get_email_confirmation_url(self, request, emailconfirmation):
         """Constructs the email confirmation (activation) url"""
-        url = reverse("account_confirm_email", args=[emailconfirmation.key])
-        frontend_api_url = settings.TWOOPSTRACKER_FRONTEND_API_URL.rstrip("/")
-        activation_url = f"{frontend_api_url}{url}"
+        frontend_url = settings.TWOOPSTRACKER_EMAIL_CONFRIMATION_URL.rstrip("/")
+        activation_url = f"{frontend_url}{emailconfirmation.key}"
         return activation_url

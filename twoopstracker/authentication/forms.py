@@ -5,7 +5,6 @@ from allauth.account.forms import default_token_generator
 from allauth.account.utils import user_pk_to_url_str, user_username
 from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
-from django.urls import reverse
 
 
 class CustomResetPasswordForm(DefaultPasswordResetForm):
@@ -36,13 +35,10 @@ class CustomResetPasswordForm(DefaultPasswordResetForm):
 
         for user in users:
 
-            temp_key = token_generator.make_token(user)
-            path = reverse(
-                "password_reset_confirm",
-                args=[user_pk_to_url_str(user), temp_key],
-            )
-            frontend_api_url = settings.TWOOPSTRACKER_FRONTEND_API_URL.rstrip("/")
-            password_reset_url = f"{frontend_api_url}{path}"
+            token = token_generator.make_token(user)
+            frontend_url = settings.TWOOPSTRACKER_PASSWORD_RESET_URL.rstrip("/")
+            uid = user_pk_to_url_str(user)
+            password_reset_url = f"{frontend_url}/{uid}/{token}"
 
             context = {
                 "current_site": current_site,
