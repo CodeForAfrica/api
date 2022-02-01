@@ -1,4 +1,17 @@
 from dj_rest_auth.registration.serializers import RegisterSerializer
+from dj_rest_auth.serializers import PasswordResetSerializer
+from rest_framework import serializers
+
+from .forms import CustomResetPasswordForm
+
+
+class CustomPasswordResetSerializer(PasswordResetSerializer):
+    def validate_email(self, value):
+        self.reset_form = CustomResetPasswordForm(data=self.initial_data)
+        if not self.reset_form.is_valid():
+            raise serializers.ValidationError(self.reset_form.errors)
+
+        return value
 
 
 class CustomRegisterSerializer(RegisterSerializer):
