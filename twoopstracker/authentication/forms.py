@@ -14,7 +14,7 @@ class CustomResetPasswordForm(DefaultPasswordResetForm):
         token_generator = kwargs.get("token_generator", default_token_generator)
 
         for user in self.users:
-            
+
             uid = user_pk_to_url_str(user)
             token = token_generator.make_token(user)
             frontend_url = settings.TWOOPSTRACKER_PASSWORD_RESET_URL.rstrip("/")
