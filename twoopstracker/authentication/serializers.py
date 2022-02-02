@@ -15,6 +15,9 @@ class CustomPasswordResetSerializer(PasswordResetSerializer):
 
 
 class CustomRegisterSerializer(RegisterSerializer):
+    first_name = serializers.CharField(allow_blank=True, max_length=35 )
+    last_name = serializers.CharField(allow_blank=True, max_length=35 )
+
     def get_cleaned_data(self):
         return {
             "username": self.validated_data.get("username", ""),
