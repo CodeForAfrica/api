@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('twoops', '0020_team'),
+        ("twoops", "0020_team"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='twitteraccount',
-            name='profile_image_url_https',
+            model_name="twitteraccount",
+            name="profile_image_url_https",
             field=models.URLField(blank=True, max_length=255, null=True),
         ),
     ]

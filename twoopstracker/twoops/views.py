@@ -82,7 +82,7 @@ def save_accounts(users, evidence_links={}, categories={}):
             "favourites_count",
             "statuses_count",
             "profile_image_url",
-            "profile_image_url_https"
+            "profile_image_url_https",
         ],
     )
 
