@@ -86,6 +86,7 @@ class TwitterAccountsListSerializer(TwitterAccountsListsSerializer):
                     "created_at": account.created_at,
                     "updated_at": account.updated_at,
                     "profile_image_url": account.profile_image_url,
+                    "profile_image_url_https": account.profile_image_url_https,
                     "evidences": evidences,
                 }
             )
@@ -111,6 +112,7 @@ class TwitterAccountsSerializer(serializers.ModelSerializer):
             "screen_name",
             "protected",
             "profile_image_url",
+            "profile_image_url_https",
             "created_at",
             "updated_at",
         ]
