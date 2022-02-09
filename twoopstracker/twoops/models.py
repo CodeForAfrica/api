@@ -83,6 +83,7 @@ class TwitterAccount(TimestampedModelMixin):
     favourites_count = models.IntegerField(default=0)
     statuses_count = models.IntegerField(default=0)
     profile_image_url = models.URLField(max_length=255, null=True, blank=True)
+    profile_image_url_https = models.URLField(max_length=255, null=True, blank=True)
     deleted = models.BooleanField(
         default=False,
         help_text=_("When deleted is true, we aren't tracking this account anymore."),
