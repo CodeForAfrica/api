@@ -57,6 +57,7 @@ def save_accounts(users, evidence_links={}, categories={}):
         twitter_account.favourites_count = user.favourites_count
         twitter_account.statuses_count = user.statuses_count
         twitter_account.profile_image_url = user.profile_image_url
+        twitter_account.profile_image_url_https = user.profile_image_url_https
         category = categories.get(user.screen_name)
         category = Category.objects.filter(name__iexact=category).first()
         if category:
@@ -81,6 +82,7 @@ def save_accounts(users, evidence_links={}, categories={}):
             "favourites_count",
             "statuses_count",
             "profile_image_url",
+            "profile_image_url_https",
         ],
     )
 
