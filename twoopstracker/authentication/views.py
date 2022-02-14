@@ -1,9 +1,9 @@
-from rest_framework.generics import RetrieveUpdateDestroyAPIView
 from allauth.socialaccount import signals
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
 from dj_rest_auth.views import UserDetailsView as BaseUserDetailsView
+from rest_framework.generics import RetrieveUpdateDestroyAPIView
 
 from .providers.googlesub.views import GoogleSubOAuth2Adapter
 
