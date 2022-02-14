@@ -430,6 +430,9 @@ class AccountsList(generics.RetrieveUpdateDestroyAPIView):
 
 class TwitterAccountsView(generics.ListAPIView):
     serializer_class = TwitterAccountsSerializer
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = ["name", "screen_name", "created_at"]
+    ordering = ["name"]
 
     def get_queryset(self):
         filter_ids = Q()
