@@ -26,7 +26,7 @@ urlpatterns = [
         "lists/upload", AccountsListUploadAPIView.as_view(), name="accounts_list_upload"
     ),
     path("lists/<pk>", AccountsList.as_view(), name="acccounts_list-detail"),
-    path("accounts/", TwitterAccountsView.as_view(), name="accounts"),
+    path("accounts/", TwitterAccountsView.as_view(), name="twitter_account-list"),
     path(
         "accounts/categories/",
         TwitterAccountCategoriesView.as_view(),
