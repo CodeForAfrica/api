@@ -148,7 +148,12 @@ class TwitterAccountsList(TimestampedModelMixin):
 
     name = models.CharField(max_length=255, help_text=_("Name of Twitter List"))
     slug = models.CharField(max_length=255, help_text=_("Twitter List Slug"))
-    owner = models.ForeignKey("UserProfile", on_delete=models.CASCADE)
+    owner = models.ForeignKey(
+        "UserProfile",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
     accounts = models.ManyToManyField("TwitterAccount", related_name="lists")
     is_private = models.BooleanField(default=True)
 
@@ -162,7 +167,11 @@ class TwitterAccountsList(TimestampedModelMixin):
 class Team(TimestampedModelMixin):
     name = models.CharField(max_length=255, help_text=_("Name of Team"))
     owner = models.ForeignKey(
-        "UserProfile", on_delete=models.CASCADE, help_text="Owner of the group"
+        "UserProfile",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Owner of the group",
     )
     twitter_accounts_lists = models.ManyToManyField(
         "TwitterAccountsList", related_name="teams"
