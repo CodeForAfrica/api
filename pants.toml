@@ -21,7 +21,11 @@ backend_packages = [
 enabled = false
 
 [source]
-root_patterns = []
+root_patterns = [
+  "twoops_tracker/docker",
+  "twoops_tracker/py",
+  "twoops_tracker/sh",
+]
 
 [python]
 interpreter_constraints = ["==3.10.*"]
