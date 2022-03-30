@@ -1,0 +1,19 @@
+boto3==1.20.29
+celery==5.2.3
+dj-rest-auth[with_social]==2.2.3
+Django==3.2.12
+django-cors-headers==3.10.1
+django-storages==1.12.3
+djangorestframework==3.13.1
+djangorestframework-simplejwt==5.0.0
+environs[django]==9.4.0
+google-api-python-client==2.34.0
+google-auth-httplib2==0.1.0
+google-auth-oauthlib==0.4.6
+greenlet==1.1.2
+gunicorn[gevent, setproctitle]==20.1.0
+redis==4.1.0
+requests==2.27.1
+sentry-sdk==1.5.2
+tablib[xlsx]==3.1.0
+tweepy==4.4.0

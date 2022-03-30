@@ -1,0 +1,31 @@
+[GLOBAL]
+pants_version = "2.10.0"
+use_deprecated_python_macros = false
+
+backend_packages = [
+  "pants.backend.python",
+  "pants.backend.python.lint.black",
+  "pants.backend.python.lint.docformatter",
+  "pants.backend.python.lint.flake8",
+  "pants.backend.python.lint.isort",
+  "pants.backend.experimental.python.lint.pyupgrade",
+  "pants.backend.python.typecheck.mypy",
+  "pants.backend.docker",
+  "pants.backend.docker.lint.hadolint",
+  "pants.backend.shell",
+  "pants.backend.shell.lint.shellcheck",
+  "pants.backend.shell.lint.shfmt",
+]
+
+[anonymous-telemetry]
+enabled = false
+
+[source]
+root_patterns = []
+
+[python]
+interpreter_constraints = ["==3.10.*"]
+
+[docker]
+default_repository = "codeforafrica/{name}"
+build_args = ["VERSION"]
