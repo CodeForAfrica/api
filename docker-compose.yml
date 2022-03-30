@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:13.4
+    restart: unless-stopped
+    volumes:
+      - db-data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=${PGUSER:-api}
+      - POSTGRES_PASSWORD=${PGPASSWORD:-api}
+      - POSTGRES_DB=${PGDATABASE:-api}
+    ports:
+      # Allow DB access from outside the container
+      - "54321:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U twoops_tracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    restart: always
+    image: redis:6.2
+    ports:
+      # Allow Redis access from outside the container
+      - "63791:6379"
+
+volumes:
+  db-data:
