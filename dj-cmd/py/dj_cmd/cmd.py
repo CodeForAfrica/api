@@ -4,6 +4,7 @@
 import os
 import sys
 
+
 def celery():
     """Wrap the celery cli tool."""
 
@@ -39,7 +40,7 @@ def gunicorn():
 def manage(settings_module):
     """Run administrative tasks."""
 
-    if (settings_module):
+    if settings_module:
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", settings_module)
 
     args = sys.argv
@@ -74,5 +75,6 @@ def main(*, settings_module=None):
         else:
             print(f"Unknown command: {sys.argv[0]}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
