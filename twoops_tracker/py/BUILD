@@ -2,7 +2,6 @@ python_sources(
     name = "lib",
     dependencies = [
         "twoops_tracker/py/twoopstracker",
-        # settings.py
         "3rdparty/py:requirements-all#django-cors-headers",
         "3rdparty/py:requirements-all#django-storages",
         "3rdparty/py:requirements-all#djangorestframework-simplejwt",
@@ -15,9 +14,9 @@ python_sources(
 )
 
 pex_binary(
-    name = "tt",
+    name = "main",
     dependencies = [
         ":lib",
     ],
-    entry_point = "tt.py",
+    entry_point = "main.py",
 )
