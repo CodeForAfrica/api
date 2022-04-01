@@ -9,7 +9,7 @@ ENV APP_DOCKER=/app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-COPY twoops_tracker.py/tt.pex /bin/tt
+COPY twoops_tracker.py/main.pex /bin/dj
 
 # Expose server port
 EXPOSE 8000
