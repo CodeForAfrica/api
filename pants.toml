@@ -2,6 +2,8 @@
 pants_version = "2.10.0"
 use_deprecated_python_macros = false
 
+pythonpath = ["%(buildroot)s/pants-plugins"]
+
 backend_packages = [
   "pants.backend.python",
   "pants.backend.python.lint.black",
@@ -15,6 +17,8 @@ backend_packages = [
   "pants.backend.shell",
   "pants.backend.shell.lint.shellcheck",
   "pants.backend.shell.lint.shfmt",
+  "pants.backend.plugin_development",
+  "internal_plugins.versioned_setup",
 ]
 
 [anonymous-telemetry]
@@ -22,9 +26,11 @@ enabled = false
 
 [source]
 root_patterns = [
-  "twoops_tracker/docker",
-  "twoops_tracker/py",
-  "twoops_tracker/sh",
+  "/dj-cmd/py",
+  "/twoops_tracker/docker",
+  "/twoops_tracker/py",
+  "/twoops_tracker/sh",
+  "/pants-plugins",
 ]
 
 [python]
