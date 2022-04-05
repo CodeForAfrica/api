@@ -35,13 +35,13 @@ async def setup_kwargs_plugin(request: VersionedSetupKwargsRequest) -> SetupKwar
         "Twitter": "https://twitter.com/Code4Africa",
     }
     kwargs["project_urls"] = {**project_urls, **kwargs.get("project_urls", {})}
-    default_kwargs = dict(
-        url="https://github.com/CodeForAfrica/api",
-        author="Code for Africa",
-        author_email="tech@codeforafrica.org",
-        license="MIT",
-        zip_safe=True,
-    )
+    default_kwargs = {
+        "url": "https://github.com/CodeForAfrica/api",
+        "author": "Code for Africa",
+        "author_email": "tech@codeforafrica.org",
+        "license": "MIT",
+        "zip_safe": True,
+    }
     for key, value in default_kwargs.items():
         if key not in kwargs:
             kwargs[key] = value
