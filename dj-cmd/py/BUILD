@@ -1,38 +1,21 @@
-resource(
-    name = "README",
-    source = "README.md",
-)
-
-resource(
-    name = "LICENSE",
-    source = "LICENSE",
-)
-
-resource(
-    name = "setup",
-    source = "setup.cfg",
-)
-
-resource(
-    name = "pyproject",
-    source = "pyproject.toml",
+resources(
+    name = "resources",
+    sources = [
+        "pyproject.toml",
+        "setup.cfg",
+        "README.md",
+        "VERSION",
+    ],
 )
 
 python_distribution(
     name = "dj-cmd",
     dependencies = [
         "dj-cmd/py/dj_cmd:dj_cmd",
-        ":pyproject",
-        ":setup",
-        ":README",
-        ":LICENSE",
-        # Dependencies on code to be packaged into the distribution.
-        # ":lib",
+        ":resources",
     ],
-    # generate_setup = False,
-    provides = python_artifact(
+    provides = setup_py(
         name = "dj-cmd",
-        version = "0.0.1",
     ),
     sdist = False,
 )
