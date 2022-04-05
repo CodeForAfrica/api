@@ -17,7 +17,14 @@ class VersionedSetupKwargsRequest(SetupKwargsRequest):
 
 @rule
 async def setup_kwargs_plugin(request: VersionedSetupKwargsRequest) -> SetupKwargs:
-    kwargs = request.explicit_kwargs.copy()
+    kwargs = {
+        "url": "https://github.com/CodeForAfrica/api",
+        "author": "Code for Africa",
+        "author_email": "tech@codeforafrica.org",
+        "license": "MIT",
+        "zip_safe": True,
+    }
+    kwargs |= request.explicit_kwargs.copy()
 
     # Add classifiers. We preserve any that were already set.
     standard_classifiers = [
@@ -35,16 +42,6 @@ async def setup_kwargs_plugin(request: VersionedSetupKwargsRequest) -> SetupKwar
         "Twitter": "https://twitter.com/Code4Africa",
     }
     kwargs["project_urls"] = {**project_urls, **kwargs.get("project_urls", {})}
-    default_kwargs = {
-        "url": "https://github.com/CodeForAfrica/api",
-        "author": "Code for Africa",
-        "author_email": "tech@codeforafrica.org",
-        "license": "MIT",
-        "zip_safe": True,
-    }
-    for key, value in default_kwargs.items():
-        if key not in kwargs:
-            kwargs[key] = value
 
     # version can be set to directly or via version_file relative to the BUILD file.
     version = kwargs.get("version", None)
