@@ -1,0 +1,64 @@
+name: Build and deploy twoops-tracker
+on:
+  push:
+    branches:
+      - main
+
+  env:
+    DOKKU_REMOTE_BRANCH: "master"
+    DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/twoopstracker"
+    APP_LOCATION: "twoops_tracker/"
+    GIT_PUSH_FLAGS: "--force"
+
+  jobs:
+    deploy:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Cancel Previous Runs
+          uses: styfle/cancel-workflow-action@0.9.1
+          with:
+            access_token: ${{ github.token }}
+        
+        - name: Checkout
+          uses: actions/checkout@v3
+          with:
+            fetch-depth: 0
+        
+        - name: Get version 
+          id: get-version
+          run: echo ::set-output name=version::$(cat ${{ env.APP_LOCATION }}/py/VERSION)}})
+
+        - name: Set up Docker Buildx
+          id: buildx
+          uses: docker/setup-buildx-action@v2
+        
+        - name: Cache Docker Layers
+          id: cache-layers
+          uses: actions/cache@v3
+          with:
+            path: /tmp/.buildx-cache
+            key: ${{ runner.os }}-buildx-${{ github.sha }}
+            restore-keys: |
+              ${{ runner.os }}-buildx-
+        
+        - name: Login to Docker Hub
+          uses: actions/login@v2
+          with:
+            username: ${{ secrets.DOCKER_HUB_USERNAME }}
+            password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+        
+        - name: Bootstrap Pants
+          run: |
+            ./pants --version
+        
+        - name: Build and Publish Docker Image
+          run: |
+            ./pants publish --docker-env-vars="VERSION=${{ steps.get-version.outputs.version }}" ${{ env.APP_LOCATION }}/docker:twoops-tracker
+        
+        - name: Push to Dokku
+          uses: dokku/github-action@v1.0.1
+          with:
+            branch: ${{ env.DOKKU_REMOTE_BRANCH }}
+            ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+            git_push_flags: ${{ env.GIT_PUSH_FLAGS }}
+            git_remote_url: ${{ env.DOKKU_REMOTE_URL }}
