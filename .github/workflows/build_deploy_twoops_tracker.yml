@@ -51,10 +51,14 @@ jobs:
         run: |
           ./pants --version
       
+      - name: Lint App
+        run: |
+          ./pants lint ${{ APP_LOCATION }}/py::
+
       - name: Build and Publish Docker Image
         run: |
           ./pants publish --docker-env-vars="VERSION=${{ steps.get-version.outputs.version }}" ${{ env.APP_LOCATION }}/docker:twoops-tracker
-      
+
       - name: Push to Dokku
         uses: dokku/github-action@v1.0.1
         with:
