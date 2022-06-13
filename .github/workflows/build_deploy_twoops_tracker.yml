@@ -8,6 +8,7 @@ env:
   DOKKU_REMOTE_BRANCH: "master"
   DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/twoopstracker"
   APP_LOCATION: "twoops_tracker/"
+  APP_NAME: "twoops-tracker"
   GIT_PUSH_FLAGS: "--force"
 
 jobs:
@@ -67,7 +68,7 @@ jobs:
       - name: Build and Publish Docker Image
         if: steps.version-check.outputs.changed == 'true'
         run: |
-          ./pants publish --docker-env-vars="VERSION=${{ steps.version-check.outputs.version }}" ${{ env.APP_LOCATION }}/docker:twoops-tracker
+          ./pants publish --docker-env-vars="VERSION=${{ steps.version-check.outputs.version }}" ${{ env.APP_LOCATION }}/docker:${{ env.APP_NAME }}
 
       - name: Push to Dokku
         if: steps.version-check.outputs.changed == 'true'
