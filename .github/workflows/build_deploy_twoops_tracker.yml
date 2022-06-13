@@ -9,6 +9,7 @@ env:
   DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/twoopstracker"
   APP_LOCATION: "twoops_tracker/"
   APP_NAME: "twoops-tracker"
+  APP_VERSION_LOCATION: "twoops_tracker/py/VERSION"
   GIT_PUSH_FLAGS: "--force"
 
 jobs:
@@ -30,9 +31,9 @@ jobs:
 
       - name: Get version
         id: version-check
-        if: contains(steps.changed-files.outputs.modified_files, ${{ env.APP_LOCATION }}/py/VERSION)
+        if: contains(steps.changed-files.outputs.modified_files, env.APP_VERSION_LOCATION)
         run: |
-          echo ::set-output name=version::$(cat ${{ env.APP_LOCATION }}/py/VERSION)}})
+          echo ::set-output name=version::$(cat env.APP_VERSION_LOCATION)}})
           echo ::set-output name=changed::true
 
       - name: Set up Docker Buildx
