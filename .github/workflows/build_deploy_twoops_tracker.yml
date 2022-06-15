@@ -2,10 +2,10 @@ name: Build and deploy twoops-tracker
 on:
   push:
     branches:
-      - main
+      - ft-add-ci-cd
 
 env:
-  DOKKU_REMOTE_BRANCH: "ft-add-ci-cd"
+  DOKKU_REMOTE_BRANCH: "master"
   DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/twoopstracker-test"
   APP_LOCATION: "twoops_tracker/"
   APP_NAME: "twoops-tracker"
