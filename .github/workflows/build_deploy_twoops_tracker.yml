@@ -29,7 +29,7 @@ jobs:
       - name: Changed Files
         uses: tj-actions/changed-files@v23
         with:
-          since_last_remote_commit: true
+          base_sha: "fe0db0c5e3435689e40c333278d5d3d1d65263a8"
 
       - name: Get version
         id: version-check
