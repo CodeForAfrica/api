@@ -28,6 +28,8 @@ jobs:
       
       - name: Changed Files
         uses: tj-actions/changed-files@v23
+        with:
+          since_last_remote_commit: true
 
       - name: Get version
         id: version-check
