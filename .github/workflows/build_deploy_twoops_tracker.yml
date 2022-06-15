@@ -27,6 +27,7 @@ jobs:
           fetch-depth: 0
       
       - name: Changed Files
+        id: changed-files
         uses: tj-actions/changed-files@v23
         with:
           base_sha: "fe0db0c5e3435689e40c333278d5d3d1d65263a8"
@@ -35,7 +36,7 @@ jobs:
         id: version-check
         if: contains(steps.changed-files.outputs.modified_files, env.APP_VERSION_LOCATION)
         run: |
-          echo ::set-output name=version::$(cat env.APP_VERSION_LOCATION)}})
+          echo ::set-output name=version::$(cat env.APP_VERSION_LOCATION)
           echo ::set-output name=changed::true
 
       - name: Set up Docker Buildx
