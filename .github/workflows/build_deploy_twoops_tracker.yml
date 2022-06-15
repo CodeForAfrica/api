@@ -64,11 +64,11 @@ jobs:
       
       - name: Lint App
         run: |
-          ./pants lint ${{ APP_LOCATION }}/py::
+          ./pants lint ${{ env.APP_LOCATION }}/py::
         
       - name: Test App
         run: |
-          ./pants test ${{ APP_LOCATION }}/py::
+          ./pants test ${{ env.APP_LOCATION }}/py::
 
       - name: Build and Publish Docker Image
         if: steps.version-check.outputs.changed == 'true'
