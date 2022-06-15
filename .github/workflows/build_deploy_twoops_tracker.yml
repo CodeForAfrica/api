@@ -65,19 +65,18 @@ jobs:
         run: |
           ./pants --version
       
+      - name: Install Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
       - name: Lint App
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          run: |
-            ./pants lint ${{ env.APP_LOCATION }}/py::
-        
+        run: |
+          ./pants lint ${{ env.APP_LOCATION }}/py::
+
       - name: Test App
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          run: |
-            ./pants test ${{ env.APP_LOCATION }}/py::
+        run: |
+          ./pants test ${{ env.APP_LOCATION }}/py::
 
       - name: Build and Publish Docker Image
         if: steps.version-check.outputs.changed == 'true'
