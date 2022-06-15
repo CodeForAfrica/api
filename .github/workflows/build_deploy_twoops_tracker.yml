@@ -1,0 +1,93 @@
+name: Build and deploy twoops-tracker
+on:
+  push:
+    branches:
+      - ft-add-ci-cd
+
+env:
+  DOKKU_REMOTE_BRANCH: "master"
+  DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/twoopstracker-test"
+  APP_LOCATION: "twoops_tracker/"
+  APP_NAME: "twoops-tracker"
+  APP_VERSION_LOCATION: "twoops_tracker/py/VERSION"
+  GIT_PUSH_FLAGS: "--force"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
+      
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Changed Files
+        id: changed-files
+        uses: tj-actions/changed-files@v23
+        with:
+          base_sha: "fe0db0c5e3435689e40c333278d5d3d1d65263a8"
+
+      - name: Get version
+        id: version-check
+        if: contains(steps.changed-files.outputs.modified_files, env.APP_VERSION_LOCATION)
+        run: |
+          echo ::set-output name=version::$(cat ${{env.APP_VERSION_LOCATION}})
+          echo ::set-output name=changed::true
+
+      - name: Set up Docker Buildx
+        id: buildx
+        if: steps.version-check.outputs.changed == 'true'
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Cache Docker Layers
+        id: cache-layers
+        if: steps.version-check.outputs.changed == 'true'
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+      
+      - name: Login to Docker Hub
+        if: steps.version-check.outputs.changed == 'true'
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      
+      - name: Bootstrap Pants
+        run: |
+          ./pants --version
+      
+      - name: Install Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Lint App
+        run: |
+          ./pants lint ${{ env.APP_LOCATION }}/py::
+
+      - name: Test App
+        run: |
+          ./pants test ${{ env.APP_LOCATION }}/py::
+
+      - name: Build and Publish Docker Image
+        if: steps.version-check.outputs.changed == 'true'
+        run: |
+          ./pants publish --docker-env-vars="VERSION=${{ steps.version-check.outputs.version }}" ${{ env.APP_LOCATION }}/docker:${{ env.APP_NAME }}
+
+      - name: Push to Dokku
+        if: steps.version-check.outputs.changed == 'true'
+        uses: dokku/github-action@v1.0.1
+        with:
+          branch: ${{ env.DOKKU_REMOTE_BRANCH }}
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          git_push_flags: ${{ env.GIT_PUSH_FLAGS }}
+          git_remote_url: ${{ env.DOKKU_REMOTE_URL }}
