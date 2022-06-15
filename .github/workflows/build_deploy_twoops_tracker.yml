@@ -36,7 +36,7 @@ jobs:
         id: version-check
         if: contains(steps.changed-files.outputs.modified_files, env.APP_VERSION_LOCATION)
         run: |
-          echo ::set-output name=version::$(cat env.APP_VERSION_LOCATION)
+          echo ::set-output name=version::$(cat ${{env.APP_VERSION_LOCATION}})
           echo ::set-output name=changed::true
 
       - name: Set up Docker Buildx
