@@ -4,9 +4,13 @@ import json
 
 class EmailsLoader(ABC):
     @abstractmethod
-    def get_emails(self):
+    def get_emails_without_vpn(self):
         pass
     
+    # get emails that have vpn access and haven't been sent yet
+    def get_emails_to_send(self):
+        pass
+
     @abstractmethod
     def update_emails(self, emails):
         pass
@@ -19,10 +23,15 @@ class LocalEmailsLoader(EmailsLoader):
         with open(self.path, 'r') as f:
             return f.read()
     
-    def get_emails(self):
+    def get_emails_without_vpn(self):
         emails = json.loads(self._load()).get('emails', [])
         # return only emails without vpn keys
         return [email['name'] for email in emails if not email.get('has_vpn_access')]
+
+    # get emails that have vpn access and haven't been sent yet
+    def get_emails_to_send(self):
+        emails = json.loads(self._load()).get('emails', [])
+        return [email['name'] for email in emails if email.get('has_vpn_access') and not email.get('sent')]
 
     def update_emails(self, emails):
         emails_json = json.loads(self._load())
