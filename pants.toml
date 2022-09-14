@@ -30,6 +30,7 @@ root_patterns = [
   "/twoops_tracker/docker",
   "/twoops_tracker/py",
   "/twoops_tracker/sh",
+  "cfa_vpn/py",
   "/pants-plugins",
 ]
 

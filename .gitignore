@@ -164,4 +164,7 @@ cython_debug/
 /.pids
 /.pants.workdir.file_lock*
 
+# cfa_vpn
+cfa_vpn/py/emails/emails.json
+
 # End of custom ignore
