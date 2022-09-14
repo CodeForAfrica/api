@@ -13,14 +13,6 @@ class OutlineVPN(VPN):
     def __init__(self, api_url):
         self.client = OutlineVPNManager(api_url=api_url)
 
-    def generate_vpn_keys(self, emails):
-
-        for email in emails:
-            try:
-                self.client.create_key(email)
-            except Exception as e:
-                print(f"Failed to generate vpn key for {email}: {e}")
-
     # generate vpn keys for emails and return a list of emails we generated keys for
     def generate_vpn_keys(self, emails):
         success_emails = []
