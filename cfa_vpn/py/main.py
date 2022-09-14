@@ -38,7 +38,7 @@ if __name__ == "__main__":
     else:
         raise ValueError(f"Unsupported vpn type: {vpn_type}")
 
-    email_sender = env("CFA_EMAIL_SENDER", "sendgrid")
+    email_sender_type = env("CFA_EMAIL_SENDER", "sendgrid")
 
     emails_location = env("CFA_EMAILS_LOCATION", "local")
     emails_loader = None
@@ -54,13 +54,13 @@ if __name__ == "__main__":
         vpn_manager.generate_vpn_keys()
 
     if args.send:
-        if email_sender == "sendgrid":
+        if email_sender_type == "sendgrid":
             email_sender = SendGridEmailSender(
                 api_key=env("CFA_SENDGRID_API_KEY"),
                 from_email=env("CFA_SENDGRID_FROM_EMAIL"),
                 subject=env("CFA_EMAIL_SUBJECT", "CFA VPN Access Key"),
             )
         else:
-            raise ValueError(f"Unsupported email sender: {email_sender}")
+            raise ValueError(f"Unsupported email sender: {email_sender_type}")
         vpn_manager.set_email_sender(email_sender)
         vpn_manager.send_emails()
