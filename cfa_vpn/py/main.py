@@ -1,6 +1,7 @@
 import argparse
 
 from emails.loader import LocalEmailsLoader
+from emails.sender import SendGridEmailSender
 from environs import Env
 from vpn import OutlineVPN, VPNManager
 
@@ -29,13 +30,20 @@ if __name__ == "__main__":
     parser = init_argparse()
     args = parser.parse_args()
 
-    vpn = None
-    vpn_type = env("VPN_TYPE", "outline")
+    vpn_type = env("CFA_VPN_TYPE", "outline")
 
-    emails_location = env("EMAILS_LOCATION", "local")
+    if vpn_type == "outline":
+        outline_vpn_api_url = env("CFA_OUTLINE_VPN_API_URL")
+        vpn = OutlineVPN(api_url=outline_vpn_api_url)
+    else:
+        raise ValueError(f"Unsupported vpn type: {vpn_type}")
+
+    email_sender = env("CFA_EMAIL_SENDER", "sendgrid")
+
+    emails_location = env("CFA_EMAILS_LOCATION", "local")
     emails_loader = None
     if emails_location == "local":
-        emails_json_path = env("EMAILS_JSON_PATH", "cfa_vpn/py/emails/emails.json")
+        emails_json_path = env("CFA_EMAILS_JSON_PATH", "cfa_vpn/py/emails/emails.json")
         emails_loader = LocalEmailsLoader(emails_json_path)
     else:
         raise ValueError(f"Unsupported emails location: {emails_location}")
@@ -43,13 +51,16 @@ if __name__ == "__main__":
     vpn_manager = VPNManager(emails_loader=emails_loader, vpn=vpn)
 
     if args.generate:
-        if vpn_type == "outline":
-            outline_vpn_api_url = env("OUTLINE_VPN_API_URL")
-            vpn = OutlineVPN(api_url=outline_vpn_api_url)
-            vpn_manager.set_vpn(vpn)
-        else:
-            raise ValueError(f"Unsupported vpn type: {vpn_type}")
         vpn_manager.generate_vpn_keys()
 
     if args.send:
+        if email_sender == "sendgrid":
+            email_sender = SendGridEmailSender(
+                api_key=env("CFA_SENDGRID_API_KEY"),
+                from_email=env("CFA_SENDGRID_FROM_EMAIL"),
+                subject=env("CFA_EMAIL_SUBJECT", "CFA VPN Access Key"),
+            )
+        else:
+            raise ValueError(f"Unsupported email sender: {email_sender}")
+        vpn_manager.set_email_sender(email_sender)
         vpn_manager.send_emails()

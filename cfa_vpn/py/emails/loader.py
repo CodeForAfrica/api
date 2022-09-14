@@ -12,7 +12,11 @@ class EmailsLoader(ABC):
         pass
 
     @abstractmethod
-    def update_vpn_keys_access_status(self, emails):
+    def update_vpn_keys_access_status(self, emails, status):
+        pass
+
+    @abstractmethod
+    def update_email_sent_status(self, emails, status):
         pass
 
 
@@ -38,13 +42,19 @@ class LocalEmailsLoader(EmailsLoader):
             if email.get("has_vpn_access") and not email.get("sent")
         ]
 
-    def update_vpn_keys_access_status(self, emails):
+    def _update_vpn_users_state(self, emails, state, value):
         emails_json = json.loads(self._load())
         for email in emails_json["emails"]:
             if email["name"] in emails:
-                email["has_vpn_access"] = True
+                email[state] = value
         with open(self.path, "w") as f:
             f.write(json.dumps(emails_json))
+
+    def update_vpn_keys_access_status(self, emails, has_vpn_access=True):
+        self._update_vpn_users_state(emails, "has_vpn_access", has_vpn_access)
+
+    def update_email_sent_status(self, emails, sent=True):
+        self._update_vpn_users_state(emails, "sent", sent)
 
 
 class GsheetEmailsLoader(EmailsLoader):
