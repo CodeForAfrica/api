@@ -41,9 +41,7 @@ class VPNManager():
         emails = self.emails_loader.get_emails_without_vpn()
         successful_emails = self._vpn.generate_vpn_keys(emails)
         self.emails_loader.update_vpn_keys_access_status(successful_emails)
-    
+
     def send_emails(self):
         emails = self.emails_loader.get_emails_to_send()
         print(f"Sending emails to {len(emails)} users")
-
-
