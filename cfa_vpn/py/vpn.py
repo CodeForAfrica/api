@@ -1,15 +1,18 @@
 from abc import ABC, abstractmethod
+
 from outline_vpn.outline_vpn import OutlineVPN as OutlineVPNManager
+
 
 class VPN(ABC):
     @abstractmethod
     def generate_vpn_keys(self, emails):
         pass
 
+
 class OutlineVPN(VPN):
     def __init__(self, api_url):
         self.client = OutlineVPNManager(api_url=api_url)
-        
+
     def generate_vpn_keys(self, emails):
 
         for email in emails:
@@ -29,14 +32,15 @@ class OutlineVPN(VPN):
                 print(f"Failed to generate VPN key for {email}: {e}")
         return success_emails
 
-class VPNManager():
+
+class VPNManager:
     def __init__(self, emails_loader, vpn):
         self.emails_loader = emails_loader
         self._vpn = vpn
 
     def set_vpn(self, vpn):
         self._vpn = vpn
-    
+
     def generate_vpn_keys(self):
         emails = self.emails_loader.get_emails_without_vpn()
         successful_emails = self._vpn.generate_vpn_keys(emails)
