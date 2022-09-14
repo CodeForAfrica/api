@@ -53,7 +53,9 @@ class VPNManager:
     def generate_vpn_keys(self):
         emails = self.emails_loader.get_emails_without_vpn()
         successful_emails = self._vpn.generate_vpn_keys(emails)
-        self.emails_loader.update_vpn_keys_access_status(successful_emails)
+        self.emails_loader.update_vpn_users_state(
+            successful_emails, "has_vpn_access", True
+        )
 
     def send_emails(self):
         emails = self.emails_loader.get_emails_to_send()
@@ -65,7 +67,7 @@ class VPNManager:
                 self._email_sender.set_body(get_outline_email_template(key))
                 if self._email_sender.send(key.name):
                     success_emails.append(key.name)
-            self.emails_loader.update_email_sent_status(success_emails)
+            self.emails_loader.update_vpn_users_state(success_emails, "sent", True)
         else:
             # For now, we only support Outline VPN
             raise ValueError(f"Unsupported VPN type: {type(self._vpn)}")
