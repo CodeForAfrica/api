@@ -12,7 +12,7 @@ class EmailsLoader(ABC):
         pass
 
     @abstractmethod
-    def update_emails(self, emails):
+    def update_vpn_keys_access_status(self, emails):
         pass
 
 class LocalEmailsLoader(EmailsLoader):
@@ -33,7 +33,7 @@ class LocalEmailsLoader(EmailsLoader):
         emails = json.loads(self._load()).get('emails', [])
         return [email['name'] for email in emails if email.get('has_vpn_access') and not email.get('sent')]
 
-    def update_emails(self, emails):
+    def update_vpn_keys_access_status(self, emails):
         emails_json = json.loads(self._load())
         for email in emails_json['emails']:
             if email['name'] in emails:
