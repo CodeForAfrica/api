@@ -27,7 +27,8 @@ if __name__ == '__main__':
     emails_location = env('EMAILS_LOCATION', 'local')
     emails_loader = None
     if emails_location == 'local':
-        emails_loader = LocalEmailsLoader()
+        emails_json_path = env('EMAILS_JSON_PATH', 'cfa_vpn/py/emails/emails.json')
+        emails_loader = LocalEmailsLoader(emails_json_path)
     else:
         raise ValueError(f"Unsupported emails location: {emails_location}")
 
