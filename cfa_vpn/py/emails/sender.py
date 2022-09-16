@@ -42,7 +42,7 @@ class SendGridEmailSender(EmailSender):
             ssl._create_default_https_context = ssl._create_unverified_context
 
             response = sg.send(message)
-            if response.status_code == 200:
+            if response.status_code == 202:
                 return True
         except Exception as e:
             print(e.message)

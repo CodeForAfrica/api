@@ -1,3 +1,4 @@
+import time
 from abc import ABC, abstractmethod
 
 from emails.templates import get_outline_email_template
@@ -65,8 +66,11 @@ class VPNManager:
             success_emails = []
             for key in keys:
                 self._email_sender.set_body(get_outline_email_template(key))
+                time.sleep(10)
                 if self._email_sender.send(key.name):
                     success_emails.append(key.name)
+                else:
+                    print("Couldn't send an email to ", key.name)
             self.emails_loader.update_vpn_users_state(success_emails, "sent", True)
         else:
             # For now, we only support Outline VPN
