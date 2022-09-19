@@ -24,5 +24,17 @@ services:
       # Allow Redis access from outside the container
       - "63791:6379"
 
+  twoops_tracker:
+    restart: always
+    image: codeforafrica/twoops-tracker:latest
+    ports:
+      # Allow API access from outside the container
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - TWOOPSTRACKER_DATABASE_URL=postgres://${PGUSER:-twoops_tracker}:${PGPASSWORD:-twoops_tracker}@db:5432/${PGDATABASE:-twoops_tracker}
+      - TWOOPSTRACKER_CELERY_BROKER_URL=${TWOOPSTRACKER_CELERY_BROKER_URL:-redis://redis:6379/0}
+
 volumes:
   db-data:
