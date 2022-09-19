@@ -2,9 +2,9 @@ from allauth.socialaccount.providers.google.provider import GoogleProvider
 
 
 class GoogleSubProvider(GoogleProvider):
-    """The default GoogleProvider uses data["id"] to extact uid.
-
-    However, Google have changed their API to use data["sub"] instead.
+    """
+    The default GoogleProvider uses data["id"] to extact uid. However, Google
+    have changed their API to use data["sub"] instead.
     """
 
     id = "google_sub"

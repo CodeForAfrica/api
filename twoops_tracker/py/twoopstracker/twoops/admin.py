@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from twoopstracker.twoops.models import (
     Category,
     Evidence,

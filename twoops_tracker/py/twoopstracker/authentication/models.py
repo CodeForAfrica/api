@@ -2,6 +2,7 @@ from typing import List
 
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+
 from twoopstracker.db.models import TimestampedModelMixin
 
 

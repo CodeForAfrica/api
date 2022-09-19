@@ -2,6 +2,7 @@ import logging
 
 from celery import shared_task
 from django.utils import timezone
+
 from twoopstracker.twoops.models import Tweet, TwitterAccount
 
 logger = logging.getLogger(__name__)

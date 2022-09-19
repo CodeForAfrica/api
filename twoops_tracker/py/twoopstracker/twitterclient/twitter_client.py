@@ -3,6 +3,7 @@ import logging
 import tweepy
 from django.conf import settings
 from sentry_sdk import capture_exception
+
 from twoopstracker.twoops.models import TwitterAccount
 
 from .tasks import mark_tweet_as_deleted, save_tweet

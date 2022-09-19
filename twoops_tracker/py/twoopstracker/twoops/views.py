@@ -15,6 +15,7 @@ from rest_framework import filters, generics, response, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from sentry_sdk import capture_exception
+
 from twoopstracker.twitterclient.twitter_client import TwitterClient
 from twoopstracker.twoops.models import (
     Category,
@@ -244,9 +245,11 @@ class TweetsView(generics.ListAPIView):
 
         if not start_date:
             start_date = str(
-                datetime.date.today()
-                - datetime.timedelta(
-                    days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
+                (
+                    datetime.date.today()
+                    - datetime.timedelta(
+                        days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
+                    )
                 )
             )
         if start_date:
@@ -288,9 +291,11 @@ class TweetsInsightsView(TweetsView):
             self.request.GET.get(
                 "start_date",
                 str(
-                    today
-                    - datetime.timedelta(
-                        days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
+                    (
+                        today
+                        - datetime.timedelta(
+                            days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
+                        )
                     )
                 ),
             )
