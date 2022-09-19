@@ -1,6 +1,5 @@
 from django.db import IntegrityError
 from rest_framework import serializers
-
 from twoopstracker.twoops.models import (
     Category,
     Evidence,

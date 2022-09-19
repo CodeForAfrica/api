@@ -1,14 +1,11 @@
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-
 from twoopstracker.db.models import TimestampedModelMixin
 
 
 class Tweet(TimestampedModelMixin):
-    """
-    Tweet model
-    """
+    """Tweet model."""
 
     tweet_id = models.BigIntegerField(primary_key=True)
     content = models.CharField(max_length=1024, help_text=_("Tweet Content"))
@@ -38,9 +35,7 @@ class Tweet(TimestampedModelMixin):
 
 
 class TweetSearch(TimestampedModelMixin):
-    """
-    TweetSearch model
-    """
+    """TweetSearch model."""
 
     query = models.JSONField(help_text=_("Search Query"))
     name = models.CharField(
@@ -62,9 +57,7 @@ class TweetSearch(TimestampedModelMixin):
 
 
 class TwitterAccount(TimestampedModelMixin):
-    """
-    Twitter Account model
-    """
+    """Twitter Account model."""
 
     account_id = models.BigAutoField(primary_key=True)
     name = models.CharField(
@@ -97,9 +90,7 @@ class TwitterAccount(TimestampedModelMixin):
 
 
 class Category(TimestampedModelMixin):
-    """
-    Twitter Account Category model
-    """
+    """Twitter Account Category model."""
 
     name = models.CharField(max_length=255, unique=True, help_text=_("Category Name"))
 
@@ -111,9 +102,7 @@ class Category(TimestampedModelMixin):
 
 
 class Evidence(TimestampedModelMixin):
-    """
-    Evidence model
-    """
+    """Evidence model."""
 
     account = models.ForeignKey(
         "TwitterAccount", on_delete=models.CASCADE, related_name="evidence"
@@ -129,9 +118,7 @@ class Evidence(TimestampedModelMixin):
 
 
 class UserProfile(TimestampedModelMixin):
-    """
-    User Profile model
-    """
+    """User Profile model."""
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True
@@ -142,9 +129,7 @@ class UserProfile(TimestampedModelMixin):
 
 
 class TwitterAccountsList(TimestampedModelMixin):
-    """
-    List model
-    """
+    """List model."""
 
     name = models.CharField(max_length=255, help_text=_("Name of Twitter List"))
     slug = models.CharField(max_length=255, help_text=_("Twitter List Slug"))

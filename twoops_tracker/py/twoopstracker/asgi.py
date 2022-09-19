@@ -1,5 +1,4 @@
-"""
-ASGI config for twoopstracker project.
+"""ASGI config for twoopstracker project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
