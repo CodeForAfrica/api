@@ -244,10 +244,10 @@ class TweetsView(generics.ListAPIView):
 
         if not start_date:
             start_date = str(
-                    datetime.date.today()
-                    - datetime.timedelta(
-                        days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
-                    )
+                datetime.date.today()
+                - datetime.timedelta(
+                    days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
+                )
             )
         if start_date:
             start_date = datetime.date.fromisoformat(start_date)
@@ -288,10 +288,10 @@ class TweetsInsightsView(TweetsView):
             self.request.GET.get(
                 "start_date",
                 str(
-                        today
-                        - datetime.timedelta(
-                            days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
-                        )
+                    today
+                    - datetime.timedelta(
+                        days=settings.TWOOPSTRACKER_SEARCH_DEFAULT_DAYS_BACK
+                    )
                 ),
             )
         )
