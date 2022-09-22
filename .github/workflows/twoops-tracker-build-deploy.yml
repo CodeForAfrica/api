@@ -24,9 +24,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
       - name: Cache Pants
       - uses: pantsbuild/actions/init-pants@c0ce05ee4ba288bb2a729a2b77294e9cb6ab66f7
         # This action bootstraps pants and manages 2-3 GHA caches.
