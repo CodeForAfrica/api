@@ -1,1 +1,1 @@
-FROM codeforafrica/twoops_tracker:0.0.1
+FROM codeforafrica/twoops_tracker:2.0.0a1
