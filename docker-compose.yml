@@ -25,16 +25,26 @@ services:
       - "63791:6379"
 
   twoops_tracker:
-    restart: always
     image: codeforafrica/twoops-tracker:latest
-    ports:
-      # Allow API access from outside the container
-      - "8000:8000"
-    env_file:
-      - .env
     environment:
       - TWOOPSTRACKER_DATABASE_URL=postgres://${PGUSER:-twoops_tracker}:${PGPASSWORD:-twoops_tracker}@db:5432/${PGDATABASE:-twoops_tracker}
       - TWOOPSTRACKER_CELERY_BROKER_URL=${TWOOPSTRACKER_CELERY_BROKER_URL:-redis://redis:6379/0}
+    env_file:
+      - .env
+    volumes:
+      - app-staticfiles:/app/staticfiles
+  
+  nginx:
+    image: nginx:1.20
+    restart: unless-stopped
+    volumes:
+      - ./contrib/docker-compose/nginx:/etc/nginx/conf.d
+      - app-staticfiles:/var/www/static
+    ports:
+      - 8000:80
+    depends_on:
+      - twoops_tracker
 
 volumes:
   db-data:
+  app-staticfiles:
