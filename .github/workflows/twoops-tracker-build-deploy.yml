@@ -28,6 +28,10 @@ jobs:
         run: |
           ./pants lint twoops_tracker/py::
 
+      - name: Format
+        run: |
+          ./pants fmt twoops_tracker/py::
+
       - name: Build
         run: |
           ./pants package twoops_tracker/docker/::
