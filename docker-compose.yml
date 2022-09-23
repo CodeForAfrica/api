@@ -26,6 +26,9 @@ services:
 
   twoops_tracker:
     image: codeforafrica/twoops-tracker:latest
+    depends_on:
+      - db
+      - redis
     environment:
       - TWOOPSTRACKER_DATABASE_URL=postgres://${PGUSER:-twoops_tracker}:${PGPASSWORD:-twoops_tracker}@db:5432/${PGDATABASE:-twoops_tracker}
       - TWOOPSTRACKER_CELERY_BROKER_URL=${TWOOPSTRACKER_CELERY_BROKER_URL:-redis://redis:6379/0}
