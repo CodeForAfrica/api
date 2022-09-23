@@ -53,8 +53,8 @@ class TweetListener(tweepy.Stream):
 
     def on_delete(self, status_id, user_id):
         logger.info(
-            f"Queued delete notification for user {user_id} \
-                for tweet {status_id}"
+            f"Queued delete notification for user {user_id}                 for tweet"
+            f" {status_id}"
         )
         # Mark the tweet as Deleted
         mark_tweet_as_deleted.delay(status_id)

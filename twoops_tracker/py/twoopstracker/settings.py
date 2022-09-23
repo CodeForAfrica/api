@@ -121,7 +121,9 @@ AUTH_USER_MODEL = "authentication.User"
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": (
+            "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+        ),
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
@@ -206,7 +208,9 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.BasicAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
-    "DEFAULT_PAGINATION_CLASS": "twoopstracker.twoops.pagination.TwoopsTrackerPagination",
+    "DEFAULT_PAGINATION_CLASS": (
+        "twoopstracker.twoops.pagination.TwoopsTrackerPagination"
+    ),
 }
 
 # Dj-Rest-Auth
@@ -236,11 +240,15 @@ TWOOPSTRACKER_PASSWORD_RESET_URL = env.str(
 # Custom Register Serializer
 # https://dj-rest-auth.readthedocs.io/en/latest/configuration.html
 REST_AUTH_REGISTER_SERIALIZERS = {
-    "REGISTER_SERIALIZER": "twoopstracker.authentication.serializers.CustomRegisterSerializer"
+    "REGISTER_SERIALIZER": (
+        "twoopstracker.authentication.serializers.CustomRegisterSerializer"
+    )
 }
 
 REST_AUTH_SERIALIZERS = {
-    "PASSWORD_RESET_SERIALIZER": "twoopstracker.authentication.serializers.CustomPasswordResetSerializer"
+    "PASSWORD_RESET_SERIALIZER": (
+        "twoopstracker.authentication.serializers.CustomPasswordResetSerializer"
+    )
 }
 # Custom Redirects
 # https://django-allauth.readthedocs.io/en/latest/advanced.html#custom-redirects
