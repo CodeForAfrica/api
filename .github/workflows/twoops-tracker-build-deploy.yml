@@ -37,25 +37,25 @@ jobs:
           # then you may also want to preserve the local Pants cache (lmdb_store). However this must invalidate for
           # changes to any file that can affect the build, so may not be practical in larger repos.
           # A remote cache service integrates with Pants's fine-grained invalidation and avoids these problems.
-          cache-lmdb-store: 'true'  # defaults to 'false'
           # Note that named_caches and lmdb_store falls back to partial restore keys which
           # may give a useful partial result that will save time over completely clean state,
           # but will cause the cache entry to grow without bound over time.
           # See https://pants.readme.io/docs/using-pants-in-ci for tips on how to periodically clean it up.
           # Alternatively you change gha-cache-key to ignore old caches.
+          cache-lmdb-store: 'true'  # defaults to 'false'
       - name: Lint
         run: |
           ./pants lint twoops_tracker/py::
+
+      - name: Build
+        run: |
+          ./pants package twoops_tracker/docker/::
 
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
-      - name: Build
-        run: |
-          ./pants package twoops_tracker/docker/::
       
       - name: Push to DockerHub
         run: |
