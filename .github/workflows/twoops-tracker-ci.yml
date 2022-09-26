@@ -23,7 +23,7 @@ jobs:
       - name: Initialize Pants
         uses: pantsbuild/actions/init-pants@main
         with:
-          pants-python-version: ${{ matrix.python-version }}
+          pants-python-version: "3.10.7"
 
       - name: Lint
         run: |
