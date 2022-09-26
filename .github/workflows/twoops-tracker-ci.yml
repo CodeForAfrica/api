@@ -31,4 +31,4 @@ jobs:
 
       - name: Build
         run: |
-          ./pants package twoops_tracker/docker/::
+          ./pants package twoops_tracker/py:main
