@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.10.7]
+        python-version: ["3.10.7",]
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.10.0
@@ -41,7 +41,7 @@ jobs:
 
       - name: Build
         run: |
-          ${{ env.VERSION }} ./pants package twoops_tracker/docker/::
+          VERSION=${{ env.VERSION }} ./pants package twoops_tracker/docker/::
 
       - name: Login to DockerHub
         uses: docker/login-action@v2
