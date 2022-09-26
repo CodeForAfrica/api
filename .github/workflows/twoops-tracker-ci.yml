@@ -24,6 +24,7 @@ jobs:
         uses: pantsbuild/actions/init-pants@main
         with:
           pants-python-version: "3.10.7"
+          pants-ci-config: "pants.toml"
 
       - name: Lint
         run: |
