@@ -2,11 +2,6 @@ name: TwoopsTracker | Continuous Integration
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-env:
-  DOKKU_REMOTE_BRANCH: "master"
-  DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/twoopstracker"
-  GIT_PUSH_FLAGS: "--force"
-  IMAGE_NAME: "codeforafrica/twoopstracker"
 jobs:
   build:
     name: Perform CI Checks
