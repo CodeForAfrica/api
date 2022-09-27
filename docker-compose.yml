@@ -24,5 +24,30 @@ services:
       # Allow Redis access from outside the container
       - "63791:6379"
 
+  twoops_tracker:
+    image: codeforafrica/twoops-tracker:latest
+    depends_on:
+      - db
+      - redis
+    environment:
+      - TWOOPSTRACKER_DATABASE_URL=postgres://${PGUSER:-twoops_tracker}:${PGPASSWORD:-twoops_tracker}@db:5432/${PGDATABASE:-twoops_tracker}
+      - TWOOPSTRACKER_CELERY_BROKER_URL=${TWOOPSTRACKER_CELERY_BROKER_URL:-redis://redis:6379/0}
+    env_file:
+      - ./twoops_tracker/.env
+    volumes:
+      - app-staticfiles:/app/staticfiles
+  
+  nginx:
+    image: nginx:1.20
+    restart: unless-stopped
+    volumes:
+      - ./contrib/docker-compose/nginx:/etc/nginx/conf.d
+      - app-staticfiles:/var/www/static
+    ports:
+      - 8000:80
+    depends_on:
+      - twoops_tracker
+
 volumes:
   db-data:
+  app-staticfiles:

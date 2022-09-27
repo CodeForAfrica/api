@@ -1,0 +1,35 @@
+name: TwoopsTracker | Continuous Integration
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  build:
+    name: Perform CI Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10.7", ]
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.10.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Initialize Pants
+        uses: pantsbuild/actions/init-pants@main
+        with:
+          pants-python-version: ${{ matrix.python-version }}
+          pants-ci-config: "pants.toml"
+
+      - name: Lint
+        run: |
+          ./pants lint twoops_tracker/py::
+
+      - name: Build
+        run: |
+          ./pants package twoops_tracker/py:main

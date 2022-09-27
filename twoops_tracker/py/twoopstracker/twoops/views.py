@@ -483,7 +483,9 @@ class AccountsListUploadAPIView(generics.CreateAPIView):
             if category and category.lower() not in all_categories:
                 errors.append(
                     {
-                        "message": f"The category '{category}' isn't currently supported",
+                        "message": (
+                            f"The category '{category}' isn't currently supported"
+                        ),
                         "details": {
                             "row": position,
                             "username": row["username"],
@@ -534,7 +536,10 @@ class AccountsListUploadAPIView(generics.CreateAPIView):
 
                 except IntegrityError:
                     user = request.user.email
-                    msg = f"A {account['repo']} list {account_list} already exists for {user}"
+                    msg = (
+                        f"A {account['repo']} list {account_list} already exists for"
+                        f" {user}"
+                    )
                     errors.append(
                         {
                             "message": msg,

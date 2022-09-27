@@ -28,7 +28,10 @@ class Migration(migrations.Migration):
                 (
                     "url",
                     models.URLField(
-                        help_text="URL to evidence showing that this account can belong to a public list"
+                        help_text=(
+                            "URL to evidence showing that this account can belong to a"
+                            " public list"
+                        )
                     ),
                 ),
                 (

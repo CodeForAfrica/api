@@ -45,7 +45,10 @@ class Migration(migrations.Migration):
                     "deleted",
                     models.BooleanField(
                         default=False,
-                        help_text="When deleted is true, we aren't tracking this account anymore.",
+                        help_text=(
+                            "When deleted is true, we aren't tracking this account"
+                            " anymore."
+                        ),
                     ),
                 ),
             ],

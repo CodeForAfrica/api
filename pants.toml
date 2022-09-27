@@ -36,6 +36,9 @@ root_patterns = [
 [python]
 interpreter_constraints = ["==3.10.*"]
 
+[black]
+args = ["--preview"]
+
 [docker]
 default_repository = "codeforafrica/{name}"
 build_args = ["VERSION"]

@@ -8,6 +8,7 @@ ENV APP_HOST=.
 ENV APP_DOCKER=/app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ENV STATIC_ROOT=/app/staticfiles
 
 COPY twoops_tracker.py/main.pex /bin/dj
 
