@@ -5,7 +5,7 @@ Django==3.2.12
 django-cors-headers==3.10.1
 django-storages==1.13.1
 djangorestframework==3.14.0
-djangorestframework-simplejwt==5.0.0
+djangorestframework-simplejwt==5.2.0
 environs[django]==9.4.0
 google-api-python-client==2.63.0
 google-auth-httplib2==0.1.0
