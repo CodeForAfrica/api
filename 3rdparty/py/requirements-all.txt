@@ -16,4 +16,4 @@ redis==4.3.4
 requests==2.28.1
 sentry-sdk==1.9.9
 tablib[xlsx]==3.2.1
-tweepy==4.4.0
+tweepy==4.10.1
