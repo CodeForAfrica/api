@@ -54,7 +54,7 @@ jobs:
       
       - name: Push to DockerHub
         run: |
-          docker push codeforafrica/twoopstracker:${{ env.VERSION }}
+          docker push ${env.IMAGE_NAME}:${{ env.VERSION }}
 
       - name: Push to Dokku
         uses: dokku/github-action@v1.3.0
