@@ -36,6 +36,7 @@ jobs:
         uses: pantsbuild/actions/init-pants@main
         with:
           pants-python-version: ${{ matrix.python-version }}
+          pants-ci-config: "pants.toml"
 
       - name: Lint
         run: |
