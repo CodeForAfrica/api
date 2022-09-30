@@ -1,5 +1,5 @@
 docker_image(
-    name = "twoops-tracker",
+    name = "twoopstracker",
     dependencies = [
         "twoops_tracker/py:main",
         "twoops_tracker/sh:sh",
