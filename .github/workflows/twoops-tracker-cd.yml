@@ -7,10 +7,9 @@ on:
       - 'twoops_tracker/py/VERSION'
 env:
   DOKKU_REMOTE_BRANCH: "master"
-  DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/twoopstracker_test"
+  DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/twoopstracker-test"
   GIT_PUSH_FLAGS: "--force"
   IMAGE_NAME: "codeforafrica/twoopstracker"
-  VERSION: cat twoops_tracker/py/VERSION
 
 jobs:
   build:
@@ -29,6 +28,9 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Set env
+        run: echo "VERSION=$(cat twoops_tracker/py/VERSION)" >> $GITHUB_ENV
 
       - name: Initialize Pants
         uses: pantsbuild/actions/init-pants@main
