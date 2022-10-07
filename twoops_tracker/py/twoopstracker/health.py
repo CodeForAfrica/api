@@ -10,7 +10,7 @@ def health_check(request):
     # 1. has there been any tweets collected in the last 24 hours\
     # and if not it might indicate the system not being functional
     try:
-        first_tweet = Tweet.objects.only('tweet_id').first()
+        first_tweet = Tweet.objects.only("tweet_id").first()
         if first_tweet:
             return Response(status=status.HTTP_200_OK)
         else:
