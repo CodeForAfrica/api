@@ -23,8 +23,11 @@ env.read_env()
 # Core Settings
 # https://docs.djangoproject.com/en/3.2/ref/settings/#core-settings
 
+
+BASE_DIR = env.path("TWOOPSTRACKER_BASE_DIR", None)
+if not BASE_DIR:
+    BASE_DIR = Path(__file__).resolve().parent.parent
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Sentry
 SENTRY_DSN = env.str("TWOOPSTRACKER_SENTRY_DSN", "")
@@ -178,8 +181,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 # Celery
 CELERY_BROKER_URL = env.str("TWOOPSTRACKER_CELERY_BROKER_URL", "")
-TWOOPTRACKER_STREAM_LISTENER_INTERVAL = env.int(
-    "TWOOPTRACKER_STREAM_LISTENER_INTERVAL", 15
+TWOOPSTRACKER_STREAM_LISTENER_INTERVAL = env.int(
+    "TWOOPSTRACKER_STREAM_LISTENER_INTERVAL", 15
 )
 
 # Static Files
@@ -223,11 +226,13 @@ REST_FRAMEWORK = {
 #                  some to env vars.
 ACCOUNT_AUTHENTICATION_METHOD = "email"
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = env.str("ACCOUNT_EMAIL_VERIFICATION", "none")
-SOCIALACCOUNT_EMAIL_VERIFICATION = env.str("SOCIALACCOUNT_EMAIL_VERIFICATION", "none")
+ACCOUNT_EMAIL_VERIFICATION = env.str("TWOOPSTRACKER_ACCOUNT_EMAIL_VERIFICATION", "none")
+SOCIALACCOUNT_EMAIL_VERIFICATION = env.str(
+    "TWOOPSTRACKER_SOCIALACCOUNT_EMAIL_VERIFICATION", "none"
+)
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_USERNAME_REQUIRED = False
-LOGIN_URL = env("LOGIN_URL", "http://localhost:3000/login")
+LOGIN_URL = env("TWOOPSTRACKER_LOGIN_URL", "http://localhost:3000/login")
 TWOOPSTRACKER_EMAIL_CONFIRMATION_URL = env.str(
     "TWOOPSTRACKER_EMAIL_CONFIRMATION_URL",
     "http://localhost:3000/api/auth/registration/confirm-email",
@@ -254,12 +259,12 @@ REST_AUTH_SERIALIZERS = {
 # https://django-allauth.readthedocs.io/en/latest/advanced.html#custom-redirects
 ACCOUNT_ADAPTER = "twoopstracker.authentication.adapter.CustomAccountAdapter"
 
-DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", "webmaster@localhost")
-EMAIL_HOST = env("EMAIL_HOST", "")
-EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", True)
-EMAIL_PORT = env.int("EMAIL_PORT", 587)
-EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = env.str("TWOOPSTRACKER_DEFAULT_FROM_EMAIL", "webmaster@localhost")
+EMAIL_HOST = env("TWOOPSTRACKER_EMAIL_HOST", "")
+EMAIL_USE_TLS = env.bool("TWOOPSTRACKER_EMAIL_USE_TLS", True)
+EMAIL_PORT = env.int("TWOOPSTRACKER_EMAIL_PORT", 587)
+EMAIL_HOST_USER = env("TWOOPSTRACKER_EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env("TWOOPSTRACKER_EMAIL_HOST_PASSWORD", "")
 
 REST_SESSION_LOGIN = False
 REST_USE_JWT = True
