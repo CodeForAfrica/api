@@ -1,32 +1,26 @@
-FROM python:3.10-slim as deps
+FROM python:3.10-slim-bullseye AS python-base
 
-COPY twoops_tracker.py/main.pex /main.pex
-RUN PEX_TOOLS=1 /usr/local/bin/python3.10 /main.pex venv --scope=deps --compile /bin/dj
+RUN apt-get update \
+    && apt-get -y upgrade \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
+FROM twoopstracker/app:deps AS app-deps
 
-FROM python:3.10-slim as srcs
+FROM twoopstracker/app:srcs AS app-srcs
 
-COPY twoops_tracker.py/main.pex /main.pex
-RUN PEX_TOOLS=1 /usr/local/bin/python3.10 /main.pex venv --scope=srcs --compile /bin/dj
+FROM python-base AS python-app
 
-
-FROM python:3.10-slim
-
-ENV APP_DOCKER=/app
-
-# Expose server port
-EXPOSE 8000
-
-### Volumes
-WORKDIR ${APP_DOCKER}
+WORKDIR /app
 
 RUN mkdir -p media staticfiles logs
 
-COPY twoops_tracker/sh/*.sh /
-RUN chmod +x /cmd.sh
+COPY --from=app-deps /app ./
+COPY --from=app-srcs /app ./
 
-COPY --from=deps /bin/dj /bin/dj
-COPY --from=srcs /bin/dj /bin/dj
+COPY twoops_tracker/sh/cmd.sh ./
+RUN chmod +x ./cmd.sh
 
-### Run app
-ENTRYPOINT ["/cmd.sh"]
+EXPOSE 8000
+
+ENTRYPOINT ["./cmd.sh"]
