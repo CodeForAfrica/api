@@ -49,9 +49,9 @@ async def setup_kwargs_plugin(request: VersionedSetupKwargsRequest) -> SetupKwar
     version_file = kwargs.pop("version_file", None)
     if version and version_file:
         raise ValueError(
-            f"The python_distribution target {request.target.address} has supplied both "
-            "`version` and `version_file` in its setup_py's kwargs. Only one of these "
-            "should be supplied."
+            f"The python_distribution target {request.target.address} has supplied both"
+            " `version` and `version_file` in its setup_py's kwargs. Only one of these"
+            " should be supplied."
         )
     # we default to checking VERSION file if both version and version_file are not set
     if not version:
@@ -62,7 +62,9 @@ async def setup_kwargs_plugin(request: VersionedSetupKwargsRequest) -> SetupKwar
             DigestContents,
             PathGlobs(
                 [version_path],
-                description_of_origin=f"the 'version_file' kwarg in {request.target.address}",
+                description_of_origin=(
+                    f"the 'version_file' kwarg in {request.target.address}"
+                ),
                 glob_match_error_behavior=GlobMatchErrorBehavior.error,
             ),
         )

@@ -31,7 +31,7 @@ app.conf.beat_schedule = {
     "start_stream_listener": {
         "task": "start_stream_listener",
         "schedule": crontab(
-            minute=f"*/{settings.TWOOPTRACKER_STREAM_LISTENER_INTERVAL}"
+            minute=f"*/{settings.TWOOPSTRACKER_STREAM_LISTENER_INTERVAL}"
         ),
     },
 }
