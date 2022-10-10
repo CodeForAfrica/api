@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10.7", ]
+        python-version: ["3.10.7"]
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.10.1
@@ -28,8 +28,8 @@ jobs:
 
       - name: Lint
         run: |
-          ./pants lint twoops_tracker/py::
+          ./pants lint --lint-skip-formatters twoops_tracker/::
 
       - name: Build
         run: |
-          ./pants package twoops_tracker/py:main
+          ./pants package twoops_tracker/py:twoopstracker-deps twoops_tracker/py:twoopstracker-srcs

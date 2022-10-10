@@ -40,7 +40,7 @@ jobs:
 
       - name: Lint
         run: |
-          ./pants lint twoops_tracker/py::
+          ./pants lint --lint-skip-formatters twoops_tracker/::
 
       - name: Build
         run: |
