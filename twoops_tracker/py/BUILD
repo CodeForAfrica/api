@@ -21,12 +21,23 @@ python_sources(
 )
 
 pex_binary(
-    name = "main",
-    entry_point = "main.py",
+    name = "twoopstracker-deps",
     dependencies = [
         ":lib",
     ],
-    layout = "packed",
-    execution_mode = "venv",
+    entry_point = "main.py",
+    include_sources = False,
     include_tools = True,
+    layout = "packed",
+)
+
+pex_binary(
+    name = "twoopstracker-srcs",
+    dependencies = [
+        ":lib",
+    ],
+    entry_point = "main.py",
+    include_requirements = False,
+    include_tools = True,
+    layout = "packed",
 )
