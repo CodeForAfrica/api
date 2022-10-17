@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - 'twoops_tracker/py/VERSION'
+      - "twoops_tracker/py/VERSION"
 env:
   DOKKU_REMOTE_BRANCH: "master"
   DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/twoopstracker"
@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10.7",]
+        python-version: ["3.10"]
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.11.0
@@ -32,17 +32,23 @@ jobs:
       - name: Set env
         run: echo "VERSION=$(cat twoops_tracker/py/VERSION)" >> $GITHUB_ENV
 
-      - name: Initialize Pants
-        uses: pantsbuild/actions/init-pants@main
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
         with:
-          pants-python-version: ${{ matrix.python-version }}
-          pants-ci-config: "pants.toml"
+          python-version: ${{ matrix.python-version }}
+
+      - name: Bootstrap Pants
+        run: |
+          ./pants --version
+
+      - name: Check BUILD files
+        run: ./pants tailor --check update-build-files --check
 
       - name: Lint
         run: |
-          ./pants lint twoops_tracker/py::
+          ./pants lint --lint-skip-formatters twoops_tracker/::
 
-      - name: Build
+      - name: Build Docker image
         run: |
           VERSION=${{ env.VERSION }} ./pants package twoops_tracker/docker/::
 
@@ -51,7 +57,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-      
+
       - name: Push to DockerHub
         run: |
           docker push ${{ env.IMAGE_NAME }}:${{ env.VERSION }}

@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("twoops", "0021_twitteraccount_profile_image_url_https"),
     ]

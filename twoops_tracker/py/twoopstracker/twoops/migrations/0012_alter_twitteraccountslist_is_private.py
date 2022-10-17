@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("twoops", "0011_alter_tweetsearch_options"),
     ]
