@@ -12,7 +12,7 @@ def health_check(request):
     try:
         last_tweet_id = Tweet.objects.values_list("tweet_id", flat=True).last()
         if last_tweet_id is not None:
-            return Response({'tweet_id':last_tweet_id},status=status.HTTP_200_OK)
+            return Response({"tweet_id": last_tweet_id}, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_503_SERVICE_UNAVAILABLE)
     except Exception:
