@@ -1,4 +1,4 @@
-boto3==1.25.1
+boto3==1.25.3
 celery==5.2.7
 dj-rest-auth[with_social]==2.2.5
 Django==3.2.16
