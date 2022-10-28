@@ -1,6 +1,6 @@
 resources(
-    name = "resources",
-    sources = [
+    name="resources",
+    sources=[
         "pyproject.toml",
         "setup.cfg",
         "README.md",
@@ -9,13 +9,13 @@ resources(
 )
 
 python_distribution(
-    name = "dj-cmd",
-    dependencies = [
+    name="dj-cmd",
+    dependencies=[
         "dj-cmd/py/dj_cmd:dj_cmd",
         ":resources",
     ],
-    provides = setup_py(
-        name = "dj-cmd",
+    provides=setup_py(
+        name="dj-cmd",
     ),
-    sdist = False,
+    sdist=False,
 )

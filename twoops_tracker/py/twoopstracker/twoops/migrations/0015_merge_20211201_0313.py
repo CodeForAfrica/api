@@ -5,7 +5,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("twoops", "0011_alter_tweet_content"),
         ("twoops", "0014_alter_twitteraccountslist_unique_together"),

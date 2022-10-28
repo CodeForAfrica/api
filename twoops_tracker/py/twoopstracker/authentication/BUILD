@@ -1,5 +1,5 @@
 python_sources(
-    dependencies = [
+    dependencies=[
         "twoops_tracker/py/twoopstracker/authentication/migrations",
     ],
 )

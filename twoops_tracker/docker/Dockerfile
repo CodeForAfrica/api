@@ -1,26 +1,26 @@
-FROM python:3.10-slim
+FROM python:3.10-slim-bullseye AS python-base
 
-### Arg
-ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get -y upgrade \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-### Env
-ENV APP_HOST=.
-ENV APP_DOCKER=/app
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV STATIC_ROOT=/app/staticfiles
+FROM twoopstracker/app:deps AS app-deps
 
-COPY twoops_tracker.py/main.pex /bin/dj
+FROM twoopstracker/app:srcs AS app-srcs
 
-# Expose server port
-EXPOSE 8000
+FROM python-base AS python-app
 
-### Volumes
-WORKDIR ${APP_DOCKER}
+WORKDIR /app
+
 RUN mkdir -p media staticfiles logs
 
-COPY twoops_tracker/sh/*.sh /
-RUN chmod +x /cmd.sh
+COPY --from=app-deps /app ./
+COPY --from=app-srcs /app ./
 
-### Run app
-CMD ["/cmd.sh"]
+COPY twoops_tracker/sh/cmd.sh ./
+RUN chmod +x ./cmd.sh
+
+EXPOSE 8000
+
+ENTRYPOINT ["./cmd.sh"]
