@@ -1,0 +1,4 @@
+FROM python:3.10-slim-bullseye
+
+COPY twoops_tracker.py/twoopstracker-srcs.pex /twoopstracker-srcs.pex
+RUN PEX_TOOLS=1 /usr/local/bin/python3.10 /twoopstracker-srcs.pex venv --scope=srcs --compile /app
