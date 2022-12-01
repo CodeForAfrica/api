@@ -7,7 +7,7 @@ django-storages==1.13.1
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.2.2
 environs[django]==9.5.0
-google-api-python-client==2.66.0
+google-api-python-client==2.68.0
 google-auth-httplib2==0.1.0
 google-auth-oauthlib==0.7.1
 greenlet==2.0.1
