@@ -1,7 +1,5 @@
 [GLOBAL]
-pants_version = "2.13.0"
-use_deprecated_directory_cli_args_semantics = false
-use_deprecated_pex_binary_run_semantics = false
+pants_version = "2.14.0"
 pythonpath = ["%(buildroot)s/pants-plugins"]
 
 backend_packages = [
@@ -34,7 +32,7 @@ root_patterns = [
 ]
 
 [python]
-interpreter_constraints = ["==3.10.*"]
+interpreter_constraints = ["==3.9.*"]
 
 [black]
 args = ["--preview"]
