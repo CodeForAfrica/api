@@ -15,5 +15,5 @@ gunicorn[gevent, setproctitle]==20.1.0
 redis==4.3.5
 requests==2.28.1
 sentry-sdk==1.11.1
-tablib[xlsx]==3.2.1
+tablib[xlsx]==3.3.0
 tweepy==4.10.1
