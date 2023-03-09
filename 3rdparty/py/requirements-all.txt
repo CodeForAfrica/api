@@ -19,3 +19,4 @@ sendgrid==6.9.7
 sentry-sdk==1.5.2
 tablib[xlsx]==3.1.0
 tweepy==4.4.0
+python-dotenv==1.0.0

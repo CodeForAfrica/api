@@ -6,6 +6,7 @@ python_sources(
         "3rdparty/py:requirements-all#outline-vpn-api",
         "3rdparty/py:requirements-all#sendgrid",
         "3rdparty/py:requirements-all#environs",
+        "3rdparty/py:requirements-all#python-dotenv",
     ],
 )
 
