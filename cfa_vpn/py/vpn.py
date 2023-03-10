@@ -91,5 +91,3 @@ class VPNManager:
             writer.writeheader()
             for row in user_data:
                 writer.writerow(row)
-
-                
