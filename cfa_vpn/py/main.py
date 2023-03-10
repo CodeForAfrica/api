@@ -25,6 +25,12 @@ def init_argparse():
         action="store_true",
         help="Send emails to users after generating VPN keys",
     )
+    parser.add_argument(
+        "-e",
+        "--extract",
+        action="store_true",
+        help="Extract VPN usage metrics for every key",
+    )
     return parser
 
 
@@ -36,9 +42,7 @@ if __name__ == "__main__":
 
     if vpn_type == "outline":
         outline_vpn_api_url = os.environ.get("CFA_OUTLINE_VPN_API_URL")
-        print(outline_vpn_api_url)
         vpn = OutlineVPN(api_url=outline_vpn_api_url)
-        print(vpn)
     else:
         raise ValueError(f"Unsupported vpn type: {vpn_type}")
 
@@ -68,3 +72,6 @@ if __name__ == "__main__":
             raise ValueError(f"Unsupported email sender: {email_sender_type}")
         vpn_manager.set_email_sender(email_sender)
         vpn_manager.send_emails()
+    
+    if args.extract:
+        vpn_manager.extract_user_data()
