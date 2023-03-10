@@ -37,14 +37,16 @@ class OutlineVPN(VPN):
             return all_keys
         else:
             return [key for key in all_keys if key.name in emails]
-    
+
     def get_user_status(self):
         user_data = []
         all_keys = self.client.get_keys()
         for key in all_keys:
-            used_bytes_mb = key.used_bytes/(1024 * 1024) if key.used_bytes is not None else 0
-            user_data.append({"Name":key.name, "Data":f"{used_bytes_mb:.2f} MB"})
-                             
+            used_bytes_mb = (
+                key.used_bytes / (1024 * 1024) if key.used_bytes is not None else 0
+            )
+            user_data.append({"Name": key.name, "Data": f"{used_bytes_mb:.2f} MB"})
+
         return user_data
 
 
@@ -84,9 +86,9 @@ class VPNManager:
 
     def extract_user_data(self):
         user_data = self._vpn.get_user_status()
-        
+
         headers = user_data[0].keys()
-        with open("metrics_output.csv", 'w', newline='') as output_file:
+        with open("metrics_output.csv", "w", newline="") as output_file:
             writer = csv.DictWriter(output_file, fieldnames=headers)
             writer.writeheader()
             for row in user_data:

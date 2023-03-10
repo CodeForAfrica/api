@@ -1,12 +1,10 @@
-import os
 import argparse
+import os
 
-
+from dotenv import load_dotenv
 from emails.loader import LocalEmailsLoader
 from emails.sender import SendGridEmailSender
-from dotenv import load_dotenv
 from vpn import OutlineVPN, VPNManager
-
 
 load_dotenv("cfa_vpn/.env")
 
@@ -51,7 +49,9 @@ if __name__ == "__main__":
     emails_location = os.environ.get("CFA_EMAILS_LOCATION", "local")
     emails_loader = None
     if emails_location == "local":
-        emails_json_path = os.environ.get("CFA_EMAILS_JSON_PATH", "cfa_vpn/py/emails/emails.json")
+        emails_json_path = os.environ.get(
+            "CFA_EMAILS_JSON_PATH", "cfa_vpn/py/emails/emails.json"
+        )
         emails_loader = LocalEmailsLoader(emails_json_path)
     else:
         raise ValueError(f"Unsupported emails location: {emails_location}")
@@ -72,6 +72,6 @@ if __name__ == "__main__":
             raise ValueError(f"Unsupported email sender: {email_sender_type}")
         vpn_manager.set_email_sender(email_sender)
         vpn_manager.send_emails()
-    
+
     if args.extract:
         vpn_manager.extract_user_data()
