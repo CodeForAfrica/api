@@ -1,5 +1,5 @@
 boto3==1.28.38
-celery==5.3.1
+celery==5.3.3
 dj-rest-auth[with_social]==4.0.1
 Django==3.2.20
 django-cors-headers==4.2.0
