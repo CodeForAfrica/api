@@ -1,7 +1,7 @@
 boto3==1.28.73
 celery==5.3.4
 dj-rest-auth[with_social]==4.0.1
-Django==3.2.22
+Django==3.2.23
 django-cors-headers==4.3.0
 django-storages==1.14.2
 djangorestframework==3.14.0
