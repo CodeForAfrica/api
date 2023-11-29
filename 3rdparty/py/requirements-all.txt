@@ -10,7 +10,7 @@ environs[django]==9.5.0
 google-api-python-client==2.108.0
 google-auth-httplib2==0.1.1
 google-auth-oauthlib==1.1.0
-greenlet==2.0.2
+greenlet==3.0.1
 gunicorn[gevent, setproctitle]==21.2.0
 redis==5.0.1
 requests==2.31.0
