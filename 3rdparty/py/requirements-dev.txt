@@ -1,4 +1,4 @@
 -r requirements-all.txt
 
-black==23.12.1
+black==24.1.0
 psycopg2-binary==2.9.9
