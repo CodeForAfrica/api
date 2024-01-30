@@ -166,5 +166,6 @@ cython_debug/
 
 # cfa_vpn
 cfa_vpn/py/emails/emails.json
+cfa_vpn/py/credentials.json
 
 # End of custom ignore
