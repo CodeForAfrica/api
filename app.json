@@ -1,0 +1,8 @@
+{
+    "cron": [
+        {
+            "command": "./test_script.sh",
+            "schedule": "* * * * *"
+        }
+    ]
+}
