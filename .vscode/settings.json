@@ -1,6 +1,0 @@
-{
-    "python.linting.enabled": true,
-    "cSpell.words": [
-        "dotenv"
-    ]
-}
