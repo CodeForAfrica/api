@@ -46,7 +46,10 @@ services:
       - 8000:80
     depends_on:
       - twoopstracker_app
-
+  pesacheck_meedan_bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
 volumes:
   app-media:
   app-staticfiles:

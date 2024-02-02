@@ -72,3 +72,5 @@ def upload_content():
         if (res):
             success_posts.append(res)
     set_context("Successful Uploads", success_posts)
+
+upload_content()
