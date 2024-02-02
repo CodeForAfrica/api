@@ -164,5 +164,5 @@ cython_debug/
 /.pids
 /.pants.workdir.file_lock*
 
-# End of custom ignore
 credentials.json
+# End of custom ignore
