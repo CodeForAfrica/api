@@ -1,0 +1,1 @@
+* * * * * root /app/pesacheck_meedan_bridge/venv/bin/python /app/pesacheck_meedan_bridge/service.py && echo "Cron job ran at $(date)" >> /app/debug.log
