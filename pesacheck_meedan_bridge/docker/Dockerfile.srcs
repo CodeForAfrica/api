@@ -1,0 +1,4 @@
+FROM python:3.9-slim-bullseye
+
+COPY pesacheck_meedan_bridge.py/pesacheck-srcs.pex /pesacheck-srcs.pex
+RUN PEX_TOOLS=1 /usr/local/bin/python3.9 /pesacheck-srcs.pex venv --scope=srcs --compile /app

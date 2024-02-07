@@ -29,7 +29,8 @@ root_patterns = [
   "/twoops_tracker/py",
   "/twoops_tracker/sh",
   "/pants-plugins",
-  "/pesacheck_meedan_bridge"
+  "/pesacheck_meedan_bridge/py",
+  "/pesacheck_meedan_bridge/docker"
 ]
 
 [python]

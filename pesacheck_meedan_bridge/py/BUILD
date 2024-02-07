@@ -1,0 +1,30 @@
+python_sources(
+  name="lib",
+  dependencies=[
+    "3rdparty/py:requirements-all#requests",
+    "3rdparty/py:requirements-all#sentry-sdk",
+    "3rdparty/py:requirements-all#environs",
+  ]
+)
+
+pex_binary(
+    name="pesacheck-deps",
+    dependencies=[
+        ":lib",
+    ],
+    entry_point="service.py",
+    include_sources=False,
+    include_tools=True,
+    layout="packed",
+)
+
+pex_binary(
+    name="pesacheck-srcs",
+    dependencies=[
+        ":lib",
+    ],
+    entry_point="service.py",
+    include_requirements=False,
+    include_tools=True,
+    layout="packed",
+)

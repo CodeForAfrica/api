@@ -47,9 +47,10 @@ services:
     depends_on:
       - twoopstracker_app
   pesacheck_meedan_bridge:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: codeforafrica/pesacheck_meedan_bridge:latest
+    env_file:
+      - ./pesacheck_meedan_bridge/.env
+
 volumes:
   app-media:
   app-staticfiles:

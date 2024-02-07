@@ -1,0 +1,4 @@
+FROM python:3.9-slim-bullseye
+
+COPY pesacheck_meedan_bridge.py/pesacheck-deps.pex /pesacheck-deps.pex
+RUN PEX_TOOLS=1 /usr/local/bin/python3.9 /pesacheck-deps.pex venv --scope=deps --compile /app
