@@ -15,7 +15,7 @@ RUN curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/ge
 ENV PATH="/root/.local/bin:$PATH"
 
 RUN apt-get update && apt-get -y install cron
-RUN echo '* * * * * root /bin/bash -c "SHELL=/bin/bash  /app/pex && echo \"Cron job ran at $(date)\" >> /app/debug.log"' > /etc/cron.d/crontab
+RUN echo '0 0 * * * root /bin/bash -c "SHELL=/bin/bash  /app/pex && echo \"Cron job ran at $(date)\" >> /app/debug.log"' > /etc/cron.d/crontab
 RUN chmod 0644 /etc/cron.d/crontab
 
 RUN crontab /etc/cron.d/crontab

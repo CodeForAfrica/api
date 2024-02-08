@@ -8,14 +8,14 @@ from sentry_sdk import capture_exception, capture_message, init, set_context
 env = Env()
 env.read_env()
 
-
 PESACHECK_SENTRY_DSN = env("PESACHECK_SENTRY_DSN", None)
 PESACHECK_RSS2JSON_API_KEY = env("PESACHECK_RSS2JSON_API_KEY", "")
 PESACHECK_URL = env("PESACHECK_URL", "")
 PESACHECK_CHECK_URL = env("PESACHECK_CHECK_URL", "")
-PESACHECK_TOKEN = env("PESACHECK_TOKEN", "")
+PESACHECK_CHECK_TOKEN = env("PESACHECK_CHECK_TOKEN", "")
 PESACHECK_CHECK_WORKSPACE_SLUG = env("PESACHECK_CHECK_WORKSPACE_SLUG", None)
-print(dict(PESACHECK_CHECK_WORKSPACE_SLUG = PESACHECK_CHECK_WORKSPACE_SLUG, PESACHECK_SENTRY_DSN = PESACHECK_SENTRY_DSN, PESACHECK_RSS2JSON_API_KEY = PESACHECK_RSS2JSON_API_KEY, PESACHECK_URL=PESACHECK_URL, PESACHECK_TOKEN=PESACHECK_TOKEN))
+
+
 init(
     dsn=PESACHECK_SENTRY_DSN,
     traces_sample_rate=1.0,
@@ -24,7 +24,30 @@ init(
 
 
 def log_error(code, message=""):
-    capture_message(f"Status code: {code}\n Error: {message}")
+    capture_message(f"Status: {code}\n Error: {message}")
+
+
+def check_missing_variables():
+    variables = {
+        "PESACHECK_SENTRY_DSN": None,
+        "PESACHECK_RSS2JSON_API_KEY": "",
+        "PESACHECK_URL": "",
+        "PESACHECK_CHECK_URL": "",
+        "PESACHECK_CHECK_TOKEN": "",
+        "PESACHECK_CHECK_WORKSPACE_SLUG": None,
+    }
+    missing_variables = [
+        name for name, value in variables.items() if not globals().get(name, value)
+    ]
+
+    if missing_variables:
+        error_message = "Missing environment variables: {}".format(
+            ", ".join(missing_variables)
+        )
+        log_error(400, error_message)
+
+
+check_missing_variables()
 
 
 def remove_html_tags(input_string):
@@ -51,7 +74,7 @@ def post_to_check(query):
     try:
         headers = {
             "Content-Type": "application/json",
-            "X-Check-Token": PESACHECK_TOKEN,
+            "X-Check-Token": PESACHECK_CHECK_TOKEN,
             "X-Check-Team": PESACHECK_CHECK_WORKSPACE_SLUG,
         }
         body = dict(query=query)
