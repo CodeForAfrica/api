@@ -9,15 +9,18 @@ COPY . /app
 COPY --from=app-deps /app ./
 COPY --from=app-srcs /app ./
 
-RUN apt-get update && apt-get install -y curl --no-install-recommends
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash
+RUN apt-get update && apt-get install -y \ 
+    curl=7.74.0-1.3+deb11u11 \
+    cron=3.0pl1-137 \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl --proto '=https' --tlsv1.2 -fsSL https://static.pantsbuild.org/setup/get-pants.sh | bash \
+    && echo '0 0 * * * root /bin/bash -c "SHELL=/bin/bash  /app/pex && echo \"Cron job ran at $(date)\" >> /app/debug.log"' > /etc/cron.d/crontab \
+    && chmod 0644 /etc/cron.d/crontab \
+    && crontab /etc/cron.d/crontab
+
 ENV PATH="/root/.local/bin:$PATH"
-
-RUN apt-get update && apt-get -y install cron
-RUN echo '0 0 * * * root /bin/bash -c "SHELL=/bin/bash  /app/pex && echo \"Cron job ran at $(date)\" >> /app/debug.log"' > /etc/cron.d/crontab
-RUN chmod 0644 /etc/cron.d/crontab
-
-RUN crontab /etc/cron.d/crontab
 
 CMD ["cron", "-f"]
