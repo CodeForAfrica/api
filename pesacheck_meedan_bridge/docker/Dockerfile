@@ -1,9 +1,11 @@
-FROM python:3.9-slim-bullseye AS python-base
-FROM pesacheck_meedan_bridge/app:deps AS app-deps
-FROM pesacheck_meedan_bridge/app:srcs AS app-srcs
+FROM python:3.11-slim-bullseye AS python-base
 FROM python-base AS python-app
 
+FROM pesacheck_meedan_bridge/app:deps AS app-deps
+FROM pesacheck_meedan_bridge/app:srcs AS app-srcs
+
 WORKDIR /app
+
 COPY . /app
 
 COPY --from=app-deps /app ./

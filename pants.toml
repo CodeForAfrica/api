@@ -34,7 +34,7 @@ root_patterns = [
 ]
 
 [python]
-interpreter_constraints = ["==3.9.*"]
+interpreter_constraints = [">=3.9.*"]
 
 [black]
 args = ["--preview"]
