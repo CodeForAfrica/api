@@ -11,19 +11,19 @@ env:
   GIT_PUSH_FLAGS: "--force"
   IMAGE_NAME: "codeforafrica/twoopstracker"
 
+# This allows a subsequently queued workflow run to interrupt previous runs
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build and Deploy
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9"]
+        python-version: ["3.11"]
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.12.1
-        with:
-          access_token: ${{ github.token }}
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -37,16 +37,23 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Initialize Pants
+        uses: pantsbuild/actions/init-pants@main
+        with:
+          # cache0 makes it easy to bust the cache if needed
+          gha-cache-key: cache0-py${{ matrix.python_version }}
+          named-caches-hash: ${{ hashFiles('lockfiles/*.json', '**/something-else.lock') }}
+
       - name: Bootstrap Pants
         run: |
-          ./pants --version
+          pants --version
 
       - name: Check BUILD files
         run: ./pants tailor --check update-build-files --check
 
       - name: Lint
         run: |
-          ./pants lint --lint-skip-formatters twoops_tracker/::
+          pants lint --lint-skip-formatters twoops_tracker/::
 
       - name: Build Docker image
         run: |
