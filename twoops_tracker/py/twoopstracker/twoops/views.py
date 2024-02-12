@@ -108,7 +108,8 @@ def refromat_search_string(search_string):
 def get_twitter_accounts(screen_names):
     twitter_accounts = []
     if screen_names:
-        # Twitter API Returns fully-hydrated user objects for up to 100 users per request
+        # Twitter API returns fully-hydrated user objects for up to 100 users
+        # per request
         screen_names_batch = [
             screen_names[i : i + 100] for i in range(0, len(screen_names), 100)
         ]
@@ -137,9 +138,9 @@ def process_file_data(data):
         # For tweets, we need to convert the OrderedDict to a json
         if row.get("owner"):
             username = row["owner"]["screen_name"]
-            row[
-                "original_tweet"
-            ] = f"https://twitter.com/{username}/status/{row['tweet_id']}"
+            row["original_tweet"] = (
+                f"https://twitter.com/{username}/status/{row['tweet_id']}"
+            )
             row["username"] = username
             row["owner"] = json.dumps(row["owner"])
             result.append(row)
@@ -314,7 +315,8 @@ class TweetsInsightsView(TweetsView):
             current_date = str(start_date + datetime.timedelta(days=day))
             insights.setdefault(current_date, 0)
 
-        # we can now return it in the expected [{'date': xxx, 'count': xxx}, ...] structure
+        # we can now return it in the expected [{'date': xxx, 'count': xxx}, ...]
+        # structure
         data = [{"date": i, "count": insights[i]} for i in sorted(insights)]
 
         serializer = TweetsInsightsSerializer(data=data, many=True)

@@ -24,7 +24,8 @@ class TweetSerializer(serializers.ModelSerializer):
 
     def get_original_retweet_link(self, obj):
         if obj.retweet_id:
-            return f"https://twitter.com/{obj.retweeted_user_screen_name}/status/{obj.retweet_id}"
+            screen_name = obj.retweeted_user_screen_name
+            return f"https://twitter.com/{screen_name}/status/{obj.retweet_id}"
 
     class Meta:
         model = Tweet
