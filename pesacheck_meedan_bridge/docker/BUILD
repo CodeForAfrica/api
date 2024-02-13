@@ -1,6 +1,7 @@
 docker_image(
     name="pesacheck-deps",
     image_tags=["deps"],
+    build_platform=["linux/amd64"],
     registries=["pesacheck_meedan_bridge"],
     repository="app",
     skip_push=True,
@@ -10,6 +11,7 @@ docker_image(
 docker_image(
     name="pesacheck-srcs",
     image_tags=["srcs"],
+    build_platform=["linux/amd64"],
     registries=["pesacheck_meedan_bridge"],
     repository="app",
     skip_push=True,
@@ -18,6 +20,7 @@ docker_image(
 
 docker_image(
     name="pesacheck_meedan_bridge",
+    build_platform=["linux/amd64"],
     dependencies=[':pesacheck-srcs', ':pesacheck-deps'],
     image_tags=[
         "{build_args.VERSION}",

@@ -4,12 +4,12 @@ python_sources(
     "3rdparty/py:requirements-all#requests",
     "3rdparty/py:requirements-all#sentry-sdk",
     "3rdparty/py:requirements-all#environs",
-    "3rdparty/py:requirements-all#charset-normalizer",
   ]
 )
 
 pex_binary(
     name="pesacheck-deps",
+    environment=parametrize("__local__", "linux"),
     dependencies=[
         ":lib",
     ],
@@ -21,6 +21,7 @@ pex_binary(
 
 pex_binary(
     name="pesacheck-srcs",
+    environment=parametrize("__local__", "linux"),
     dependencies=[
         ":lib",
     ],

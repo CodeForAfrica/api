@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bullseye
+FROM python:3.11-slim-bookworm AS python-base
 
-COPY pesacheck_meedan_bridge.py/pesacheck-srcs.pex /pesacheck-srcs.pex
-RUN PEX_TOOLS=1 /usr/local/bin/python3.11 /pesacheck-srcs.pex venv --scope=srcs --compile /app
+COPY pesacheck_meedan_bridge.py/pesacheck-srcs@environment=linux.pex /pesacheck-srcs.pex
+RUN PEX_TOOLS=1 python /pesacheck-srcs.pex venv --scope=srcs --compile /app

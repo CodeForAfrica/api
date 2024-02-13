@@ -166,5 +166,5 @@ credentials.json
 ### Pyenv ###
 
 .python-version
-
+*.db
 # End of custom ignore
