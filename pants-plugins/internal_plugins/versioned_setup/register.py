@@ -1,6 +1,9 @@
 import os.path
 
-from pants.backend.python.goals.setup_py import SetupKwargs, SetupKwargsRequest
+from pants.backend.python.util_rules.package_dists import (
+    SetupKwargs,
+    SetupKwargsRequest,
+)
 from pants.engine.fs import DigestContents, GlobMatchErrorBehavior, PathGlobs
 from pants.engine.rules import Get, collect_rules, rule
 from pants.engine.target import Target

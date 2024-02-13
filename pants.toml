@@ -1,21 +1,28 @@
 [GLOBAL]
-pants_version = "2.14.0"
+pants_version = "2.19.0"
 pythonpath = ["%(buildroot)s/pants-plugins"]
 
-backend_packages = [
+backend_packages.add = [
+  "pants.backend.build_files.fmt.black",
+  "pants.backend.docker",
+  "pants.backend.docker.lint.hadolint",
+  "pants.backend.plugin_development",
   "pants.backend.python",
   "pants.backend.python.lint.black",
   "pants.backend.python.lint.docformatter",
   "pants.backend.python.lint.flake8",
   "pants.backend.python.lint.isort",
-  "pants.backend.experimental.python.lint.pyupgrade",
+  "pants.backend.python.lint.pyupgrade",
   "pants.backend.python.typecheck.mypy",
-  "pants.backend.docker",
-  "pants.backend.docker.lint.hadolint",
   "pants.backend.shell",
   "pants.backend.shell.lint.shellcheck",
   "pants.backend.shell.lint.shfmt",
-  "pants.backend.plugin_development",
+  "pants.backend.tools.taplo",
+  # Expiremental backends
+  "pants.backend.experimental.python",
+  "pants.backend.experimental.python.framework.django",
+  "pants.backend.experimental.tools.yamllint",
+  # In-repo plugins
   "internal_plugins.versioned_setup",
 ]
 
@@ -27,16 +34,20 @@ root_patterns = [
   "/dj-cmd/py",
   "/twoops_tracker/docker",
   "/twoops_tracker/py",
-  "/twoops_tracker/sh",
   "/pants-plugins",
 ]
 
 [python]
-interpreter_constraints = ["==3.9.*"]
+interpreter_constraints = ["==3.11.*"]
 
 [black]
 args = ["--preview"]
 
 [docker]
-default_repository = "codeforafrica/{name}"
 build_args = ["VERSION"]
+default_repository = "codeforafrica/{name}"
+
+[environments-preview.names]
+linux = "//:local_linux"
+linux_docker = "//:docker_bookworm"
+macos = "//:local_macos"

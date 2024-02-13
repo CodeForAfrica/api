@@ -1,4 +1,4 @@
-FROM python:3.10-slim-bullseye AS python-base
+FROM python:3.11-slim-bookworm AS python-base
 
 RUN apt-get update \
     && apt-get -y upgrade \
