@@ -1,4 +1,4 @@
-FROM python:3.10-slim-bullseye
+FROM python:3.11-slim-bookworm
 
-COPY twoops_tracker.py/twoopstracker-srcs.pex /twoopstracker-srcs.pex
-RUN PEX_TOOLS=1 /usr/local/bin/python3.10 /twoopstracker-srcs.pex venv --scope=srcs --compile /app
+COPY twoops_tracker.py/twoopstracker-srcs@environment=linux.pex /twoopstracker-srcs.pex
+RUN PEX_TOOLS=1 python /twoopstracker-srcs.pex venv --scope=srcs --compile /app

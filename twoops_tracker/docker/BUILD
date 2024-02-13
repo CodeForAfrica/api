@@ -1,5 +1,6 @@
 docker_image(
     name="twoopstracker-deps",
+    build_platform=["linux/amd64"],
     image_tags=["deps"],
     # We just need to hardcode something in the registries so that we can
     # reference it the final image's COPY instructions. Can be anything
@@ -11,6 +12,7 @@ docker_image(
 
 docker_image(
     name="twoopstracker-srcs",
+    build_platform=["linux/amd64"],
     image_tags=["srcs"],
     registries=["twoopstracker"],
     repository="app",
@@ -20,6 +22,7 @@ docker_image(
 
 docker_image(
     name="twoopstracker",
+    build_platform=["linux/amd64"],
     dependencies=[
         ":twoopstracker-deps",
         ":twoopstracker-srcs",

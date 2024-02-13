@@ -3,6 +3,7 @@ profile = "black"
 
 [tool.mypy]
 ignore_missing_imports = true
+# TODO(kilemensi): mypy django stubs
 
 [tool.setuptools_scm]
 write_to = "VERSION"

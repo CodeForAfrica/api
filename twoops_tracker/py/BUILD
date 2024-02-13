@@ -20,24 +20,37 @@ python_sources(
     ],
 )
 
+# Multi - stage docker; dependencies
 pex_binary(
     name="twoopstracker-deps",
     dependencies=[
         ":lib",
     ],
     entry_point="main.py",
+    environment=parametrize("__local__", "linux"),
     include_sources=False,
     include_tools=True,
     layout="packed",
 )
 
+# Multi - stage docker; app sources
 pex_binary(
     name="twoopstracker-srcs",
     dependencies=[
         ":lib",
     ],
     entry_point="main.py",
+    environment=parametrize("__local__", "linux"),
     include_requirements=False,
     include_tools=True,
     layout="packed",
+)
+
+# Running locally
+pex_binary(
+    name="twoopstracker",
+    dependencies=[
+        ":lib",
+    ],
+    entry_point="main.py",
 )
