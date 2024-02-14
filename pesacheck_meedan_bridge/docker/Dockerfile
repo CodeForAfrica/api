@@ -1,16 +1,11 @@
 FROM python:3.11-slim-bullseye AS python-base
-FROM python-base AS python-app
-
 FROM pesacheck_meedan_bridge/app:deps AS app-deps
 FROM pesacheck_meedan_bridge/app:srcs AS app-srcs
+FROM python-base AS python-app
 
 WORKDIR /app
-
-COPY . /app
-
+COPY pesacheck_meedan_bridge/docker/app.json ./
 COPY --from=app-deps /app ./
 COPY --from=app-srcs /app ./
 
-ENV PATH="/root/.local/bin:$PATH"
-
-CMD ["./pex"]
+CMD ["/bin/bash", "-f"]

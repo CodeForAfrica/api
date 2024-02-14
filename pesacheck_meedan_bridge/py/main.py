@@ -129,8 +129,9 @@ def main():
                     claim_description_id=""
                 )
                 store_in_database(feed)
-                post_to_check_and_update(feed)
-        sentry_sdk.capture_message("Successful Uploads", success_posts)
+                posted = post_to_check_and_update(feed)
+                success_posts.append(posted)
+        sentry_sdk.capture_message(success_posts)
     except Exception as e:
         sentry_sdk.capture_exception(e)
 

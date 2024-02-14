@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bookworm AS python-base
+FROM python:3.11-slim-bookworm
 
 COPY pesacheck_meedan_bridge.py/pesacheck-deps@environment=linux.pex /pesacheck-deps.pex
 RUN PEX_TOOLS=1 python /pesacheck-deps.pex venv --scope=deps --compile /app
