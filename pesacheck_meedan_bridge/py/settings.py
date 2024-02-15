@@ -1,6 +1,5 @@
-from environs import Env
 import sentry_sdk
-
+from environs import Env
 
 env = Env()
 env.read_env()
@@ -24,6 +23,5 @@ if PESACHECK_SENTRY_DSN:
         dsn=PESACHECK_SENTRY_DSN,
         environment=PESACHECK_SENTRY_ENVIRONMENT,
         traces_sample_rate=PESACHECK_SENTRY_TRACES_SAMPLE_RATE,
-        profiles_sample_rate=1.0
+        profiles_sample_rate=1.0,
     )
-    

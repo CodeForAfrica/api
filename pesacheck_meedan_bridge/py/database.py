@@ -1,9 +1,10 @@
-import sqlite3
-from sqlite3 import Error
-from dataclasses import dataclass
 import os
-import settings
+import sqlite3
+from dataclasses import dataclass
+from sqlite3 import Error
+
 import sentry_sdk
+import settings
 
 
 @dataclass
@@ -41,7 +42,8 @@ class PesacheckDatabase:
         conn = self.create_connection()
         try:
             cursor = conn.cursor()
-            cursor.execute('''CREATE TABLE IF NOT EXISTS pesacheck_feeds
+            cursor.execute(
+                """CREATE TABLE IF NOT EXISTS pesacheck_feeds
                               (title TEXT NOT NULL,
                               pubDate TEXT NOT NULL,
                               author TEXT NOT NULL,
@@ -53,7 +55,8 @@ class PesacheckDatabase:
                               categories TEXT DEFAULT '[]',
                               check_project_media_id TEXT,
                               check_full_url TEXT,
-                              claim_description_id TEXT)''')
+                              claim_description_id TEXT)"""
+            )
             conn.commit()
         except Error as e:
             sentry_sdk.capture_exception(e)
@@ -68,11 +71,23 @@ class PesacheckDatabase:
                  VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
         try:
             cur = conn.cursor()
-            cur.execute(sql, (feed.title, feed.pubDate, feed.author, feed.guid,
-                              feed.link, feed.thumbnail,
-                              feed.description, feed.status, feed.categories,
-                              feed.check_project_media_id, feed.check_full_url,
-                              feed.claim_description_id))
+            cur.execute(
+                sql,
+                (
+                    feed.title,
+                    feed.pubDate,
+                    feed.author,
+                    feed.guid,
+                    feed.link,
+                    feed.thumbnail,
+                    feed.description,
+                    feed.status,
+                    feed.categories,
+                    feed.check_project_media_id,
+                    feed.check_full_url,
+                    feed.claim_description_id,
+                ),
+            )
             conn.commit()
         except Error as e:
             sentry_sdk.capture_exception(e)
@@ -81,21 +96,30 @@ class PesacheckDatabase:
 
     def update_pesacheck_feed(self, guid, new_feed):
         conn = self.create_connection()
-        sql = '''UPDATE pesacheck_feeds
+        sql = """UPDATE pesacheck_feeds
                 SET title = ?, pubDate = ?, author = ?, link = ?, thumbnail = ?,
                 description = ?, status = ?, categories = ?,
                 check_project_media_id = ?, check_full_url = ?,
-                claim_description_id = ? WHERE guid = ?'''
+                claim_description_id = ? WHERE guid = ?"""
         try:
             cur = conn.cursor()
-            cur.execute(sql, (new_feed.title, new_feed.pubDate, new_feed.author,
-                              new_feed.link, new_feed.thumbnail,
-                              new_feed.description, new_feed.status,
-                              new_feed.categories, new_feed.check_project_media_id,
-                              new_feed.check_full_url,
-                              new_feed.claim_description_id,
-                              guid
-                              ))
+            cur.execute(
+                sql,
+                (
+                    new_feed.title,
+                    new_feed.pubDate,
+                    new_feed.author,
+                    new_feed.link,
+                    new_feed.thumbnail,
+                    new_feed.description,
+                    new_feed.status,
+                    new_feed.categories,
+                    new_feed.check_project_media_id,
+                    new_feed.check_full_url,
+                    new_feed.claim_description_id,
+                    guid,
+                ),
+            )
             conn.commit()
         except Error as e:
             sentry_sdk.capture_exception(e)

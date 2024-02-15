@@ -23,10 +23,10 @@ docker_image(
 docker_image(
     name="pesacheck_meedan_bridge",
     build_platform=["linux/amd64"],
-    dependencies=[':pesacheck-srcs', ':pesacheck-deps', ':app.json'],
+    dependencies=[":pesacheck-srcs", ":pesacheck-deps", ":app.json"],
     image_tags=[
         "{build_args.VERSION}",
         "latest",
     ],
-    source="Dockerfile"
+    source="Dockerfile",
 )
