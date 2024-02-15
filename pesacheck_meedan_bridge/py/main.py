@@ -37,19 +37,6 @@ def post_to_check(query):
     }
     body = dict(query=query)
     url = settings.PESACHECK_CHECK_URL
-    return {
-        "data": {
-            "createProjectMedia": {
-                "project_media": {
-                    "id": "UHJvamVjdE1lZGlhLzI2MzcyNDY=",
-                    "full_url": "project/16148/media/2637246",
-                    "claim_description": {
-                        "fact_check": {"id": "RmFjdENoZWNrLzgyNzIyMg=="}
-                    },
-                }
-            }
-        }
-    }
     response = requests.post(url, headers=headers, json=body, timeout=60)
     if response.status_code == 200:
         return response.json()
