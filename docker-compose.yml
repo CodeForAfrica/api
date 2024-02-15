@@ -48,8 +48,8 @@ services:
     depends_on:
       - twoopstracker_app
   pesacheck_meedan_bridge:
-    image: codeforafrica/pesacheck_meedan_bridge:1.0.4
-    command: ["/app/pex", "-f"]
+    image: codeforafrica/pesacheck_meedan_bridge:latest
+    command: ["tail", "-f", "/dev/null"]
     env_file:
       - ./pesacheck_meedan_bridge/.env
 

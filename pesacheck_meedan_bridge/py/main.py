@@ -24,9 +24,7 @@ def fetch_from_pesacheck():
     response = requests.get(url, params=params, timeout=60)
     if response.status_code == 200:
         return response.json().get("items") or []
-    raise Exception(
-        response.status_code, message="An Error Occurred fetching data from pesacheck"
-    )
+    raise Exception("An Error Occurred fetching data from pesacheck")
 
 
 def post_to_check(query):
@@ -40,7 +38,7 @@ def post_to_check(query):
     response = requests.post(url, headers=headers, json=body, timeout=60)
     if response.status_code == 200:
         return response.json()
-    raise Exception(response.status_code, message=response.text)
+    raise Exception(response.text)
 
 
 def store_in_database(feed):
@@ -81,7 +79,7 @@ def post_to_check_and_update(feed):
             .get("fact_check")
             .get("id")
         )
-        feed.status = 'Completed'
+        feed.status = "Completed"
         db = PesacheckDatabase()
         db.update_pesacheck_feed(feed.guid, feed)
         return feed
@@ -113,7 +111,7 @@ def main():
                     status="Pending",
                     check_project_media_id="",
                     check_full_url="",
-                    claim_description_id=""
+                    claim_description_id="",
                 )
                 store_in_database(feed)
                 posted = post_to_check_and_update(feed)
