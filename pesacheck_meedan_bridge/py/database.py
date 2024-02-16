@@ -1,4 +1,3 @@
-import os
 import sqlite3
 from dataclasses import dataclass
 from sqlite3 import Error
@@ -25,9 +24,7 @@ class PesacheckFeed:
 
 class PesacheckDatabase:
     def __init__(self):
-        path = os.path.dirname(os.path.realpath(__file__))
-        db_file = os.path.join(path, settings.PESACHECK_DATABASE_NAME)
-        self.db_file = db_file
+        self.db_file = settings.PESACHECK_DATABASE_NAME
         self.create_table()
 
     def create_connection(self):

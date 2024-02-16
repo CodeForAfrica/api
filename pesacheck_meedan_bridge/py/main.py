@@ -107,7 +107,11 @@ def main(db):
 if __name__ == "__main__":
     try:
         db = PesacheckDatabase()
+        if not db:
+            sentry_sdk.capture_message("Unable to connect to database")
+            sys.exit()
         main(db=db)
     except Exception as e:
+        print(e)
         sentry_sdk.capture_exception(e)
         sys.exit()

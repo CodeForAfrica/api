@@ -47,9 +47,12 @@ services:
       - 8000:80
     depends_on:
       - twoopstracker_app
+
   pesacheck_meedan_bridge:
-    image: codeforafrica/pesacheck_meedan_bridge:latest
+    image: codeforafrica/pesacheck_meedan_bridge:0.1.0
     command: ["tail", "-f", "/dev/null"]
+    volumes:
+      - ./pesacheck-data:/app/database
     env_file:
       - ./pesacheck_meedan_bridge/.env
 
