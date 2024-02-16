@@ -49,7 +49,7 @@ services:
       - twoopstracker_app
 
   pesacheck_meedan_bridge:
-    image: codeforafrica/pesacheck_meedan_bridge:0.1.0
+    image: codeforafrica/pesacheck_meedan_bridge:latest
     command: ["tail", "-f", "/dev/null"]
     volumes:
       - ./pesacheck-data:/app/database

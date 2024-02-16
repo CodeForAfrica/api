@@ -7,3 +7,5 @@ WORKDIR /app
 COPY pesacheck_meedan_bridge/docker/app.json ./
 COPY --from=app-deps /app ./
 COPY --from=app-srcs /app ./
+
+CMD ["tail", "-f", "/dev/null"]
