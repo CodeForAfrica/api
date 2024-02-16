@@ -162,9 +162,9 @@ cython_debug/
 /.pids
 /.pants.workdir.file_lock*
 
-credentials.json
 ### Pyenv ###
 
 .python-version
+# Custom gitignore
 *.db
 # End of custom ignore

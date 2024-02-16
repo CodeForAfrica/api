@@ -1,5 +1,8 @@
 import json
 
+import requests
+import settings
+
 
 def create_mutation_query(
     media_type=None,
@@ -54,3 +57,18 @@ def delete_mutation_query(id):
     }}
     """
     return mutation_query
+
+
+def post_to_check(data):
+    query = create_mutation_query(**data)
+    headers = {
+        "Content-Type": "application/json",
+        "X-Check-Token": settings.PESACHECK_CHECK_TOKEN,
+        "X-Check-Team": settings.PESACHECK_CHECK_WORKSPACE_SLUG,
+    }
+    body = dict(query=query)
+    url = settings.PESACHECK_CHECK_URL
+    response = requests.post(url, headers=headers, json=body, timeout=60)
+    if response.status_code == 200:
+        return response.json()
+    raise Exception(response.text)

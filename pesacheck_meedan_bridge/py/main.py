@@ -4,8 +4,9 @@ import re
 import requests
 import sentry_sdk
 import settings
-from check_api import create_mutation_query
+from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
+import sys
 
 
 def remove_html_tags(input_string):
@@ -27,27 +28,12 @@ def fetch_from_pesacheck():
     raise Exception("An Error Occurred fetching data from pesacheck")
 
 
-def post_to_check(query):
-    headers = {
-        "Content-Type": "application/json",
-        "X-Check-Token": settings.PESACHECK_CHECK_TOKEN,
-        "X-Check-Team": settings.PESACHECK_CHECK_WORKSPACE_SLUG,
-    }
-    body = dict(query=query)
-    url = settings.PESACHECK_CHECK_URL
-    response = requests.post(url, headers=headers, json=body, timeout=60)
-    if response.status_code == 200:
-        return response.json()
-    raise Exception(response.text)
-
-
-def store_in_database(feed):
-    db = PesacheckDatabase()
+def store_in_database(feed, db):
     db.insert_pesacheck_feed(feed)
     return feed
 
 
-def post_to_check_and_update(feed):
+def post_to_check_and_update(feed, db):
     categories = json.loads(feed.categories)
     language = "fr" if "french" in categories else "en"
     input_data = {
@@ -62,8 +48,7 @@ def post_to_check_and_update(feed):
         "language": language,
         "publish_report": True,
     }
-    query = create_mutation_query(**input_data)
-    res = post_to_check(query)
+    res = post_to_check(input_data)
     if res:
         feed.check_project_media_id = (
             res["data"].get("createProjectMedia").get("project_media").get("id")
@@ -80,19 +65,17 @@ def post_to_check_and_update(feed):
             .get("id")
         )
         feed.status = "Completed"
-        db = PesacheckDatabase()
         db.update_pesacheck_feed(feed.guid, feed)
         return feed
 
 
-def main():
+def main(db):
     try:
-        db = PesacheckDatabase()
         unsent_data = db.get_pending_pesacheck_feeds()
         success_posts = []
         if unsent_data:
             for pending in unsent_data:
-                posted = post_to_check_and_update(pending)
+                posted = post_to_check_and_update(pending, db=db)
                 if posted:
                     success_posts.append(posted)
 
@@ -113,8 +96,8 @@ def main():
                     check_full_url="",
                     claim_description_id="",
                 )
-                store_in_database(feed)
-                posted = post_to_check_and_update(feed)
+                store_in_database(feed, db=db)
+                posted = post_to_check_and_update(feed, db=db)
                 success_posts.append(posted)
         sentry_sdk.capture_message(success_posts)
     except Exception as e:
@@ -122,4 +105,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        db = PesacheckDatabase()
+        main(db=db)
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        sys.exit()
