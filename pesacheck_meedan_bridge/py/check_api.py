@@ -23,10 +23,10 @@ def create_mutation_query(
           channel: {{ main: {channel} }},
           set_tags: {json.dumps(set_tags or [])},
           set_status: "{set_status or ""}",
-          set_claim_description: "{set_claim_description or ""}",
+          set_claim_description: \"\"\"{set_claim_description or ""}\"\"\",
           set_fact_check: {{
-            title: "{title or ""}",
-            summary: "{summary or ""}",
+            title: \"\"\"{title or ""}\"\"\",
+            summary: \"\"\"{summary or ""}\"\"\",
             url: "{url or ""}",
             language: "{language or ""}",
             publish_report: {str(publish_report).lower()}
@@ -70,5 +70,8 @@ def post_to_check(data):
     url = settings.PESACHECK_CHECK_URL
     response = requests.post(url, headers=headers, json=body, timeout=60)
     if response.status_code == 200:
-        return response.json()
+        res = response.json()
+        if res.get('errors'):
+            raise Exception(res['errors'])
+        return res
     raise Exception(response.text)
