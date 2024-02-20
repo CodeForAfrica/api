@@ -52,7 +52,7 @@ services:
     image: codeforafrica/pesacheck_meedan_bridge:latest
     command: ["tail", "-f", "/dev/null"]
     volumes:
-      - ./pesacheck-data:/app/database
+      - pesacheck-data:/app/database
     env_file:
       - ./pesacheck_meedan_bridge/.env
 
