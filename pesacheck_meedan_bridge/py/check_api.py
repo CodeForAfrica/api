@@ -5,30 +5,30 @@ import settings
 
 
 def create_mutation_query(
-    media_type=None,
+    media_type="Blank",
     channel=None,
-    set_tags=None,
-    set_status=None,
-    set_claim_description=None,
-    title=None,
-    summary=None,
-    url=None,
-    language=None,
+    set_tags=[],
+    set_status="",
+    set_claim_description="",
+    title="",
+    summary="",
+    url="",
+    language="",
     publish_report=False,
 ):
     mutation_query = f"""
       mutation create {{
         createProjectMedia(input: {{
-          media_type: "{media_type or "Blank"}",
+          media_type: "{media_type}",
           channel: {{ main: {channel} }},
-          set_tags: {json.dumps(set_tags or [])},
-          set_status: "{set_status or ""}",
-          set_claim_description: \"\"\"{set_claim_description or ""}\"\"\",
+          set_tags: {json.dumps(set_tags)},
+          set_status: "{set_status}",
+          set_claim_description: \"\"\"{set_claim_description}\"\"\",
           set_fact_check: {{
-            title: \"\"\"{title or ""}\"\"\",
-            summary: \"\"\"{summary or ""}\"\"\",
-            url: "{url or ""}",
-            language: "{language or ""}",
+            title: \"\"\"{title}\"\"\",
+            summary: \"\"\"{summary}\"\"\",
+            url: "{url}",
+            language: "{language}",
             publish_report: {str(publish_report).lower()}
           }}
         }}) {{
