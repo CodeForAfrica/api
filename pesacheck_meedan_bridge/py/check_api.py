@@ -71,7 +71,7 @@ def post_to_check(data):
     response = requests.post(url, headers=headers, json=body, timeout=60)
     if response.status_code == 200:
         res = response.json()
-        if res.get('errors'):
-            raise Exception(res['errors'])
+        if res.get("errors"):
+            raise Exception(res["errors"])
         return res
     raise Exception(response.text)

@@ -1,16 +1,28 @@
 import json
 import re
+import sys
 
 import requests
 import sentry_sdk
 import settings
 from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
-import sys
 
 
 def remove_html_tags(input_string):
     return re.sub(r"<[^>]*>", "", input_string)
+
+
+language_codes = {
+    "english": "en",
+    "french": "fr",
+    "oromo": "om",
+    "swahili": "sw",
+    "amharic": "am",
+    "somali": "so",
+    "tigrinya": "ti",
+    "arabic": "ar",
+}
 
 
 def fetch_from_pesacheck():
@@ -35,7 +47,12 @@ def store_in_database(feed, db):
 
 def post_to_check_and_update(feed, db):
     categories = json.loads(feed.categories)
-    language = "fr" if "french" in categories else "en"
+    codes = [
+        language_codes[language.lower()]
+        for language in feed.categories
+        if language.lower() in language_codes
+    ]
+    language = "en" if not codes else codes[0]
     input_data = {
         "media_type": "Blank",
         "channel": 1,
