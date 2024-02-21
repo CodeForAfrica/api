@@ -1,5 +1,4 @@
 import json
-import re
 import sys
 
 import requests
@@ -7,19 +6,19 @@ import sentry_sdk
 import settings
 from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
-
-
-def remove_html_tags(input_string):
-    return re.sub(r"<[^>]*>", "", input_string)
-
+from html2text import html2text
 
 language_codes = {
     "english": "en",
     "french": "fr",
     "oromo": "om",
+    "afaan": "om",
+    "afaan oromoo": "om",
     "swahili": "sw",
+    "kiswahili": "sw",
     "amharic": "am",
     "somali": "so",
+    "somaaliga": "so",
     "tigrinya": "ti",
     "arabic": "ar",
 }
@@ -58,9 +57,9 @@ def post_to_check_and_update(feed, db):
         "channel": 1,
         "set_tags": categories,
         "set_status": "verified",
-        "set_claim_description": f"""{remove_html_tags(feed.description)}""",
-        "title": f"""{remove_html_tags(feed.title)}""",
-        "summary": f"""{remove_html_tags(feed.description)}""",
+        "set_claim_description": f"""{html2text(feed.description)}""",
+        "title": f"""{html2text(feed.title)}""",
+        "summary": f"""{html2text(feed.description)}""",
         "url": feed.link,
         "language": language,
         "publish_report": True,

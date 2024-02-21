@@ -4,6 +4,7 @@ python_sources(
         "3rdparty/py:requirements-all#requests",
         "3rdparty/py:requirements-all#sentry-sdk",
         "3rdparty/py:requirements-all#environs",
+        "3rdparty/py:requirements-all#html2text",
     ],
 )
 
@@ -29,4 +30,13 @@ pex_binary(
     include_requirements=False,
     include_tools=True,
     layout="packed",
+)
+
+
+pex_binary(
+    name="pesacheck_meedan_bridge",
+    dependencies=[
+        ":lib",
+    ],
+    entry_point="main.py",
 )
