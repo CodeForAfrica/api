@@ -1,0 +1,9 @@
+{
+    "name": "pesacheck_meedan_bridge",
+    "cron": [
+        {
+            "command": "./pex",
+            "schedule": "@daily"
+        }
+    ]
+}
