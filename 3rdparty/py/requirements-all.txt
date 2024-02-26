@@ -12,7 +12,7 @@ google-auth-httplib2==0.2.0
 google-auth-oauthlib==1.2.0
 greenlet==3.0.3
 gunicorn[gevent, setproctitle]==21.2.0
-html2text==2020.1.16
+html2text==2024.2.25
 redis==5.0.1
 requests==2.31.0
 sentry-sdk==1.40.5
