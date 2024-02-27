@@ -1,12 +1,12 @@
 import json
 import sys
 
+import html2text
 import requests
 import sentry_sdk
 import settings
 from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
-import html2text
 
 
 def html_to_formatted_text(html):
@@ -88,7 +88,6 @@ def post_to_check_and_update(feed, db):
             .get("id")
         )
         feed.status = "Completed"
-        print(feed.guid)
         db.update_pesacheck_feed(feed.guid, feed)
         return feed
 
