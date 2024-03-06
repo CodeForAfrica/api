@@ -1,18 +1,27 @@
 import json
 import sys
 
-import html2text
 import requests
 import sentry_sdk
 import settings
+from bs4 import BeautifulSoup
 from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
 
 
 def html_to_formatted_text(html):
-    text_maker = html2text.HTML2Text()
-    text_maker.ignore_links = True
-    return text_maker.handle(html)
+    soup = BeautifulSoup(html, "html.parser")
+    for a in soup.find_all("a", href=True):
+        new_content = f"{a.text} ({a['href']})"
+        a.replace_with(new_content)
+
+    for img in soup.find_all("img", src=True):
+        alt_text = img.get("alt", "Image")
+        new_content = f"{alt_text}: ({img['src']})"
+        img.replace_with(new_content)
+
+    text = soup.get_text(separator="\n", strip=True)
+    return text
 
 
 language_codes = {
