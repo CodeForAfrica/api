@@ -6,7 +6,12 @@ import sentry_sdk
 import settings
 from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
-from html2text import html2text
+from trafilatura import extract
+
+
+def html_to_text(content):
+    return extract(content, include_links=True, include_images=True)
+
 
 language_codes = {
     "english": "en",
@@ -57,9 +62,9 @@ def post_to_check_and_update(feed, db):
         "channel": 1,
         "set_tags": categories,
         "set_status": "verified",
-        "set_claim_description": f"""{html2text(feed.description)}""",
-        "title": f"""{html2text(feed.title)}""",
-        "summary": f"""{html2text(feed.description)}""",
+        "set_claim_description": f"""{html_to_text(feed.description)}""",
+        "title": f"""{html_to_text(feed.title)}""",
+        "summary": f"""{html_to_text(feed.description)}""",
         "url": feed.link,
         "language": language,
         "publish_report": True,
@@ -86,9 +91,9 @@ def post_to_check_and_update(feed, db):
 
 
 def main(db):
+    success_posts = []
     try:
         unsent_data = db.get_pending_pesacheck_feeds()
-        success_posts = []
         if unsent_data:
             for pending in unsent_data:
                 posted = post_to_check_and_update(pending, db=db)
@@ -115,9 +120,10 @@ def main(db):
                 store_in_database(feed, db=db)
                 posted = post_to_check_and_update(feed, db=db)
                 success_posts.append(posted)
-        sentry_sdk.capture_message(success_posts)
     except Exception as e:
         sentry_sdk.capture_exception(e)
+    finally:
+        sentry_sdk.capture_message(success_posts)
 
 
 if __name__ == "__main__":
