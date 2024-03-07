@@ -6,14 +6,11 @@ import sentry_sdk
 import settings
 from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
-from lxml import html
 from trafilatura import extract
 
 
-def html_to_formatted_text(content):
-    tree = html.fromstring(content)
-    text = extract(tree, include_links=True, include_images=True)
-    return text
+def html_to_text(content):
+    return extract(content, include_links=True, include_images=True)
 
 
 language_codes = {
@@ -65,9 +62,9 @@ def post_to_check_and_update(feed, db):
         "channel": 1,
         "set_tags": categories,
         "set_status": "verified",
-        "set_claim_description": f"""{html_to_formatted_text(feed.description)}""",
-        "title": f"""{html_to_formatted_text(feed.title)}""",
-        "summary": f"""{html_to_formatted_text(feed.description)}""",
+        "set_claim_description": f"""{html_to_text(feed.description)}""",
+        "title": f"""{html_to_text(feed.title)}""",
+        "summary": f"""{html_to_text(feed.description)}""",
         "url": feed.link,
         "language": language,
         "publish_report": True,

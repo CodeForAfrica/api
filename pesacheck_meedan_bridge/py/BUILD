@@ -4,7 +4,6 @@ python_sources(
         "3rdparty/py:requirements-all#requests",
         "3rdparty/py:requirements-all#sentry-sdk",
         "3rdparty/py:requirements-all#environs",
-        "3rdparty/py:requirements-all#lxml",
         "3rdparty/py:requirements-all#trafilatura",
     ],
 )
