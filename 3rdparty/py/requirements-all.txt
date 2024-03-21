@@ -17,5 +17,5 @@ redis==5.0.3
 requests==2.31.0
 sentry-sdk==1.42.0
 tablib[xlsx]==3.5.0
-trafilatura==1.7.0
+trafilatura==1.8.0
 tweepy==4.14.0
