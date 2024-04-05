@@ -16,6 +16,6 @@ html2text==2024.2.26
 redis==5.0.3
 requests==2.31.0
 sentry-sdk==1.44.1
-tablib[xlsx]==3.6.0
+tablib[xlsx]==3.6.1
 trafilatura==1.8.1
 tweepy==4.14.0
