@@ -2,6 +2,7 @@ import json
 
 import requests
 import settings
+import sentry_sdk
 
 
 def create_mutation_query(
@@ -69,9 +70,11 @@ def post_to_check(data):
     body = dict(query=query)
     url = settings.PESACHECK_CHECK_URL
     response = requests.post(url, headers=headers, json=body, timeout=60)
+    res = response.json()
+    if res.get("errors"):
+        sentry_sdk.capture_exception(Exception(str(res.get("errors"))))
+        return None
     if response.status_code == 200:
-        res = response.json()
-        if res.get("errors"):
-            raise Exception(res["errors"])
         return res
-    raise Exception(response.text)
+    sentry_sdk.capture_exception(Exception(response.text))
+    return None

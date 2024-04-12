@@ -10,7 +10,7 @@ from trafilatura import extract
 
 
 def html_to_text(content):
-    return extract(content, include_links=True, include_images=True)
+    return extract(content, include_links=True, include_images=True) or content
 
 
 language_codes = {
@@ -69,6 +69,7 @@ def post_to_check_and_update(feed, db):
         "language": language,
         "publish_report": True,
     }
+    print(html_to_text(feed.title))
     res = post_to_check(input_data)
     if res:
         feed.check_project_media_id = (
@@ -134,6 +135,5 @@ if __name__ == "__main__":
             sys.exit()
         main(db=db)
     except Exception as e:
-        print(e)
         sentry_sdk.capture_exception(e)
         sys.exit()
