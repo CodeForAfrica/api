@@ -1,8 +1,8 @@
 import json
 
 import requests
-import settings
 import sentry_sdk
+import settings
 
 
 def create_mutation_query(
