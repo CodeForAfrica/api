@@ -69,7 +69,6 @@ def post_to_check_and_update(feed, db):
         "language": language,
         "publish_report": True,
     }
-    print(html_to_text(feed.title))
     res = post_to_check(input_data)
     if res:
         feed.check_project_media_id = (
