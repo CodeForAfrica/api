@@ -10,7 +10,7 @@ from trafilatura import extract
 
 
 def html_to_text(content):
-    return extract(content, include_links=True, include_images=True)
+    return extract(content, include_links=True, include_images=True) or content
 
 
 language_codes = {
@@ -63,7 +63,7 @@ def post_to_check_and_update(feed, db):
         "set_tags": categories,
         "set_status": "verified",
         "set_claim_description": f"""{html_to_text(feed.description)}""",
-        "title": f"""{html_to_text(feed.title)}""",
+        "title": f"""{feed.title}""",
         "summary": f"""{html_to_text(feed.description)}""",
         "url": feed.link,
         "language": language,
@@ -96,30 +96,35 @@ def main(db):
         unsent_data = db.get_pending_pesacheck_feeds()
         if unsent_data:
             for pending in unsent_data:
-                posted = post_to_check_and_update(pending, db=db)
-                if posted:
-                    success_posts.append(posted)
-
+                try:
+                    posted = post_to_check_and_update(pending, db=db)
+                    if posted:
+                        success_posts.append(posted)
+                except Exception as exception:
+                    sentry_sdk.capture_exception(exception)
         from_pesacheck = fetch_from_pesacheck()
         if from_pesacheck:
             for _, item in enumerate(from_pesacheck):
-                feed = PesacheckFeed(
-                    title=item["title"],
-                    pubDate=item["pubDate"],
-                    author=item["author"],
-                    guid=item["guid"],
-                    link=item["link"],
-                    categories=json.dumps(item["categories"]),
-                    thumbnail=item["thumbnail"],
-                    description=item["description"],
-                    status="Pending",
-                    check_project_media_id="",
-                    check_full_url="",
-                    claim_description_id="",
-                )
-                store_in_database(feed, db=db)
-                posted = post_to_check_and_update(feed, db=db)
-                success_posts.append(posted)
+                try:
+                    feed = PesacheckFeed(
+                        title=item["title"],
+                        pubDate=item["pubDate"],
+                        author=item["author"],
+                        guid=item["guid"],
+                        link=item["link"],
+                        categories=json.dumps(item["categories"]),
+                        thumbnail=item["thumbnail"],
+                        description=item["description"],
+                        status="Pending",
+                        check_project_media_id="",
+                        check_full_url="",
+                        claim_description_id="",
+                        )
+                    store_in_database(feed, db=db)
+                    posted = post_to_check_and_update(feed, db=db)
+                    success_posts.append(posted)
+                except Exception as exception:
+                    sentry_sdk.capture_exception(exception)
     except Exception as e:
         sentry_sdk.capture_exception(e)
     finally:
@@ -134,6 +139,5 @@ if __name__ == "__main__":
             sys.exit()
         main(db=db)
     except Exception as e:
-        print(e)
         sentry_sdk.capture_exception(e)
         sys.exit()

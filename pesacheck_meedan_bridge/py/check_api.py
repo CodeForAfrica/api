@@ -69,9 +69,7 @@ def post_to_check(data):
     body = dict(query=query)
     url = settings.PESACHECK_CHECK_URL
     response = requests.post(url, headers=headers, json=body, timeout=60)
-    if response.status_code == 200:
-        res = response.json()
-        if res.get("errors"):
-            raise Exception(res["errors"])
+    res = response.json()
+    if response.status_code == 200 and res.get("data"):
         return res
     raise Exception(response.text)
