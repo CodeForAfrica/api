@@ -71,10 +71,7 @@ def post_to_check(data):
     url = settings.PESACHECK_CHECK_URL
     response = requests.post(url, headers=headers, json=body, timeout=60)
     res = response.json()
-    if res.get("errors"):
-        sentry_sdk.capture_exception(Exception(str(res.get("errors"))))
-        return None
-    if response.status_code == 200:
+    if response.status_code == 200 and res.get("data"):
         return res
     sentry_sdk.capture_exception(Exception(response.text))
     return None
