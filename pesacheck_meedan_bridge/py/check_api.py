@@ -1,7 +1,6 @@
 import json
 
 import requests
-import sentry_sdk
 import settings
 
 
@@ -73,5 +72,4 @@ def post_to_check(data):
     res = response.json()
     if response.status_code == 200 and res.get("data"):
         return res
-    sentry_sdk.capture_exception(Exception(response.text))
-    return None
+    raise Exception(response.text)

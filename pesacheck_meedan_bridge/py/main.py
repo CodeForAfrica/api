@@ -96,30 +96,35 @@ def main(db):
         unsent_data = db.get_pending_pesacheck_feeds()
         if unsent_data:
             for pending in unsent_data:
-                posted = post_to_check_and_update(pending, db=db)
-                if posted:
-                    success_posts.append(posted)
-
+                try:
+                    posted = post_to_check_and_update(pending, db=db)
+                    if posted:
+                        success_posts.append(posted)
+                except Exception as exception:
+                    sentry_sdk.capture_exception(exception)
         from_pesacheck = fetch_from_pesacheck()
         if from_pesacheck:
             for _, item in enumerate(from_pesacheck):
-                feed = PesacheckFeed(
-                    title=item["title"],
-                    pubDate=item["pubDate"],
-                    author=item["author"],
-                    guid=item["guid"],
-                    link=item["link"],
-                    categories=json.dumps(item["categories"]),
-                    thumbnail=item["thumbnail"],
-                    description=item["description"],
-                    status="Pending",
-                    check_project_media_id="",
-                    check_full_url="",
-                    claim_description_id="",
-                )
-                store_in_database(feed, db=db)
-                posted = post_to_check_and_update(feed, db=db)
-                success_posts.append(posted)
+                try:
+                    feed = PesacheckFeed(
+                        title=item["title"],
+                        pubDate=item["pubDate"],
+                        author=item["author"],
+                        guid=item["guid"],
+                        link=item["link"],
+                        categories=json.dumps(item["categories"]),
+                        thumbnail=item["thumbnail"],
+                        description=item["description"],
+                        status="Pending",
+                        check_project_media_id="",
+                        check_full_url="",
+                        claim_description_id="",
+                        )
+                    store_in_database(feed, db=db)
+                    posted = post_to_check_and_update(feed, db=db)
+                    success_posts.append(posted)
+                except Exception as exception:
+                    sentry_sdk.capture_exception(exception)
     except Exception as e:
         sentry_sdk.capture_exception(e)
     finally:
