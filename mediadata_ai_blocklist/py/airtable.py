@@ -1,4 +1,3 @@
-import json
 from pyairtable import Api
 from dotenv import load_dotenv
 from utils import validate_url, clean_url
@@ -17,7 +16,7 @@ base_id = os.getenv('AIRTABLE_BASE_ID')
 organisations_table = os.getenv('AIRTABLE_ORGANISATION_TABLE')
 content_table = os.getenv('AIRTABLE_CONTENT_TABLE')
 
-if not api_key or not base_id or not organisations_table:
+if not api_key or not base_id or not organisations_table or not content_table:
     raise ValueError('API key, base ID and Organisation table are required')
 
 at = Api(api_key)
@@ -57,38 +56,14 @@ def process_records(data):
             organizations.append(org)
     return organizations
 
-# TODO: Implement better caching mechanism
 
-
-def get_organizations(allowed_countries=None, cache=True):
-    if cache:
-        try:
-            with open('cache/organizations.json', 'r') as f:
-                logging.info('Fetching organizations from cache')
-                return json.loads(f.read())
-        except FileNotFoundError:
-            logging.info('Cache file not found. Fetching from Airtable')
-            pass
-
+def get_organizations(allowed_countries=None):
+    logging.info('Fetching organizations from Airtable')
     formula = get_formula(allowed_countries)
     fields = ['Organisation Name', 'Website', 'HQ Country']
     data = get_table_data(organisations_table, formula, fields)
     organizations = process_records(data)
-    if cache:
-        os.makedirs('cache', exist_ok=True)
-        with open('cache/organizations.json', 'w') as f:
-            f.write(json.dumps(organizations))
-
     return organizations
-
-
-async def batch_update_organizations(data):
-    logging.info('Updating organizations in Airtable')
-    try:
-        table = at.table(base_id, 'Organisation')
-        table.batch_update(records=data)
-    except Exception as e:
-        logging.error(f'Error updating organization: {e}')
 
 
 async def batch_upsert_organizations(data):

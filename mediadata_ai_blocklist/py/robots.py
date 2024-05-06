@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 import logging
 import backoff
 import random
-import csv
 
 from database import Database, MediaHouse, Robots, ArchivedRobots
 
@@ -14,22 +13,11 @@ from database import Database, MediaHouse, Robots, ArchivedRobots
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
-processed_media_houses_csv = "csv/processed_media_houses.csv"
-
 
 retries = 1
 timeout = 240
 past_days = 365
 semaphore = asyncio.Semaphore(10)
-
-
-def should_fetch_robots(media_house):
-    with open(processed_media_houses_csv, 'r') as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            if row['id'] == media_house['id']:
-                return False
-    return True
 
 
 @backoff.on_exception(backoff.expo,
@@ -85,10 +73,11 @@ async def fetch_robots(session, url):
             else:
                 logging.error(f"""Failed to fetch robots.txt for {
                               robots_url}. Error: {e}""")
-            raise
+            return None
         except Exception as e:
             logging.error(f"""ClientResponseError:: Failed to fetch robots.txt for {
                           robots_url}. Error: {e}""")
+            return None
 
         logging.error(
             f"Exception:: Failed to fetch robots.txt for {robots_url}")
@@ -100,42 +89,28 @@ async def fetch_robots(session, url):
                       max_tries=retries,
                       giveup=lambda e: isinstance(e, aiohttp.ClientResponseError) and e.status == 404)
 async def fetch_current_robots(db: Database, session: aiohttp.ClientSession, media_house: MediaHouse):
-    async with semaphore:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-        }
-        # print(media_house)
-        url = media_house['url']
-        if url.endswith('/'):
-            robots_url = f"{url}robots.txt"
-        else:
-            robots_url = f"{url}/robots.txt"
-        logging.info(f"Fetching robots.txt for {robots_url}")
+    url = media_house['url']
+    if url.endswith('/'):
+        robots_url = f"{url}robots.txt"
+    else:
+        robots_url = f"{url}/robots.txt"
 
-        try:
-            text = await fetch_with_backoff(session, robots_url, headers)
-            if text:
-                print("Valid robots.txt")
-                robots = Robots(media_house['id'], robots_url,
-                                datetime.now().strftime("%Y%m%d%H%M%S"), text, "200")
-                print(robots)
-                db.insert_robot(robots)
-                await asyncio.sleep(random.uniform(1, 3))
-        except aiohttp.ClientResponseError as e:
-            if e.status == 404:
-                logging.error(f"robots.txt not found at {robots_url}")
-                return None
-            else:
-                logging.error(f"""Failed to fetch robots.txt for {
-                              robots_url}. Error: {e}""")
-            raise
-        except Exception as e:
-            logging.error(f"""ClientResponseError:: Failed to fetch robots.txt for {
-                          robots_url}. Error: {e}""")
+    try:
+        text = await fetch_robots(session, url)
+        if text:
+            print("Valid robots.txt")
+            robots = Robots(media_house['id'], robots_url,
+                            datetime.now().strftime("%Y%m%d%H%M%S"), text, "200")
+            print(robots)
+            db.insert_robot(robots)
+            await asyncio.sleep(random.uniform(1, 3))
+    except Exception as e:
+        logging.error(f"""ClientResponseError:: Failed to fetch robots.txt for {
+                      robots_url}. Error: {e}""")
 
-        logging.error(
-            f"Exception:: Failed to fetch robots.txt for {robots_url}")
-        return None
+    logging.error(
+        f"Exception:: Failed to fetch robots.txt for {robots_url}")
+    return None
 
 
 @backoff.on_exception(backoff.expo,

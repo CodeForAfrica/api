@@ -117,59 +117,6 @@ class Database:
         finally:
             cur.close()
 
-    def select_media_house_by_id(self, id):
-        try:
-            cur = self.conn.cursor()
-            cur.execute("SELECT * FROM media_house WHERE id=?", (id,))
-            row = cur.fetchone()
-            return row
-        except Error as e:
-            print(e)
-            return None
-        finally:
-            cur.close()
-
-    def select_media_house_by_name(self, name):
-        try:
-            cur = self.conn.cursor()
-            cur.execute("SELECT * FROM media_house WHERE name=?", (name,))
-            row = cur.fetchone()
-            return row
-        except Error as e:
-            print(e)
-            return None
-        finally:
-            cur.close()
-
-    def update_media_house(self, media_house: MediaHouse):
-        sql = """
-        UPDATE media_house
-        SET name = ?,
-            country = ?,
-            url = ?
-        WHERE id = ?
-        """
-        try:
-            cur = self.conn.cursor()
-            cur.execute(sql, (media_house.name, media_house.country,
-                        media_house.url, media_house.id))
-            self.conn.commit()
-        except Error as e:
-            print(e)
-        finally:
-            cur.close()
-
-    def delete_media_house(self, id):
-        try:
-            sql = "DELETE FROM media_house WHERE id=?"
-            cur = self.conn.cursor()
-            cur.execute(sql, (id,))
-            self.conn.commit()
-        except Error as e:
-            print(e)
-        finally:
-            cur.close()
-
     def close_connection(self):
         self.conn.close()
 
