@@ -3,7 +3,7 @@ celery==5.4.0
 dj-rest-auth[with_social]==5.1.0
 Django==3.2.23
 django-cors-headers==4.3.1
-django-storages==1.14.2
+django-storages==1.14.3
 djangorestframework==3.15.1
 djangorestframework-simplejwt==5.3.1
 environs[django]==11.0.0
