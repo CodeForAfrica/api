@@ -1,11 +1,14 @@
 import os
 import asyncio
+import re
 import aiohttp
 from datetime import datetime, timedelta
 import logging
 import backoff
 import random
 import csv
+
+from database import Database, MediaHouse, Robots, ArchivedRobots
 
 
 logging.basicConfig(level=logging.INFO,
@@ -44,8 +47,8 @@ async def fetch_with_backoff(session, url, headers, retry_count=0):
                 await asyncio.sleep(retry_after)
                 return await fetch_with_backoff(session, url, headers, retry_count + 1)
             else:
-                logging.error(f"Failed to fetch {
-                              url} after 3 attempts due to rate limit.")
+                logging.error(f"""Failed to fetch {
+                              url} after 3 attempts due to rate limit.""")
                 return None
         else:
             return await response.text()
@@ -95,6 +98,80 @@ async def fetch_robots(session, url):
 @backoff.on_exception(backoff.expo,
                       aiohttp.ClientError,
                       max_tries=retries,
+                      giveup=lambda e: isinstance(e, aiohttp.ClientResponseError) and e.status == 404)
+async def fetch_current_robots(db: Database, session: aiohttp.ClientSession, media_house: MediaHouse):
+    async with semaphore:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+        }
+        # print(media_house)
+        url = media_house['url']
+        if url.endswith('/'):
+            robots_url = f"{url}robots.txt"
+        else:
+            robots_url = f"{url}/robots.txt"
+        logging.info(f"Fetching robots.txt for {robots_url}")
+
+        try:
+            text = await fetch_with_backoff(session, robots_url, headers)
+            if text:
+                print("Valid robots.txt")
+                robots = Robots(media_house['id'], robots_url,
+                                datetime.now().strftime("%Y%m%d%H%M%S"), text, "200")
+                print(robots)
+                db.insert_robot(robots)
+                await asyncio.sleep(random.uniform(1, 3))
+        except aiohttp.ClientResponseError as e:
+            if e.status == 404:
+                logging.error(f"robots.txt not found at {robots_url}")
+                return None
+            else:
+                logging.error(f"""Failed to fetch robots.txt for {
+                              robots_url}. Error: {e}""")
+            raise
+        except Exception as e:
+            logging.error(f"""ClientResponseError:: Failed to fetch robots.txt for {
+                          robots_url}. Error: {e}""")
+
+        logging.error(
+            f"Exception:: Failed to fetch robots.txt for {robots_url}")
+        return None
+
+
+@backoff.on_exception(backoff.expo,
+                      aiohttp.ClientError,
+                      max_tries=retries,
+                      giveup=lambda e: isinstance(e, aiohttp.ClientResponseError) and e.status == 404)
+async def fetch_past_robots(db: Database, session: aiohttp.ClientSession, media_house: MediaHouse):
+    snapshots = await fetch_internet_archive_snapshots(session, media_house['url'])
+    if snapshots:
+        print("Snapshots")
+        one_year_ago = (datetime.now() - timedelta(days=past_days)
+                        ).strftime("%Y%m%d%H%M%S")
+        closest_snapshot = find_closest_snapshot(snapshots, one_year_ago)
+        logging.info(f"""Closest snapshot for {
+            media_house['name']}: {closest_snapshot}""")
+        if closest_snapshot:
+            closest_snapshot_url = f"https://web.archive.org/web/{
+                closest_snapshot['timestamp']}/{media_house['url']}"
+            logging.info(f"""Closet snapshot URL for {
+                media_house['name']}: {closest_snapshot_url}""")
+            archive_robots = await fetch_robots(session, closest_snapshot_url)
+            if archive_robots:
+                print("Valid robots.txt")
+                archive_robots = ArchivedRobots(media_house['id'], closest_snapshot_url,
+                                                closest_snapshot['timestamp'], archive_robots, datetime.now().strftime("%Y%m%d%H%M%S"), "200")
+                print(archive_robots)
+                db.insert_archived_robot(archive_robots)
+                await asyncio.sleep(random.uniform(1, 3))
+        else:
+            logging.error(
+                f"No snapshot found for {media_house['name']} in the past year")
+
+
+@backoff.on_exception(backoff.expo,
+                      aiohttp.ClientError,
+                      max_tries=retries,
                       giveup=lambda e: e.status == 404)
 async def fetch_internet_archive_snapshots(session, url):
     async with semaphore:
@@ -122,67 +199,3 @@ async def fetch_internet_archive_snapshots(session, url):
 
 def find_closest_snapshot(snapshots, date):
     return next((snapshot for snapshot in reversed(snapshots) if snapshot["timestamp"] <= date), None)
-
-
-def save_processed_site(country, media_house, snapshot, filename):
-    data_to_save = {
-        "id": media_house["id"],
-        "name": media_house["name"],
-        "country": country,
-        "url": media_house["url"],
-        'robots_url': f"{media_house['url']}/robots.txt",
-        "timestamp": snapshot["timestamp"],
-        "archived_robots_url": f"https://web.archive.org/web/{snapshot['timestamp']}/{media_house['url']}/robots.txt",
-    }
-    with open(filename, "a", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=data_to_save.keys())
-        if file.tell() == 0:
-            writer.writeheader()
-        writer.writerow(data_to_save)
-
-
-async def fetch_and_save_robots(session, media_house):
-    if not os.path.exists(processed_media_houses_csv):
-        with open(processed_media_houses_csv, "w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(["id", "name", "country", "url",
-                            "robots_url", "timestamp", "archived_robots_url"])
-
-    if not should_fetch_robots(media_house):
-        logging.info(
-            f"Skipping {media_house['name']} as it has already been processed")
-        return
-
-    country = media_house['country']
-    robots = await fetch_robots(session, media_house['url'])
-    if robots:
-        os.makedirs(
-            f"data/{country}/{media_house['name']}/archive", exist_ok=True)
-
-        with open(f"data/{country}/{media_house['name']}/robots.txt", "w") as f:
-            f.write(robots)
-
-        await asyncio.sleep(random.uniform(1, 3))
-
-        snapshots = await fetch_internet_archive_snapshots(session, media_house['url'])
-        if snapshots:
-            one_year_ago = (datetime.now() - timedelta(days=past_days)
-                            ).strftime("%Y%m%d%H%M%S")
-            closest_snapshot = find_closest_snapshot(snapshots, one_year_ago)
-            logging.info(f"""Closest snapshot for {
-                media_house['name']}: {closest_snapshot}""")
-            if closest_snapshot:
-                closest_snapshot_url = f"https://web.archive.org/web/{
-                    closest_snapshot['timestamp']}/{media_house['url']}"
-                logging.info(f"""Closet snapshot URL for {
-                    media_house['name']}: {closest_snapshot_url}""")
-                archive_robots = await fetch_robots(session, closest_snapshot_url)
-                if archive_robots:
-                    with open(f"data/{country}/{media_house['name']}/archive/{closest_snapshot['timestamp']}-robots.txt", "w") as f:
-                        f.write(archive_robots)
-
-                    save_processed_site(country,
-                                        media_house, closest_snapshot, processed_media_houses_csv)
-            else:
-                logging.error(
-                    f"No snapshot found for {media_house['name']} in the past year")

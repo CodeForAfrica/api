@@ -9,12 +9,13 @@ import re
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
-
-load_dotenv()
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path)
 
 api_key = os.getenv('AIRTABLE_API_KEY')
 base_id = os.getenv('AIRTABLE_BASE_ID')
 organisations_table = os.getenv('AIRTABLE_ORGANISATION_TABLE')
+content_table = os.getenv('AIRTABLE_CONTENT_TABLE')
 
 if not api_key or not base_id or not organisations_table:
     raise ValueError('API key, base ID and Organisation table are required')
@@ -71,7 +72,7 @@ def get_organizations(allowed_countries=None, cache=True):
 
     formula = get_formula(allowed_countries)
     fields = ['Organisation Name', 'Website', 'HQ Country']
-    data = get_table_data('Organisation', formula, fields)
+    data = get_table_data(organisations_table, formula, fields)
     organizations = process_records(data)
     if cache:
         os.makedirs('cache', exist_ok=True)
@@ -88,3 +89,12 @@ async def batch_update_organizations(data):
         table.batch_update(records=data)
     except Exception as e:
         logging.error(f'Error updating organization: {e}')
+
+
+async def batch_upsert_organizations(data):
+    logging.info('Upserting organizations in Airtable')
+    try:
+        table = at.table(base_id, content_table)
+        table.batch_upsert(records=data, key_fields=['URL',])
+    except Exception as e:
+        logging.error(f'Error upserting organization: {e}')
