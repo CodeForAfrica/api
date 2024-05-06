@@ -55,9 +55,18 @@ services:
       - pesacheck-data:/app/database
     env_file:
       - ./pesacheck_meedan_bridge/.env
+  
+  mediadata_ai_blocklist:
+    image: codeforafrica/mediadata_ai_blocklist:latest
+    command: ["tail", "-f", "/dev/null"]
+    volumes:
+      - mediadata-data:/app/database
+    env_file:
+      - ./mediadata_ai_blocklist/.env
 
 volumes:
   app-media:
   app-staticfiles:
   db-data:
   pesacheck-data:
+  mediadata-data:
