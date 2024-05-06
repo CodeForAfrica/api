@@ -1,5 +1,3 @@
-import os
-import glob
 import logging
 
 from database import Database, MediaHouse
