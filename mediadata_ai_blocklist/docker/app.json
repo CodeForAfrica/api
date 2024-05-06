@@ -1,0 +1,9 @@
+{
+    "name": "mediadata_ai_blocklist",
+    "cron": [
+        {
+            "command": "./pex",
+            "schedule": "@daily"
+        }
+    ]
+}

@@ -1,0 +1,4 @@
+FROM python:3.11-slim-bookworm
+
+COPY mediadata_ai_blocklist.py/mediadata-srcs@environment=linux.pex /mediadata-srcs.pex
+RUN PEX_TOOLS=1 python /mediadata-srcs.pex venv --scope=srcs --compile /app
