@@ -47,10 +47,8 @@ async def fetch_orgs(db: Database):
 async def fetch_robots(db: Database):
     media_houses = db.select_all_media_houses()
     async with aiohttp.ClientSession() as session:
-        tasks = []
-        for media_house in media_houses:
-            task = fetch_current_robots(db, session, media_house)
-            tasks.append(task)
+        tasks = [asyncio.create_task(fetch_current_robots(
+            db, session, media_house)) for media_house in media_houses]
         await asyncio.gather(*tasks)
         await asyncio.sleep(random.uniform(1, 3))
 
@@ -58,18 +56,15 @@ async def fetch_robots(db: Database):
 async def fetch_archived_robots(db: Database):
     media_houses = db.select_all_media_houses()
     async with aiohttp.ClientSession() as session:
-        tasks = []
-        for media_house in media_houses:
-            task = fetch_past_robots(db, session, media_house)
-            tasks.append(task)
+        tasks = [asyncio.create_task(fetch_past_robots(
+            db, session, media_house)) for media_house in media_houses]
         await asyncio.gather(*tasks)
         await asyncio.sleep(random.uniform(1, 3))
 
 
 async def main(db: Database):
     await fetch_orgs(db)
-    await fetch_robots(db)
-    await fetch_archived_robots(db)
+    await asyncio.gather(fetch_robots(db), fetch_archived_robots(db))
     await update_airtable(db)
 
 

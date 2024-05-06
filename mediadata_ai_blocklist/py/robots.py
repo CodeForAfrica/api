@@ -89,6 +89,15 @@ async def fetch_robots(session, url):
                       max_tries=retries,
                       giveup=lambda e: isinstance(e, aiohttp.ClientResponseError) and e.status == 404)
 async def fetch_current_robots(db: Database, session: aiohttp.ClientSession, media_house: MediaHouse):
+    latest_robots = db.select_latest_robots(media_house['id'])
+    if latest_robots:
+        last_fetch = datetime.strptime(
+            latest_robots['timestamp'], "%Y%m%d%H%M%S")
+        if (datetime.now() - last_fetch) < timedelta(days=1):
+            logging.info(
+                f"Skipping robots.txt fetch for {media_house['name']}")
+            return
+
     url = media_house['url']
     if url.endswith('/'):
         robots_url = f"{url}robots.txt"
@@ -118,6 +127,14 @@ async def fetch_current_robots(db: Database, session: aiohttp.ClientSession, med
                       max_tries=retries,
                       giveup=lambda e: isinstance(e, aiohttp.ClientResponseError) and e.status == 404)
 async def fetch_past_robots(db: Database, session: aiohttp.ClientSession, media_house: MediaHouse):
+    latest_archived_robots = db.select_latest_archived_robots(media_house['id'])
+    if latest_archived_robots:
+        last_fetch = datetime.strptime(
+            latest_archived_robots['timestamp'], "%Y%m%d%H%M%S")
+        if (datetime.now() - last_fetch) < timedelta(days=1):
+            logging.info(
+                f"Skipping past robots.txt fetch for {media_house['name']}")
+            return
     snapshots = await fetch_internet_archive_snapshots(session, media_house['url'])
     if snapshots:
         print("Snapshots")
