@@ -20,6 +20,18 @@ past_days = 365
 semaphore = asyncio.Semaphore(10)
 
 
+def is_valid_robots_txt(text):
+    text = re.sub(r'(#.*)?\n', '', text)
+
+    if not re.search(r'^\s*(User-agent|Disallow)\s*:', text, re.MULTILINE | re.IGNORECASE):
+        return False
+
+    if not re.match(r'^\s*(User-agent|Disallow|Allow|Crawl-delay|Sitemap)\s*:', text, re.IGNORECASE):
+        return False
+
+    return True
+
+
 @backoff.on_exception(backoff.expo,
                       (aiohttp.ClientError, aiohttp.ClientResponseError),
                       max_tries=retries,
@@ -65,6 +77,10 @@ async def fetch_robots(session, url):
             text = await fetch_with_backoff(session, robots_url, headers)
             if text:
                 await asyncio.sleep(random.uniform(1, 3))
+                if (not is_valid_robots_txt(text)):
+                    logging.error(
+                        f"Invalid robots.txt for {robots_url}. Skipping")
+                    return None
                 return text
         except aiohttp.ClientResponseError as e:
             if e.status == 404:
