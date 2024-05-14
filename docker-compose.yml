@@ -56,17 +56,17 @@ services:
     env_file:
       - ./pesacheck_meedan_bridge/.env
   
-  mediadata_ai_blocklist:
-    image: codeforafrica/mediadata_ai_blocklist:latest
+  content_access_bot:
+    image: codeforafrica/content_access_bot:latest
     command: ["tail", "-f", "/dev/null"]
     volumes:
-      - mediadata-data:/app/database
+      - content_access_bot-data:/app/database
     env_file:
-      - ./mediadata_ai_blocklist/.env
+      - ./content_access_bot/.env
 
 volumes:
   app-media:
   app-staticfiles:
   db-data:
   pesacheck-data:
-  mediadata-data:
+  content_access_bot-data:

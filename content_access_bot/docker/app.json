@@ -1,5 +1,5 @@
 {
-    "name": "mediadata_ai_blocklist",
+    "name": "content_access_bot",
     "cron": [
         {
             "command": "./pex",

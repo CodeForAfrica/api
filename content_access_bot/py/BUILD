@@ -9,7 +9,7 @@ python_sources(
 )
 
 pex_binary(
-    name="mediadata-deps",
+    name="content_access_bot-deps",
     environment=parametrize("__local__", "linux"),
     dependencies=[
         ":lib",
@@ -21,7 +21,7 @@ pex_binary(
 )
 
 pex_binary(
-    name="mediadata-srcs",
+    name="content_access_bot-srcs",
     environment=parametrize("__local__", "linux"),
     dependencies=[
         ":lib",
@@ -34,7 +34,7 @@ pex_binary(
 
 
 pex_binary(
-    name="mediadata",
+    name="content_access_bot",
     dependencies=[
         ":lib",
     ],

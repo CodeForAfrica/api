@@ -1,8 +1,8 @@
 docker_image(
-    name="mediadata-deps",
+    name="content_access_bot-deps",
     image_tags=["deps"],
     build_platform=["linux/amd64"],
-    registries=["mediadata_ai_blocklist"],
+    registries=["content_access_bot"],
     repository="app",
     skip_push=True,
     source="Dockerfile.deps",
@@ -11,19 +11,19 @@ docker_image(
 file(name="app.json", source="app.json")
 
 docker_image(
-    name="mediadata-srcs",
+    name="content_access_bot-srcs",
     image_tags=["srcs"],
     build_platform=["linux/amd64"],
-    registries=["mediadata_ai_blocklist"],
+    registries=["content_access_bot"],
     repository="app",
     skip_push=True,
     source="Dockerfile.srcs",
 )
 
 docker_image(
-    name="mediadata_ai_blocklist",
+    name="content_access_bot",
     build_platform=["linux/amd64"],
-    dependencies=[":mediadata-srcs", ":mediadata-deps", ":app.json"],
+    dependencies=[":content_access_bot-srcs", ":content_access_bot-deps", ":app.json"],
     image_tags=[
         "{build_args.VERSION}",
         "latest",

@@ -37,8 +37,8 @@ root_patterns = [
   "/pants-plugins",
   "/pesacheck_meedan_bridge/py",
   "/pesacheck_meedan_bridge/docker",
-  "/mediadata_ai_blocklist/py",
-  "/mediadata_ai_blocklist/docker",
+  "/content_access_bot/py",
+  "/content_access_bot/docker",
 ]
 
 [python]
