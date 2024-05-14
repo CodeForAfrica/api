@@ -1,7 +1,6 @@
 import sqlite3
 from dataclasses import dataclass
 from sqlite3 import Error
-from typing import List
 from dotenv import load_dotenv
 import os
 
@@ -15,6 +14,10 @@ class MediaHouse:
     url: str
     airtable_id: str
     id: str = None
+    site_status: str = None
+    site_reachable: bool = None
+    site_redirect: bool = None
+    final_url: str = None
 
 
 @dataclass
@@ -56,8 +59,12 @@ class Database:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             country TEXT NOT NULL,
-            url TEXT NOT NULL UNIQUE,
-            airtable_id TEXT NOT NULL UNIQUE
+            url TEXT NOT NULL,
+            airtable_id TEXT NOT NULL UNIQUE,
+            site_status TEXT,
+            site_reachable BOOLEAN,
+            site_redirect BOOLEAN,
+            final_url TEXT
         );
         CREATE TABLE IF NOT EXISTS robots (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,6 +114,36 @@ class Database:
         try:
             cur = self.conn.cursor()
             cur.execute("SELECT * FROM media_house")
+            rows = cur.fetchall()
+            column_names = [column[0] for column in cur.description]
+            dict_rows = [dict(zip(column_names, row)) for row in rows]
+            return dict_rows
+        except Error as e:
+            print(e)
+            return None
+        finally:
+            cur.close()
+
+    def update_site_status(self, media_house_id, site_status, site_reachable, site_redirect, final_url):
+        try:
+            sql = """
+            UPDATE media_house
+            SET site_status = ?, site_reachable = ?, site_redirect = ?, final_url = ?
+            WHERE id = ?
+            """
+            cur = self.conn.cursor()
+            cur.execute(sql, (site_status, site_reachable,
+                        site_redirect, final_url, media_house_id))
+            self.conn.commit()
+        except Error as e:
+            print(e)
+        finally:
+            cur.close()
+
+    def get_reachable_sites(self):
+        try:
+            cur = self.conn.cursor()
+            cur.execute("SELECT * FROM media_house WHERE site_reachable = 1")
             rows = cur.fetchall()
             column_names = [column[0] for column in cur.description]
             dict_rows = [dict(zip(column_names, row)) for row in rows]

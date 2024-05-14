@@ -70,6 +70,6 @@ async def batch_upsert_organizations(data):
     logging.info('Upserting organizations in Airtable')
     try:
         table = at.table(base_id, content_table)
-        table.batch_upsert(records=data, key_fields=['URL',])
+        table.batch_upsert(records=data, key_fields=['id',])
     except Exception as e:
         logging.error(f'Error upserting organization: {e}')

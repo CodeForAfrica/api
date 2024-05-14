@@ -50,6 +50,9 @@ def diff_robot_files(media_house: MediaHouse, db: Database):
     data['blocks_crawlers'] = True if found_crawlers else False
     data['notes'] = 'Robots.txt has been updated to block AI crawlers' if found_crawlers and not archive_crawlers else None
     data['latest_robots_url'] = latest_robots['url']
+    data['latest_robots_date'] = latest_robots['timestamp']
+    data['latest_robots_content'] = latest_robots['content']
     data['archived_robots_url'] = oldest_archived_robots['url']
     data['archived_date'] = oldest_archived_robots['archived_date']
+    data['archived_robots_content'] = oldest_archived_robots['content']
     return data

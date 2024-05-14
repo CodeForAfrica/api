@@ -1,4 +1,3 @@
-import os
 import asyncio
 import re
 import aiohttp
@@ -123,10 +122,8 @@ async def fetch_current_robots(db: Database, session: aiohttp.ClientSession, med
     try:
         text = await fetch_robots(session, url)
         if text:
-            print("Valid robots.txt")
             robots = Robots(media_house['id'], robots_url,
                             datetime.now().strftime("%Y%m%d%H%M%S"), text, "200")
-            print(robots)
             db.insert_robot(robots)
             await asyncio.sleep(random.uniform(1, 3))
     except Exception as e:
@@ -153,7 +150,6 @@ async def fetch_past_robots(db: Database, session: aiohttp.ClientSession, media_
             return
     snapshots = await fetch_internet_archive_snapshots(session, media_house['url'])
     if snapshots:
-        print("Snapshots")
         one_year_ago = (datetime.now() - timedelta(days=past_days)
                         ).strftime("%Y%m%d%H%M%S")
         closest_snapshot = find_closest_snapshot(snapshots, one_year_ago)
@@ -166,10 +162,8 @@ async def fetch_past_robots(db: Database, session: aiohttp.ClientSession, media_
                 media_house['name']}: {closest_snapshot_url}""")
             archive_robots = await fetch_robots(session, closest_snapshot_url)
             if archive_robots:
-                print("Valid robots.txt")
                 archive_robots = ArchivedRobots(media_house['id'], closest_snapshot_url,
                                                 closest_snapshot['timestamp'], archive_robots, datetime.now().strftime("%Y%m%d%H%M%S"), "200")
-                print(archive_robots)
                 db.insert_archived_robot(archive_robots)
                 await asyncio.sleep(random.uniform(1, 3))
         else:
