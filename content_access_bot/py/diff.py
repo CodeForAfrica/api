@@ -37,11 +37,11 @@ def diff_robot_files(media_house: MediaHouse, db: Database):
     if not oldest_archived_robots:
         return
     found_crawlers = [
-        crawler for crawler in ai_crawlers if crawler in latest_robots['content']
+        crawler for crawler in ai_crawlers if crawler.casefold() in latest_robots['content'].casefold()
     ]
 
     archive_crawlers = [
-        crawler for crawler in ai_crawlers if crawler in oldest_archived_robots['content']
+        crawler for crawler in ai_crawlers if crawler.casefold() in oldest_archived_robots['content'].casefold()
     ]
 
     data = {}
