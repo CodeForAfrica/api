@@ -1,10 +1,13 @@
 import sqlite3
 from dataclasses import dataclass
 from sqlite3 import Error
-from dotenv import load_dotenv
 import os
+from environs import Env
+env = Env()
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+
+env.read_env(dotenv_path)
 
 
 @dataclass
@@ -41,7 +44,6 @@ class ArchivedRobots:
 
 class Database:
     def __init__(self):
-        load_dotenv(dotenv_path)
         self.db_file = os.getenv('DB_FILE')
         self.conn = self.create_connection()
         self.create_table()
@@ -153,9 +155,6 @@ class Database:
             return None
         finally:
             cur.close()
-
-    def close_connection(self):
-        self.conn.close()
 
     def is_connected(self):
         return self.conn is not None

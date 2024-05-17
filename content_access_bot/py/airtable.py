@@ -1,15 +1,17 @@
 from pyairtable import Api
-from dotenv import load_dotenv
 from utils import validate_url, clean_url
 import os
 import logging
 import re
+from environs import Env
+env = Env()
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+
+env.read_env(dotenv_path)
 
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
-dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-load_dotenv(dotenv_path)
 
 api_key = os.getenv('AIRTABLE_API_KEY')
 base_id = os.getenv('AIRTABLE_BASE_ID')

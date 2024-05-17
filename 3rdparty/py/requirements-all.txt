@@ -16,7 +16,6 @@ greenlet==3.0.3
 gunicorn[gevent, setproctitle]==22.0.0
 html2text==2024.2.26
 pyairtable==2.3.3
-python-dotenv==1.0.1
 redis==5.0.4
 requests==2.31.0
 sentry-sdk==2.1.0
