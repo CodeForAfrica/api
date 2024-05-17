@@ -168,6 +168,3 @@ cython_debug/
 # Custom gitignore
 *.db
 # End of custom ignore
-
-# 
-/**/cache/*

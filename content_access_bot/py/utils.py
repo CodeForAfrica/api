@@ -30,3 +30,15 @@ def clean_url(url):
     cleaned_url = urlunparse(
         (parsed_url.scheme, parsed_url.netloc, "", "", "", ""))
     return cleaned_url.rstrip('/')
+
+
+def url_redirects(original, final):
+    parsed_original = urlparse(original)
+    parsed_final = urlparse(final)
+
+    original_netloc_path = parsed_original.netloc.replace(
+        'www.', '') + parsed_original.path.rstrip('/')
+    final_netloc_path = parsed_final.netloc.replace(
+        'www.', '') + parsed_final.path.rstrip('/')
+
+    return original_netloc_path != final_netloc_path

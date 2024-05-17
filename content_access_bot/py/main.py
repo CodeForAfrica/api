@@ -9,6 +9,7 @@ from diff import diff_robot_files
 import time
 import datetime
 from database import Database, MediaHouse
+from utils import url_redirects
 
 
 logging.basicConfig(level=logging.INFO,
@@ -73,7 +74,7 @@ async def check_site_availability(url: str):
                 return {
                     "status_code": response.status,
                     "reachable": True,
-                    "redirect": URL(response.url).with_scheme('').with_path(response.url.path.rstrip('/')) != URL(url).with_scheme('').with_path(URL(url).path.rstrip('/')),
+                    "redirect": url_redirects(url, str(response.url)),
                     "final_url": str(response.url)
                 }
         except Exception:
