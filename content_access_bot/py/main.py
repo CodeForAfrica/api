@@ -1,5 +1,4 @@
 import asyncio
-from yarl import URL
 import random
 import aiohttp
 from airtable import get_organizations, batch_upsert_organizations
@@ -9,7 +8,7 @@ from diff import diff_robot_files
 import time
 import datetime
 from database import Database, MediaHouse
-from utils import url_redirects
+from utils import check_site_availability
 
 
 logging.basicConfig(level=logging.INFO,
@@ -18,6 +17,7 @@ logging.basicConfig(level=logging.INFO,
 
 async def update_airtable(db: Database):
     all_orgs = db.get_reachable_sites()
+    logging.info(f"Updating {len(all_orgs)} sites")
     data_update = []
     for org in all_orgs:
         diff_data = diff_robot_files(org, db)
@@ -38,10 +38,12 @@ async def update_airtable(db: Database):
             data_update.append(update_data)
 
     await batch_upsert_organizations(data_update)
+    logging.info("Finished updating sites")
 
 
 async def update_airtable_site_status(db: Database):
     all_orgs = db.select_all_media_houses()
+    logging.info(f"Updating {len(all_orgs)} sites status")
     data_update = []
     for org in all_orgs:
         update_data = {
@@ -57,6 +59,7 @@ async def update_airtable_site_status(db: Database):
         data_update.append(update_data)
 
     await batch_upsert_organizations(data_update)
+    logging.info("Finished updating sites status")
 
 
 async def fetch_orgs(db: Database):
@@ -67,32 +70,15 @@ async def fetch_orgs(db: Database):
         db.insert_media_house(media_house_obj)
 
 
-async def check_site_availability(url: str):
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(url, allow_redirects=True) as response:
-                return {
-                    "status_code": response.status,
-                    "reachable": True,
-                    "redirect": url_redirects(url, str(response.url)),
-                    "final_url": str(response.url)
-                }
-        except Exception:
-            return {
-                "status_code": None,
-                "reachable": False,
-                "redirect": False,
-                "final_url": None
-            }
-
-
 async def fetch_robots(db: Database):
     media_houses = db.get_reachable_sites()
+    logging.info(f"Fetching robots for {len(media_houses)} sites")
     async with aiohttp.ClientSession() as session:
         tasks = [asyncio.create_task(fetch_current_robots(
             db, session, media_house)) for media_house in media_houses]
         await asyncio.gather(*tasks)
         await asyncio.sleep(random.uniform(1, 3))
+    logging.info("Finished fetching robots")
 
 
 async def fetch_archived_robots(db: Database):
@@ -106,10 +92,15 @@ async def fetch_archived_robots(db: Database):
 
 async def check_org_sites(db: Database):
     all_orgs = db.select_all_media_houses()
-    for org in all_orgs:
+    logging.info(f"Checking {len(all_orgs)} sites")
+
+    async def update_org_site(org):
         site_status = await check_site_availability(org['url'])
         db.update_site_status(org['id'], site_status['status_code'],
                               site_status['reachable'], site_status['redirect'], site_status['final_url'])
+
+    await asyncio.gather(*(update_org_site(org) for org in all_orgs))
+    logging.info("Finished checking sites")
 
 
 async def main(db: Database):

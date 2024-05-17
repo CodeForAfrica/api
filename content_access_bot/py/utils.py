@@ -1,5 +1,6 @@
 import re
 from urllib.parse import urlparse, urlunparse
+import aiohttp
 
 
 def validate_url(url):
@@ -42,3 +43,22 @@ def url_redirects(original, final):
         'www.', '') + parsed_final.path.rstrip('/')
 
     return original_netloc_path != final_netloc_path
+
+
+async def check_site_availability(url: str):
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(url, allow_redirects=True) as response:
+                return {
+                    "status_code": response.status,
+                    "reachable": True,
+                    "redirect": url_redirects(url, str(response.url)),
+                    "final_url": str(response.url)
+                }
+        except Exception:
+            return {
+                "status_code": None,
+                "reachable": False,
+                "redirect": False,
+                "final_url": None
+            }

@@ -65,6 +65,7 @@ def get_organizations(allowed_countries=None):
     fields = ['Organisation Name', 'Website', 'HQ Country']
     data = get_table_data(organisations_table, formula, fields)
     organizations = process_records(data)
+    logging.info(f'Fetched {len(organizations)} organizations')
     return organizations
 
 
@@ -73,5 +74,6 @@ async def batch_upsert_organizations(data):
     try:
         table = at.table(base_id, content_table)
         table.batch_upsert(records=data, key_fields=['id',])
+        logging.info('Organizations upserted successfully')
     except Exception as e:
         logging.error(f'Error upserting organization: {e}')
