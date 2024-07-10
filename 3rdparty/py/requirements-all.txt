@@ -9,7 +9,7 @@ djangorestframework-simplejwt==5.3.1
 environs[django]==11.0.0
 google-api-python-client==2.136.0
 google-auth-httplib2==0.2.0
-google-auth-oauthlib==1.2.0
+google-auth-oauthlib==1.2.1
 greenlet==3.0.3
 gunicorn[gevent, setproctitle]==22.0.0
 html2text==2024.2.26
