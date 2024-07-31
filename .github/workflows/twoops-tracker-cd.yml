@@ -70,7 +70,7 @@ jobs:
           docker push ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
 
       - name: Push to Dokku
-        uses: dokku/github-action@v1.4.0
+        uses: dokku/github-action@v1.5.0
         with:
           branch: ${{ env.DOKKU_REMOTE_BRANCH }}
           git_push_flags: ${{ env.GIT_PUSH_FLAGS }}
