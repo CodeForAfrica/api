@@ -13,7 +13,7 @@ google-auth-oauthlib==1.2.1
 greenlet==3.0.3
 gunicorn[gevent, setproctitle]==22.0.0
 html2text==2024.2.26
-redis==5.0.7
+redis==5.0.8
 requests==2.32.3
 sentry-sdk==2.12.0
 tablib[xlsx]==3.6.1
