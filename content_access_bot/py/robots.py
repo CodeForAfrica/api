@@ -135,6 +135,18 @@ async def fetch_current_robots(db: Database, session: aiohttp.ClientSession, med
     return None
 
 
+async def should_fetch_past_robots(db: Database, media_house: MediaHouse):
+    latest_archived_robots = db.select_latest_archived_robots(media_house['id'])
+    if latest_archived_robots:
+        last_fetch = datetime.strptime(
+            latest_archived_robots['timestamp'], "%Y%m%d%H%M%S")
+        if (datetime.now() - last_fetch) < timedelta(days=1):
+            logging.info(
+                f"Skipping past robots.txt fetch for {media_house['name']}")
+            return False
+    return True
+
+
 @backoff.on_exception(backoff.expo,
                       aiohttp.ClientError,
                       max_tries=retries,

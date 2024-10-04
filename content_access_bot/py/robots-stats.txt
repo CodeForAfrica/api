@@ -1,0 +1,44 @@
+AI Bot Blocking.
+
+----
+We analysed top websites across Africa to check if they were blocking AI bots.  We found that only 4.3% of websites were blocking AI bots. Only 45.5% of them had a robots.txt file which is a file that tells search engine bots which pages to crawl and which not to crawl.
+
+----
+
+As AI bots become more prevalent, it is important for websites to protect their data from unauthorized scrapping and crawling by AI bots which use the scraped data to train their models. 
+
+We recently analysed a broad range of popular websites across Africa to check if they were blocking AI bots. The results were quite alarming highlighting a significant gap in the security of these websites.
+
+Blocking AI bots: Only 4.3% of websites were blocking AI bots. This means that 95.7% of websites are potentially vulnerable to unauthorized scraping and crawling by AI bots.
+
+Robots.txt file: The robots.txt file is a critical component in guiding search engine bots on which pages to index and which to ignore. Surprisingly, only 45.5% of the websites had implemented a robots.txt file. This leaves more than half of the websites without a fundamental line of defense against unwanted bot activities.
+
+Importance of blocking AI bots:
+1. Data protection: Unauthorized scraping and crawling can lead to data theft and misuse. Blocking AI bots is essential to protect sensitive data from being accessed by unauthorized parties.
+2. Resource consumption: AI bots can consume significant server resources, leading to slow website performance and increased operational costs. Blocking AI bots can help prevent resource wastage and maintain optimal website performance.
+3. Content Ownership: Unauthorized scraping can lead to the unauthorized use of website content, undermining the ownership and intellectual property rights of the website owner. Blocking AI bots can help protect the originality and integrity of the website content.
+
+
+----
+
+## Overview:
+
+As AI bots become more prevalent, it is important for websites to protect their data from unauthorized scrapping and crawling by AI bots which use the scraped data to train their models. 
+
+We recently analysed a broad range of popular websites across Africa to check if they were blocking AI bots. The results were quite alarming highlighting a significant gap in the security of these websites.
+
+Blocking AI bots: Only 4.3% of websites were blocking AI bots. This means that 95.7% of websites are potentially vulnerable to unauthorized scraping and crawling by AI bots.
+
+Robots.txt file: The robots.txt file is a critical component in guiding search engine bots on which pages to index and which to ignore. Surprisingly, only 45.5% of the websites had implemented a robots.txt file. This leaves more than half of the websites without a fundamental line of defense against unwanted bot activities.
+
+The principal aim of this study was to determine the frequency with which African media houses and other top webistes were putting policies in place to block artificial intelligence (AI) crawlers. Large language models (LLMs) rely on a significant amount of data to be trained and improved. The main technique for gathering such data is the methodical trawling of web material using crawlers, which collect data continuously. However some websites want to limit how their content is used to train LLMs; alternatively, they might block these web crawlers from reaching their websites.
+
+## Technique Used:
+
+We examined the `robots.txt` file of the websites to determine if they were blocking AI bots. The `robots.txt` file is a file that tells search engine bots which pages to crawl and which not to crawl. We examined the `robots.txt` file for common AI bot's user agents and checked if they were blocked.
+
+## Results:
+
+
+## How to Block AI Bots:
+

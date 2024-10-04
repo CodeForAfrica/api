@@ -62,3 +62,10 @@ async def check_site_availability(url: str):
                 "redirect": False,
                 "final_url": None
             }
+
+
+def get_robots_url(url: str):
+    parsed_url = urlparse(url)
+    robots_url = urlunparse(
+        (parsed_url.scheme, parsed_url.netloc, "/robots.txt", "", "", ""))
+    return robots_url.rstrip('/')

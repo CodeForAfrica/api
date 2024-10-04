@@ -3,12 +3,15 @@ import random
 import aiohttp
 from airtable import get_organizations, batch_upsert_organizations
 import logging
-from robots import fetch_current_robots, fetch_past_robots
+from robots import fetch_past_robots, should_fetch_past_robots
 from diff import diff_robot_files
 import time
-import datetime
+from datetime import datetime, timedelta
 from database import Database, MediaHouse
-from utils import check_site_availability
+from utils import check_site_availability, get_robots_url
+from spider import RobotsSpider, ArchivedRobotsSpider
+from scrapy.crawler import CrawlerProcess
+from internet_archive import fetch_internet_archive_snapshots, find_closest_snapshot
 
 
 logging.basicConfig(level=logging.INFO,
@@ -72,22 +75,61 @@ async def fetch_orgs(db: Database):
 
 async def fetch_robots(db: Database):
     media_houses = db.get_reachable_sites()
+    # only first 5 sites for testing
+    media_houses = media_houses[:5]
     logging.info(f"Fetching robots for {len(media_houses)} sites")
-    async with aiohttp.ClientSession() as session:
-        tasks = [asyncio.create_task(fetch_current_robots(
-            db, session, media_house)) for media_house in media_houses]
-        await asyncio.gather(*tasks)
-        await asyncio.sleep(random.uniform(1, 3))
-    logging.info("Finished fetching robots")
+    urls = [(media_house['id'], get_robots_url(media_house['url']))
+            for media_house in media_houses]
+    process = CrawlerProcess(settings={
+        'ITEM_PIPELINES': {
+            'pipeline.RobotsDatabasePipeline': 1
+        },
+    }, install_root_handler=False)
+    process.crawl(RobotsSpider, urls)
+    process.start()
+
+
+async def get_internet_archive_urls(media_houses):
+    past_days = 365
+    one_year_ago = (datetime.now() - timedelta(days=past_days)
+                    ).strftime("%Y%m%d%H%M%S")
+    urls = []
+    for media_house in media_houses:
+        if await should_fetch_past_robots(db, media_house):
+            archived_robots = await fetch_internet_archive_snapshots(
+                media_house['url'])
+            if archived_robots:
+                closest_snapshot = find_closest_snapshot(
+                    archived_robots, one_year_ago)
+                if closest_snapshot:
+                    print("Closest snapshot::", closest_snapshot)
+                    closest_snapshot_url = f"https://web.archive.org/web/{
+                        closest_snapshot['timestamp']}/{media_house['url']}"
+                    urls.append(
+                        (media_house['id'], closest_snapshot_url, closest_snapshot['timestamp']))
+                else:
+                    logging.info(
+                        f"No archived robots found for {media_house['name']}")
+        else:
+            logging.info(f"Skipping {media_house['name']}")
+    return urls
 
 
 async def fetch_archived_robots(db: Database):
+
     media_houses = db.get_reachable_sites()
-    async with aiohttp.ClientSession() as session:
-        tasks = [asyncio.create_task(fetch_past_robots(
-            db, session, media_house)) for media_house in media_houses]
-        await asyncio.gather(*tasks)
-        await asyncio.sleep(random.uniform(1, 3))
+    # only first 5 sites for testing
+    media_houses = media_houses[:5]
+    urls = await get_internet_archive_urls(media_houses)
+    archived_robot_urls = [(id, f"{url}/robots.txt", timestamp) for id,
+                           url, timestamp in urls]
+    process = CrawlerProcess(settings={
+        'ITEM_PIPELINES': {
+            'pipeline.ArchivedRobotsDatabasePipeline': 1
+        },
+    }, install_root_handler=False)
+    process.crawl(ArchivedRobotsSpider, archived_robot_urls)
+    process.start()
 
 
 async def check_org_sites(db: Database):
@@ -104,11 +146,13 @@ async def check_org_sites(db: Database):
 
 
 async def main(db: Database):
-    await fetch_orgs(db)
-    await check_org_sites(db)
-    await update_airtable_site_status(db)
-    await asyncio.gather(fetch_robots(db), fetch_archived_robots(db))
-    await update_airtable(db)
+    # await fetch_orgs(db)
+    # await check_org_sites(db)
+    # await update_airtable_site_status(db)
+    # await fetch_robots(db)
+    await fetch_archived_robots(db)
+    # await asyncio.gather(fetch_robots(db), fetch_archived_robots(db))
+    # await update_airtable(db)
 
 
 if __name__ == '__main__':

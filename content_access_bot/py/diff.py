@@ -29,6 +29,7 @@ ai_crawlers = [
     "LaMDA",
     "Megatron-Turing-NLG",
     "magpie-crawler",
+    "Meltwater",
     "NewsNow",
     "news-please",
     "omgili",
