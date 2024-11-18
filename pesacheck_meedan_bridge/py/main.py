@@ -73,15 +73,15 @@ def post_to_check_and_update(feed, db):
     ]
     language = "en" if not codes else codes[0]
     claim_description = html_to_text(extract_h4_before_figure(feed.description))
-    set_claim_description = f"""{claim_description}"""
+    description = f"""{claim_description}"""
     input_data = {
         "media_type": "Blank",
         "channel": 1,
         "set_tags": categories,
         "set_status": "verified",
-        "set_claim_description": set_claim_description,
+        "set_claim_description": feed.title,
         "title": f"""{feed.title}""",
-        "summary": f"""{html_to_text(feed.description)}""",
+        "summary": f"""{description}""",
         "url": feed.link,
         "language": language,
         "publish_report": True,
