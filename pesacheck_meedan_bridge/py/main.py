@@ -79,7 +79,7 @@ def post_to_check_and_update(feed, db):
         "channel": 1,
         "set_tags": categories,
         "set_status": "verified",
-        "set_claim_description": feed.title,
+        "set_claim_description": f"""{feed.title}""",  # Becomes Claim title on meedan,
         "title": f"""{feed.title}""",
         "summary": f"""{description}""",
         "url": feed.link,
