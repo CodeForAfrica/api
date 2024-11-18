@@ -7,10 +7,25 @@ import settings
 from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
 from trafilatura import extract
+import re
 
 
 def html_to_text(content):
     return extract(content, include_links=True, include_images=True) or content
+
+
+def extract_h4_before_figure(content):
+    h4_pattern = r"<h4>(.*?)</h4>"
+    figure_pattern = r"<figure>"
+    h4_matches = re.findall(h4_pattern, content)
+    figure_index = content.find(figure_pattern)
+    
+    for h4_match in reversed(h4_matches):
+        h4_index = content.find(h4_match)
+        if h4_index < figure_index:
+            return h4_match.strip()
+    
+    return None
 
 
 language_codes = {
@@ -57,12 +72,14 @@ def post_to_check_and_update(feed, db):
         if language.lower() in language_codes
     ]
     language = "en" if not codes else codes[0]
+    claim_description = html_to_text(extract_h4_before_figure(feed.description))
+    set_claim_description = f"""{claim_description}"""
     input_data = {
         "media_type": "Blank",
         "channel": 1,
         "set_tags": categories,
         "set_status": "verified",
-        "set_claim_description": f"""{html_to_text(feed.description)}""",
+        "set_claim_description": set_claim_description,
         "title": f"""{feed.title}""",
         "summary": f"""{html_to_text(feed.description)}""",
         "url": feed.link,
