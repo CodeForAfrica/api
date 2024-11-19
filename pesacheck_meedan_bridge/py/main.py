@@ -1,23 +1,21 @@
 import json
 import sys
 
+import lxml.html
 import requests
 import sentry_sdk
 import settings
 from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
-from lxml import etree
-from lxml.html import tostring
 
 
 def extract_summary(content):
-    tree = etree.Element("root")
-    tree.append(etree.HTML(content))
+    tree = lxml.html.fromstring(content)
     figures = tree.xpath("//figure")
     if len(figures) == 0:
         return None
     summary_el = figures[0].getprevious()
-    summary_text = tostring(summary_el, method="text", encoding="unicode")
+    summary_text = lxml.html.tostring(summary_el, method="text", encoding="unicode")
     return summary_text.strip() if summary_text else None
 
 
@@ -67,7 +65,6 @@ def post_to_check_and_update(feed, db):
     language = "en" if not codes else codes[0]
     claim_description = feed.title
     summary = extract_summary(feed.description) or "Not Found"
-    print(summary)
     input_data = {
         "media_type": "Blank",
         "channel": 1,
