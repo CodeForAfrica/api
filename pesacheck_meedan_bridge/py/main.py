@@ -7,11 +7,7 @@ import settings
 from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
 from lxml import etree
-from trafilatura import extract
-
-
-def html_to_text(content):
-    return extract(content, include_links=True, include_images=True) or content
+from lxml.html import tostring
 
 
 def extract_summary(content):
@@ -20,8 +16,9 @@ def extract_summary(content):
     figures = tree.xpath("//figure")
     if len(figures) == 0:
         return None
-    h4 = figures[0].getprevious()
-    return h4.text
+    summary_el = figures[0].getprevious()
+    summary_text = tostring(summary_el, method="text", encoding="unicode")
+    return summary_text.strip() if summary_text else None
 
 
 language_codes = {
@@ -70,14 +67,15 @@ def post_to_check_and_update(feed, db):
     language = "en" if not codes else codes[0]
     claim_description = feed.title
     summary = extract_summary(feed.description) or "Not Found"
+    print(summary)
     input_data = {
         "media_type": "Blank",
         "channel": 1,
         "set_tags": categories,
         "set_status": "verified",
-        "set_claim_description": f"""{claim_description}""",
-        "title": f"""{feed.title}""",
-        "summary": f"""{summary}""",
+        "set_claim_description": claim_description,
+        "title": feed.title,
+        "summary": summary,
         "url": feed.link,
         "language": language,
         "publish_report": True,
