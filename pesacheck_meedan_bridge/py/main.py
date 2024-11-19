@@ -6,26 +6,22 @@ import sentry_sdk
 import settings
 from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
+from lxml import etree
 from trafilatura import extract
-import re
 
 
 def html_to_text(content):
     return extract(content, include_links=True, include_images=True) or content
 
 
-def extract_h4_before_figure(content):
-    h4_pattern = r"<h4>(.*?)</h4>"
-    figure_pattern = r"<figure>"
-    h4_matches = re.findall(h4_pattern, content)
-    figure_index = content.find(figure_pattern)
-    
-    for h4_match in reversed(h4_matches):
-        h4_index = content.find(h4_match)
-        if h4_index < figure_index:
-            return h4_match.strip()
-    
-    return None
+def extract_summary(content):
+    tree = etree.Element("root")
+    tree.append(etree.HTML(content))
+    figures = tree.xpath("//figure")
+    if len(figures) == 0:
+        return None
+    h4 = figures[0].getprevious()
+    return h4.text
 
 
 language_codes = {
@@ -72,16 +68,16 @@ def post_to_check_and_update(feed, db):
         if language.lower() in language_codes
     ]
     language = "en" if not codes else codes[0]
-    claim_description = html_to_text(extract_h4_before_figure(feed.description))
-    description = f"""{claim_description}"""
+    claim_description = feed.title
+    summary = extract_summary(feed.description) or "Not Found"
     input_data = {
         "media_type": "Blank",
         "channel": 1,
         "set_tags": categories,
         "set_status": "verified",
-        "set_claim_description": f"""{feed.title}""",  # Becomes Claim title on meedan,
+        "set_claim_description": f"""{claim_description}""",
         "title": f"""{feed.title}""",
-        "summary": f"""{description}""",
+        "summary": f"""{summary}""",
         "url": feed.link,
         "language": language,
         "publish_report": True,
@@ -136,7 +132,7 @@ def main(db):
                         check_project_media_id="",
                         check_full_url="",
                         claim_description_id="",
-                        )
+                    )
                     store_in_database(feed, db=db)
                     posted = post_to_check_and_update(feed, db=db)
                     success_posts.append(posted)
