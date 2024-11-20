@@ -1,16 +1,22 @@
 import json
 import sys
 
+import lxml.html
 import requests
 import sentry_sdk
 import settings
 from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
-from trafilatura import extract
 
 
-def html_to_text(content):
-    return extract(content, include_links=True, include_images=True) or content
+def extract_summary(content):
+    tree = lxml.html.fromstring(content)
+    figures = tree.xpath("//figure")
+    if len(figures) == 0:
+        return None
+    summary_el = figures[0].getprevious()
+    summary_text = summary_el.text_content()
+    return summary_text.strip() if summary_text else None
 
 
 language_codes = {
@@ -57,14 +63,16 @@ def post_to_check_and_update(feed, db):
         if language.lower() in language_codes
     ]
     language = "en" if not codes else codes[0]
+    claim_description = feed.title
+    summary = extract_summary(feed.description) or "Not Found"
     input_data = {
         "media_type": "Blank",
         "channel": 1,
         "set_tags": categories,
         "set_status": "verified",
-        "set_claim_description": f"""{html_to_text(feed.description)}""",
-        "title": f"""{feed.title}""",
-        "summary": f"""{html_to_text(feed.description)}""",
+        "set_claim_description": claim_description,
+        "title": feed.title,
+        "summary": summary,
         "url": feed.link,
         "language": language,
         "publish_report": True,
@@ -119,7 +127,7 @@ def main(db):
                         check_project_media_id="",
                         check_full_url="",
                         claim_description_id="",
-                        )
+                    )
                     store_in_database(feed, db=db)
                     posted = post_to_check_and_update(feed, db=db)
                     success_posts.append(posted)
