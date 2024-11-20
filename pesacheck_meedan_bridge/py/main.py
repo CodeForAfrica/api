@@ -15,7 +15,7 @@ def extract_summary(content):
     if len(figures) == 0:
         return None
     summary_el = figures[0].getprevious()
-    summary_text = lxml.html.tostring(summary_el, method="text", encoding="unicode")
+    summary_text = summary_el.text_content()
     return summary_text.strip() if summary_text else None
 
 
