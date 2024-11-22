@@ -4,6 +4,7 @@
 
 | Name                                            | Description                                  |
 | ----------------------------------------------- | -------------------------------------------- |
+| [**PesaCheck Meedan Bridge**](./pesacheck_meedan_bridge/README.md) | A simple service to move articles between the two platforms |
 | [**TwoopsTracker**](./twoops_tracker/README.md) | A Twitter-based disinformation tracking tool |
 
 ## Packages
