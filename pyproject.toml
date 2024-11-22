@@ -1,9 +1,15 @@
+[project]
+requires-python = ">= 3.11"
+
 [tool.isort]
 profile = "black"
 
 [tool.mypy]
 ignore_missing_imports = true
 # TODO(kilemensi): mypy django stubs
+
+[tool.ruff]
+target-version = "py311" # default: py39
 
 [tool.setuptools_scm]
 write_to = "VERSION"
