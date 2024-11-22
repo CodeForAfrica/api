@@ -1,5 +1,6 @@
+# yamllint disable rule:line-length
 name: TwoopsTracker | Continuous Deployment
-on:
+"on":
   push:
     branches:
       - main
