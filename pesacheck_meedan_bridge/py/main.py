@@ -1,7 +1,7 @@
 import json
 import sys
 
-import lxml.html
+import lxml.html  # nosec B410
 import requests
 import sentry_sdk
 import settings

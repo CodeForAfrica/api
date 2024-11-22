@@ -1,14 +1,15 @@
 [GLOBAL]
-pants_version = "2.19.0"
+pants_version = "2.23.0"
 pythonpath = ["%(buildroot)s/pants-plugins"]
 
 backend_packages.add = [
-  "pants.backend.build_files.fmt.black",
+  "pants.backend.build_files.fmt.ruff",
   "pants.backend.docker",
   "pants.backend.docker.lint.hadolint",
   "pants.backend.plugin_development",
   "pants.backend.python",
-  "pants.backend.python.lint.black",
+  "pants.backend.python.mixed_interpreter_constraints",
+  "pants.backend.python.lint.bandit",
   "pants.backend.python.lint.docformatter",
   "pants.backend.python.lint.flake8",
   "pants.backend.python.lint.isort",
@@ -21,6 +22,8 @@ backend_packages.add = [
   # Expiremental backends
   "pants.backend.experimental.python",
   "pants.backend.experimental.python.framework.django",
+  "pants.backend.experimental.python.lint.ruff.check",
+  "pants.backend.experimental.python.lint.ruff.format",
   "pants.backend.experimental.tools.yamllint",
   # In-repo plugins
   "internal_plugins.versioned_setup",
@@ -40,10 +43,24 @@ root_patterns = [
 ]
 
 [python]
+enable_resolves = false
 interpreter_constraints = ["==3.11.*"]
 
-[black]
-args = ["--preview"]
+[python-repos]
+find_links = ["https://wheels.pantsbuild.org/simple"]
+
+[generate-lockfiles]
+diff = true
+
+[bandit]
+args = ["--quiet"]
+
+[mypy]
+requirements = ["django-stubs"]
+interpreter_constraints = ["==3.11.*"]
+
+[pyupgrade]
+args = ["--py36-plus"]
 
 [docker]
 build_args = ["VERSION"]
