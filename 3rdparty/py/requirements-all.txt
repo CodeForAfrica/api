@@ -1,6 +1,8 @@
 boto3==1.34.39
 celery==5.3.6
-dj-rest-auth[with_social]==5.0.2
+dj-rest-auth==5.0.2
+# Match dj-rest-auth[with_social]==5.0.2
+django-allauth>=0.56.0,<0.58.0
 Django==3.2.23
 django-cors-headers==4.3.1
 django-storages==1.14.2
@@ -8,6 +10,7 @@ djangorestframework==3.14.0
 djangorestframework-simplejwt==5.3.1
 environs[django]==10.3.0
 google-api-python-client==2.117.0
+google-auth==2.36.0
 google-auth-httplib2==0.2.0
 google-auth-oauthlib==1.2.0
 greenlet==3.0.3
