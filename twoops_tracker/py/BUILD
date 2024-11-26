@@ -54,5 +54,5 @@ pex_binary(
     dependencies=[
         ":lib",
     ],
-    entry_point="main.py",
+    entry_point="twoops_tracker/py/twoopstracker/main",
 )
