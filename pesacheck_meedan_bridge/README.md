@@ -34,11 +34,9 @@ To run the built docker image, execute:
 docker compose --env-file ./pesacheck_meedan_bridge/.env up pesacheck_meedan_bridge
 ```
 To get container ID of this script, execute:
-```sh
-container_id=$(docker ps --filter "ancestor=codeforafrica/pesacheck_meedan_bridge:latest" --format "{{.ID}}" | head -n 1) && [ -z "$container_id" ] && echo "No running container found for the image codeforafrica/pesacheck_meedan_bridge:latest"
-```
+
 To run `pex` binary, execute:
 
 ```sh
-docker exec -it $container_id ./pex
+docker compose -f compose.yaml exec pesacheck_meedan_bridge ./pex
 ```
