@@ -33,10 +33,10 @@ To run the built docker image, execute:
 ```sh
 docker compose --env-file ./pesacheck_meedan_bridge/.env up pesacheck_meedan_bridge
 ```
-To get container ID of this script, execute:
+
 
 To run `pex` binary, execute:
 
 ```sh
-docker compose -f compose.yaml exec pesacheck_meedan_bridge ./pex
+docker compose exec api-pesacheck_meedan_bridge ./pex
 ```
