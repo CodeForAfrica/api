@@ -17,7 +17,7 @@ greenlet==3.1.1
 gunicorn[gevent, setproctitle]==23.0.0
 html2text==2024.2.26
 lxml==5.3.0
-redis==5.2.0
+redis==5.2.1
 requests==2.32.3
 sentry-sdk==2.19.0
 tablib[xlsx]==3.7.0
