@@ -1,6 +1,6 @@
 boto3==1.35.79
 celery==5.4.0
-dj-rest-auth==7.0.0
+dj-rest-auth==7.0.1
 # Must match dj-rest-auth[with_social]==7.0.0
 django-allauth>=0.56.0,<0.62.0
 Django==4.2.17
