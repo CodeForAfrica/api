@@ -19,7 +19,7 @@ html2text==2024.2.26
 lxml==5.3.1
 redis==5.2.1
 requests==2.32.3
-sentry-sdk==2.24.1
+sentry-sdk==2.25.0
 tablib[xlsx]==3.8.0
 trafilatura==1.12.2
 tweepy==4.13.0  # NOTE(kilemensi) >=4.14.0 introduces breaking changes!
