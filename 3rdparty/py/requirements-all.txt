@@ -5,7 +5,7 @@ dj-rest-auth==7.0.1
 django-allauth[socialaccount]>=64.0.0
 Django==4.2.20
 django-cors-headers==4.7.0
-django-storages==1.14.5
+django-storages==1.14.6
 djangorestframework==3.16.0
 djangorestframework-simplejwt==5.5.0
 environs[django]==11.2.1
