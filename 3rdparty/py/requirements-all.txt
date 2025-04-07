@@ -16,7 +16,7 @@ google-auth-oauthlib==1.2.1
 greenlet==3.1.1
 gunicorn[gevent, setproctitle]==23.0.0
 html2text==2024.2.26
-lxml==5.3.1
+lxml==5.3.2
 redis==5.2.1
 requests==2.32.3
 sentry-sdk==2.25.1
