@@ -12,7 +12,7 @@ environs[django]==11.2.1
 google-api-python-client==2.167.0
 google-auth==2.39.0
 google-auth-httplib2==0.2.0
-google-auth-oauthlib==1.2.1
+google-auth-oauthlib==1.2.2
 greenlet==3.2.1
 gunicorn[gevent, setproctitle]==23.0.0
 html2text==2025.4.15
