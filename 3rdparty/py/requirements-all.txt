@@ -1,5 +1,5 @@
 boto3==1.38.3
-celery==5.5.1
+celery==5.5.2
 dj-rest-auth==7.0.1
 # Must match dj-rest-auth[with_social]==7.0.1
 django-allauth[socialaccount]>=64.0.0
