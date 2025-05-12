@@ -13,7 +13,7 @@ google-api-python-client==2.169.0
 google-auth==2.40.1
 google-auth-httplib2==0.2.0
 google-auth-oauthlib==1.2.2
-greenlet==3.2.1
+greenlet==3.2.2
 gunicorn[gevent, setproctitle]==23.0.0
 html2text==2025.4.15
 lxml==5.4.0
