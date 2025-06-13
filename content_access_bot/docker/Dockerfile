@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bullseye AS python-base
+FROM python:3.11-slim-bookworm AS python-base
 FROM content_access_bot/app:deps AS app-deps
 FROM content_access_bot/app:srcs AS app-srcs
 FROM python-base AS python-app

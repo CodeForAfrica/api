@@ -4,7 +4,7 @@ python_sources(
         "3rdparty/py:requirements-all#aiohttp",
         "3rdparty/py:requirements-all#backoff",
         "3rdparty/py:requirements-all#pyairtable",
-        "3rdparty/py:requirements-all#python-dotenv",
+        "3rdparty/py:requirements-all#scrapy",
     ],
 )
 

@@ -31,10 +31,10 @@ async def update_airtable(db: Database):
                     "Blocks AI Crawlers": diff_data['blocks_crawlers'],
                     "Blocked Crawlers": diff_data['crawler'],
                     "Current Robots URL": diff_data['latest_robots_url'],
-                    "Checked": datetime.datetime.strptime(diff_data['latest_robots_date'], "%Y%m%d%H%M%S").date().isoformat(),
+                    "Checked": datetime.strptime(diff_data['latest_robots_date'], "%Y%m%d%H%M%S").date().isoformat(),
                     "Current Robots Content": diff_data['latest_robots_content'],
                     "Archived Robots URL": diff_data['archived_robots_url'],
-                    "Archive Date": datetime.datetime.strptime(diff_data['archived_date'], "%Y%m%d%H%M%S").date().isoformat(),
+                    "Archive Date": datetime.strptime(diff_data['archived_date'], "%Y%m%d%H%M%S").date().isoformat(),
                     "Archived Robots Content": diff_data['archived_robots_content'],
                 }
             }
@@ -52,7 +52,7 @@ async def update_airtable_site_status(db: Database):
         update_data = {
             "fields": {
                 "id": org['airtable_id'],
-                "Organisation": [org['airtable_id']],
+                "Organisation": org['name'],
                 "URL": org['url'],
                 "Reachable": bool(org['site_reachable']),
                 "Redirects": bool(org['site_redirect']),
@@ -75,8 +75,6 @@ async def fetch_orgs(db: Database):
 
 async def fetch_robots(db: Database):
     media_houses = db.get_reachable_sites()
-    # only first 5 sites for testing
-    media_houses = media_houses[:5]
     logging.info(f"Fetching robots for {len(media_houses)} sites")
     urls = [(media_house['id'], get_robots_url(media_house['url']))
             for media_house in media_houses]
@@ -103,8 +101,9 @@ async def get_internet_archive_urls(media_houses):
                     archived_robots, one_year_ago)
                 if closest_snapshot:
                     print("Closest snapshot::", closest_snapshot)
-                    closest_snapshot_url = f"https://web.archive.org/web/{
-                        closest_snapshot['timestamp']}/{media_house['url']}"
+                    # TODO: (@kelvinkipruto) Internet Archive now renders content in an iframe, so we need to adjust the URL accordingly. A quick fix is to add "if_/" before the URL path.
+                    # closest_snapshot_url = f"https://web.archive.org/web/{closest_snapshot['timestamp']}/{media_house['url']}"
+                    closest_snapshot_url = f"https://web.archive.org/web/{closest_snapshot['timestamp']}if_/{media_house['url']}"
                     urls.append(
                         (media_house['id'], closest_snapshot_url, closest_snapshot['timestamp']))
                 else:
@@ -118,8 +117,6 @@ async def get_internet_archive_urls(media_houses):
 async def fetch_archived_robots(db: Database):
 
     media_houses = db.get_reachable_sites()
-    # only first 5 sites for testing
-    media_houses = media_houses[:5]
     urls = await get_internet_archive_urls(media_houses)
     archived_robot_urls = [(id, f"{url}/robots.txt", timestamp) for id,
                            url, timestamp in urls]
@@ -146,13 +143,14 @@ async def check_org_sites(db: Database):
 
 
 async def main(db: Database):
-    # await fetch_orgs(db)
-    # await check_org_sites(db)
-    # await update_airtable_site_status(db)
-    # await fetch_robots(db)
+    await fetch_orgs(db)
+    await check_org_sites(db)
+    await update_airtable_site_status(db)
+    await fetch_robots(db)
     await fetch_archived_robots(db)
+    # TODO: (@kelvinkipruto) check if we can run fetch_robots and fetch_archived_robots in parallel
     # await asyncio.gather(fetch_robots(db), fetch_archived_robots(db))
-    # await update_airtable(db)
+    await update_airtable(db)
 
 
 if __name__ == '__main__':

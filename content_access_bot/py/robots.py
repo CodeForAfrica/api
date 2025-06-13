@@ -168,8 +168,7 @@ async def fetch_past_robots(db: Database, session: aiohttp.ClientSession, media_
         logging.info(f"""Closest snapshot for {
             media_house['name']}: {closest_snapshot}""")
         if closest_snapshot:
-            closest_snapshot_url = f"https://web.archive.org/web/{
-                closest_snapshot['timestamp']}/{media_house['url']}"
+            closest_snapshot_url = f"https://web.archive.org/web/{closest_snapshot['timestamp']}/{media_house['url']}"
             logging.info(f"""Closet snapshot URL for {
                 media_house['name']}: {closest_snapshot_url}""")
             archive_robots = await fetch_robots(session, closest_snapshot_url)
