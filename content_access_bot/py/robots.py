@@ -6,7 +6,7 @@ import logging
 import backoff
 import random
 
-from database import Database, MediaHouse, Robots, ArchivedRobots
+from sqliteDB import Database, MediaHouse, Robots, ArchivedRobots
 
 
 logging.basicConfig(level=logging.INFO,

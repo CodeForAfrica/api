@@ -1,4 +1,4 @@
-from database import Database
+from sqliteDB import Database
 
 
 class RobotsDatabasePipeline:

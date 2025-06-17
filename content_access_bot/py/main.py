@@ -7,7 +7,7 @@ from robots import fetch_past_robots, should_fetch_past_robots
 from diff import diff_robot_files
 import time
 from datetime import datetime, timedelta
-from database import Database, MediaHouse
+from sqliteDB import Database, MediaHouse
 from utils import check_site_availability, get_robots_url
 from spider import RobotsSpider, ArchivedRobotsSpider
 from scrapy.crawler import CrawlerProcess

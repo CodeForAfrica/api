@@ -1,6 +1,6 @@
 import datetime
 import scrapy
-from database import Robots, ArchivedRobots
+from sqliteDB import Robots, ArchivedRobots
 
 
 class RobotsSpider(scrapy.Spider):

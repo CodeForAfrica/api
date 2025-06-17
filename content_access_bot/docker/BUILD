@@ -1,3 +1,4 @@
+python_sources()
 docker_image(
     name="content_access_bot-deps",
     image_tags=["deps"],
