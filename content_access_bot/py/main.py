@@ -74,7 +74,7 @@ async def fetch_orgs(db: Database):
 
 
 async def fetch_robots(db: Database):
-    media_houses = db.get_reachable_sites()
+    media_houses = db.get_reachable_sites_without_robots()
     logging.info(f"Fetching robots for {len(media_houses)} sites")
     urls = [(media_house['id'], get_robots_url(media_house['url']))
             for media_house in media_houses]
@@ -87,11 +87,12 @@ async def fetch_robots(db: Database):
     process.start()
 
 
-async def get_internet_archive_urls(media_houses):
+async def get_internet_archive_urls(db:Database):
+    media_houses = db.get_reachable_sites_without_archived_robots_urls()
+    logging.info(f"Fetching archived robots for {len(media_houses)} sites")
     past_days = 365
     one_year_ago = (datetime.now() - timedelta(days=past_days)
                     ).strftime("%Y%m%d%H%M%S")
-    urls = []
     for media_house in media_houses:
         if await should_fetch_past_robots(db, media_house):
             archived_robots = await fetch_internet_archive_snapshots(
@@ -104,33 +105,36 @@ async def get_internet_archive_urls(media_houses):
                     # TODO: (@kelvinkipruto) Internet Archive now renders content in an iframe, so we need to adjust the URL accordingly. A quick fix is to add "if_/" before the URL path.
                     # closest_snapshot_url = f"https://web.archive.org/web/{closest_snapshot['timestamp']}/{media_house['url']}"
                     closest_snapshot_url = f"https://web.archive.org/web/{closest_snapshot['timestamp']}if_/{media_house['url']}"
-                    urls.append(
-                        (media_house['id'], closest_snapshot_url, closest_snapshot['timestamp']))
+
+                    db.insert_archived_robots_urls(media_house['id'], closest_snapshot_url, closest_snapshot['timestamp'])
+                    logging.info(
+                        f"Found archived robots for {media_house['name']}: {closest_snapshot_url}")
+                    await asyncio.sleep(random.uniform(1, 3))
                 else:
                     logging.info(
                         f"No archived robots found for {media_house['name']}")
         else:
             logging.info(f"Skipping {media_house['name']}")
-    return urls
 
 
 async def fetch_archived_robots(db: Database):
-
-    media_houses = db.get_reachable_sites()
-    urls = await get_internet_archive_urls(media_houses)
-    archived_robot_urls = [(id, f"{url}/robots.txt", timestamp) for id,
+    media_houses = db.get_archived_robots_without_content()
+    print(f"Fetching archived robots for {len(media_houses)} sites")
+    urls = [(media_house['id'], media_house['url'], media_house['archived_date'])
+            for media_house in media_houses]
+    archived_robots_urls = [(id, f"{url}/robots.txt", timestamp) for id,
                            url, timestamp in urls]
     process = CrawlerProcess(settings={
         'ITEM_PIPELINES': {
             'pipeline.ArchivedRobotsDatabasePipeline': 1
         },
     }, install_root_handler=False)
-    process.crawl(ArchivedRobotsSpider, archived_robot_urls)
+    process.crawl(ArchivedRobotsSpider, archived_robots_urls)
     process.start()
 
 
 async def check_org_sites(db: Database):
-    all_orgs = db.select_all_media_houses()
+    all_orgs = db.select_media_houses_without_status()
     logging.info(f"Checking {len(all_orgs)} sites")
 
     async def update_org_site(org):
@@ -147,9 +151,9 @@ async def main(db: Database):
     await check_org_sites(db)
     await update_airtable_site_status(db)
     await fetch_robots(db)
+    await get_internet_archive_urls(db)
+    # await asyncio.gather(fetch_robots(db), get_internet_archive_urls(db))
     await fetch_archived_robots(db)
-    # TODO: (@kelvinkipruto) check if we can run fetch_robots and fetch_archived_robots in parallel
-    # await asyncio.gather(fetch_robots(db), fetch_archived_robots(db))
     await update_airtable(db)
 
 

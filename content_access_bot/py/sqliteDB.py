@@ -81,10 +81,10 @@ class Database:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             media_house_id INTEGER NOT NULL,
             url TEXT NOT NULL,
-            archived_date TEXT NOT NULL,
-            content TEXT NOT NULL,
-            timestamp TEXT NOT NULL,
-            status TEXT NOT NULL,
+            archived_date,
+            content TEXT,
+            timestamp TEXT,
+            status TEXT,
             FOREIGN KEY(media_house_id) REFERENCES media_house(id)
         );
         """
@@ -125,6 +125,20 @@ class Database:
             return None
         finally:
             cur.close()
+    
+    def select_media_houses_without_status(self):
+        try:
+            cur = self.conn.cursor()
+            cur.execute("SELECT * FROM media_house WHERE site_status IS NULL")
+            rows = cur.fetchall()
+            column_names = [column[0] for column in cur.description]
+            dict_rows = [dict(zip(column_names, row)) for row in rows]
+            return dict_rows
+        except Error as e:
+            print(e)
+            return None
+        finally:
+            cur.close()
 
     def update_site_status(self, media_house_id, site_status, site_reachable, site_redirect, final_url):
         try:
@@ -156,6 +170,75 @@ class Database:
         finally:
             cur.close()
 
+    def get_reachable_sites_without_robots(self):
+        try:
+            cur = self.conn.cursor()
+            cur.execute("""
+                SELECT mh.* FROM media_house mh
+                LEFT JOIN robots r ON mh.id = r.media_house_id
+                WHERE mh.site_reachable = 1 AND r.id IS NULL
+            """)
+            rows = cur.fetchall()
+            column_names = [column[0] for column in cur.description]
+            dict_rows = [dict(zip(column_names, row)) for row in rows]
+            return dict_rows
+        except Error as e:
+            print(e)
+            return None
+        finally:
+            cur.close()
+
+    def get_reachable_sites_without_archived_robots(self):
+        try:
+            cur = self.conn.cursor()
+            cur.execute("""
+                SELECT mh.* FROM media_house mh
+                LEFT JOIN archived_robots ar ON mh.id = ar.media_house_id
+                WHERE mh.site_reachable = 1 AND ar.id IS NULL
+            """)
+            rows = cur.fetchall()
+            column_names = [column[0] for column in cur.description]
+            dict_rows = [dict(zip(column_names, row)) for row in rows]
+            return dict_rows
+        except Error as e:
+            print(e)
+            return None
+        finally:
+            cur.close()
+    
+    def get_reachable_sites_without_archived_robots_urls(self):
+        try:
+            cur = self.conn.cursor()
+            cur.execute("""
+                SELECT mh.* FROM media_house mh
+                LEFT JOIN archived_robots ar ON mh.id = ar.media_house_id
+                WHERE mh.site_reachable = 1 AND ar.url IS NULL
+            """)
+            rows = cur.fetchall()
+            column_names = [column[0] for column in cur.description]
+            dict_rows = [dict(zip(column_names, row)) for row in rows]
+            return dict_rows
+        except Error as e:
+            print(e)
+            return None
+        finally:
+            cur.close()
+    
+    def insert_archived_robots_urls(self, media_house_id, url, archived_date):
+        try:
+            sql = """
+            INSERT INTO archived_robots(media_house_id, url, archived_date)
+            VALUES(?, ?, ?)
+            """
+            cur = self.conn.cursor()
+            cur.execute(sql, (media_house_id, url, archived_date))
+            self.conn.commit()
+            return cur.lastrowid
+        except Error as e:
+            print(e)
+        finally:
+            cur.close()
+
     def is_connected(self):
         return self.conn is not None
 
@@ -170,6 +253,21 @@ class Database:
                         robot.timestamp, robot.content, robot.status))
             self.conn.commit()
             return cur.lastrowid
+        except Error as e:
+            print(e)
+        finally:
+            cur.close()
+    
+    def update_archived_robot_content(self, archived_robot_id, content, status, timestamp):
+        try:
+            sql = """
+            UPDATE archived_robots
+            SET content = ?, status = ?, timestamp = ?
+            WHERE id = ?
+            """
+            cur = self.conn.cursor()
+            cur.execute(sql, (content, status, timestamp, archived_robot_id))
+            self.conn.commit()
         except Error as e:
             print(e)
         finally:
@@ -190,7 +288,19 @@ class Database:
             print(e)
         finally:
             cur.close()
-
+    def get_archived_robots_without_content(self):
+        try:
+            cur = self.conn.cursor()
+            cur.execute("SELECT * FROM archived_robots WHERE content IS NULL")
+            rows = cur.fetchall()
+            column_names = [column[0] for column in cur.description]
+            dict_rows = [dict(zip(column_names, row)) for row in rows]
+            return dict_rows
+        except Error as e:
+            print(e)
+            return None
+        finally:
+            cur.close()
     def select_latest_robots(self, media_house_id):
         try:
             cur = self.conn.cursor()

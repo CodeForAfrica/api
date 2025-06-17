@@ -5,6 +5,7 @@ python_sources(
         "3rdparty/py:requirements-all#backoff",
         "3rdparty/py:requirements-all#pyairtable",
         "3rdparty/py:requirements-all#scrapy",
+        "content_access_bot/py/pipeline.py:lib"
     ],
 )
 

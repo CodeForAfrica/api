@@ -15,5 +15,15 @@ class ArchivedRobotsDatabasePipeline:
         self.db = Database()
 
     def process_item(self, item, spider):
-        self.db.insert_archived_robot(item)
+        id = item.media_house_id
+        timestamp = item.timestamp
+        status = item.status
+        content = item.content
+
+        self.db.update_archived_robot_content(
+            archived_robot_id=id,
+            content=content,
+            status=status,
+            timestamp=timestamp,
+        )
         return item
