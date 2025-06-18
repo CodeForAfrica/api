@@ -81,10 +81,10 @@ class Database:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             media_house_id INTEGER NOT NULL,
             url TEXT NOT NULL,
-            archived_date,
-            content TEXT,
-            timestamp TEXT,
-            status TEXT,
+            archived_date TEXT NULL,
+            content TEXT NULL,
+            timestamp TEXT NULL,
+            status TEXT NULL,
             FOREIGN KEY(media_house_id) REFERENCES media_house(id)
         );
         """
