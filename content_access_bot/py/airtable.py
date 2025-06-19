@@ -25,6 +25,9 @@ at = Api(api_key)
 
 
 def get_table_data(table_name, formula=None, fields=None):
+    if not base_id:
+        logging.error(f"AIRTABLE_BASE_ID Not Provided")
+        return
     table = at.table(base_id, table_name)
     return table.all(formula=formula, fields=fields)
 
@@ -72,6 +75,9 @@ def get_organizations(allowed_countries=None):
 async def batch_upsert_organizations(data):
     logging.info('Upserting organizations in Airtable')
     try:
+        if not base_id or not content_table:
+            logging.error(f"AIRTABLE_BASE_ID or AIRTABLE_CONTENT_TABLE Not Provided")
+            return
         table = at.table(base_id, content_table)
         table.batch_upsert(records=data, key_fields=['id',])
         logging.info('Organizations upserted successfully')

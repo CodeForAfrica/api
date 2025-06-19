@@ -3,8 +3,11 @@ python_sources(
     dependencies=[
         "3rdparty/py:requirements-all#aiohttp",
         "3rdparty/py:requirements-all#backoff",
+        "3rdparty/py:requirements-all#environs",
         "3rdparty/py:requirements-all#pyairtable",
         "3rdparty/py:requirements-all#scrapy",
+        "3rdparty/py:requirements-all#openpyxl",
+        "3rdparty/py:requirements-all#pandas",
         "content_access_bot/py/pipeline.py:lib"
     ],
 )

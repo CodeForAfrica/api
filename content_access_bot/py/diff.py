@@ -1,8 +1,3 @@
-import logging
-
-from sqliteDB import Database, MediaHouse
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
 ai_crawlers = [
     "Amazonbot",
     "anthropic-ai",
@@ -45,33 +40,29 @@ ai_crawlers = [
 ]
 
 
-def diff_robot_files(media_house: MediaHouse, db: Database):
-    media_house_id = media_house['id']
-    latest_robots = db.select_latest_robots(media_house_id)
+def diff_robot_content(current_robots_content: str, archived_robots_content: str):
+    """
+    Compares two robots.txt contents.
+    Returns:
+        - blocks_crawlers: True if current robots.txt blocks any AI crawlers
+        - blocked_crawlers: List of AI crawlers blocked in current robots.txt
+        - ai_blocking_update: True if current robots.txt blocks AI crawlers but archived did not
+    """
+    current_content = current_robots_content or ""
+    archived_content = archived_robots_content or ""
 
-    if not latest_robots:
-        return
-
-    oldest_archived_robots = db.oldest_archived_robots(media_house_id)
-    if not oldest_archived_robots:
-        return
-    found_crawlers = [
-        crawler for crawler in ai_crawlers if crawler.casefold() in latest_robots['content'].casefold()
+    blocked_crawlers = [
+        crawler for crawler in ai_crawlers if crawler.casefold() in current_content.casefold()
+    ]
+    previously_blocked_crawlers = [
+        crawler for crawler in ai_crawlers if crawler.casefold() in archived_content.casefold()
     ]
 
-    archive_crawlers = [
-        crawler for crawler in ai_crawlers if crawler.casefold() in oldest_archived_robots['content'].casefold()
-    ]
+    blocks_crawlers = bool(blocked_crawlers)
+    ai_blocking_update = blocks_crawlers and not previously_blocked_crawlers
 
-    data = {}
-    data['crawler'] = ', '.join(found_crawlers)
-    data['archive_crawler'] = archive_crawlers
-    data['blocks_crawlers'] = True if found_crawlers else False
-    data['notes'] = 'Robots.txt has been updated to block AI crawlers' if found_crawlers and not archive_crawlers else None
-    data['latest_robots_url'] = latest_robots['url']
-    data['latest_robots_date'] = latest_robots['timestamp']
-    data['latest_robots_content'] = latest_robots['content']
-    data['archived_robots_url'] = oldest_archived_robots['url']
-    data['archived_date'] = oldest_archived_robots['archived_date']
-    data['archived_robots_content'] = oldest_archived_robots['content']
-    return data
+    return {
+        "blocks_crawlers": blocks_crawlers,
+        "blocked_crawlers": ', '.join(blocked_crawlers),
+        "ai_blocking_update": ai_blocking_update,
+    }
