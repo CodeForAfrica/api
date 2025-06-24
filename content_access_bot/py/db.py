@@ -34,7 +34,7 @@ class Database:
     
     def create_connection(self):
         try:
-            conn = connect(self.db_file)
+            conn = connect(self.db_file, timeout=30)
             return conn
         except Error as e:
             logging.error(f"Error creating connectin: {e}")

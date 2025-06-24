@@ -46,16 +46,38 @@ async def check_org_sites(db:Database):
     logging.info("Finished checking Sites")
 
 
-async def fetch_robots(db:Database):
+async def fetch_robots(db: Database):
     all_media_houses = db.get_all_media_houses()
     if not all_media_houses:
         logging.info(f"No sites to check")
         return
-    # TODO: Only fetch robots withing a timeframe
-    count = len(all_media_houses) if all_media_houses is not None else 0
+
+    filtered_media_houses = []
+    today = datetime.now()
+    for media_house in all_media_houses:
+        robots_timestamp = media_house.get('robots_timestamp')
+        robots_content = media_house.get('robots_content')
+        # If robots_content is None or empty, always include
+        if not robots_content:
+            filtered_media_houses.append(media_house)
+            continue
+        # If robots_timestamp exists, check if it's within MAX_ROBOTS_AGE days
+        if robots_timestamp:
+            try:
+                robots_date = datetime.strptime(robots_timestamp, "%Y%m%d%H%M%S")
+                if (today - robots_date).days > MAX_ROBOTS_AGE:
+                    filtered_media_houses.append(media_house)
+            except Exception as e:
+                logging.warning(f"Invalid robots_timestamp for {media_house.get('airtable_id')}: {robots_timestamp}")
+
+    count = len(filtered_media_houses)
+    if count == 0:
+        logging.info("No robots to fetch within the specified timeframe.")
+        return
+
     logging.info(f"Fetching Robots for {count} sites")
     urls = [(media_house['airtable_id'], get_robots_url(media_house['url']))
-            for media_house in all_media_houses]
+            for media_house in filtered_media_houses]
     process = CrawlerProcess(settings={
         'ITEM_PIPELINES': {
             'pipeline.RobotsDatabasePipeline': 1
@@ -64,17 +86,27 @@ async def fetch_robots(db:Database):
     process.crawl(RobotsSpider, urls)
     process.start()
 
-async def fetch_internet_archive_snapshots(db:Database):
+async def fetch_internet_archive_snapshots(db: Database):
     logging.info("fetch_internet_archive_snapshots")
     all_media_houses = db.get_all_media_houses()
-    if not all_media_houses:
+    all_archive_snapshots = db.get_all_internet_archive_snapshots()
+    if not all_media_houses or not all_archive_snapshots:
         logging.info(f"No sites to fetch internet archive snapshots")
         return
-    count = len(all_media_houses) if all_media_houses is not None else 0
+
+    # Get set of airtable_ids that already have snapshots
+    fetched_airtable_ids = set(s['airtable_id'] for s in all_archive_snapshots)
+    # Filter only media houses not yet fetched
+    to_fetch = [media_house for media_house in all_media_houses if media_house['airtable_id'] not in fetched_airtable_ids]
+
+    count = len(to_fetch)
+    if count == 0:
+        logging.info("No new sites to fetch internet archive snapshots for.")
+        return
+
     logging.info(f"Fetching Robots for {count} sites")
-    target_date=  (datetime.now() - timedelta(days=MAX_INTERNATE_ARCHIVE_AGE)).strftime("%Y%m%d%H%M%S")
-    urls = [(media_house['airtable_id'], media_house['url'])
-            for media_house in all_media_houses]
+    target_date = (datetime.now() - timedelta(days=MAX_INTERNATE_ARCHIVE_AGE)).strftime("%Y%m%d%H%M%S")
+    urls = [(media_house['airtable_id'], media_house['url']) for media_house in to_fetch]
     process = CrawlerProcess(settings={
         'ITEM_PIPELINES': {
             'pipeline.ArchivedURLsDatabasePipeline': 2
@@ -89,11 +121,33 @@ async def fetch_archived_robots(db:Database):
     if not all_archived_snapshot_url:
         logging.info(f"No sites to fetch internet archive snapshots")
         return
-    count = len(all_archived_snapshot_url) if all_archived_snapshot_url is not None else 0
-    logging.info(f"Fetching Robots for {count} sites")
 
+    today = datetime.now()
+    filtered_snapshots = []
+    for snapshot in all_archived_snapshot_url:
+        archived_content = snapshot.get('archived_content')
+        archived_retrieval_date = snapshot.get('archived_retrieval_date')
+        # If archived_content is None or empty, always include
+        if not archived_content:
+            filtered_snapshots.append(snapshot)
+            continue
+        # If archived_retrieval_date exists, check if it's older than MAX_ROBOTS_AGE days
+        if archived_retrieval_date:
+            try:
+                retrieval_date = datetime.strptime(archived_retrieval_date, "%Y%m%d%H%M%S")
+                if (today - retrieval_date).days > MAX_ROBOTS_AGE:
+                    filtered_snapshots.append(snapshot)
+            except Exception as e:
+                logging.warning(f"Invalid archived_retrieval_date for {snapshot.get('id')}: {archived_retrieval_date}")
+
+    count = len(filtered_snapshots)
+    if count == 0:
+        logging.info("No archived robots to fetch within the specified timeframe.")
+        return
+
+    logging.info(f"Fetching Robots for {count} sites")
     urls = [(snapshot['id'], f"{snapshot['url']}/robots.txt")
-                for snapshot in all_archived_snapshot_url]
+                for snapshot in filtered_snapshots]
     process = CrawlerProcess(settings={
         'ITEM_PIPELINES': {
             'pipeline.ArchivedRobotsDatabasePipeline': 3
@@ -121,12 +175,14 @@ async def generate_report(db: Database):
             "URL": media.get("url"),
             "Airtable ID": media.get("airtable_id"),
             "Site Status": media.get("site_status"),
-            "Site Reachable": media.get("site_reachable"),
-            "Site Redirect": media.get("site_redirect"),
+            "Site Reachable": bool(media.get("site_reachable")),
+            "Site Redirect": bool(media.get("site_redirect")),
             "Final URL": media.get("final_url"),
             "Robots URL": media.get("robots_url"),
             "Date Robots Fetched": format_db_date(media.get("robots_timestamp")),
-            "Robot Content": media.get("robots_content"),
+            "Robot Content": (
+                "''" if media.get("robots_content") == "" else media.get("robots_content")
+            ),
             "Robot Status": media.get("robots_status"),
         }
         if closest_snapshot:
@@ -134,7 +190,9 @@ async def generate_report(db: Database):
                 "Archive URL": closest_snapshot.get("url"),
                 "Archive Date": format_db_date(closest_snapshot.get("archive_date")),
                 "Archive Robots URL": closest_snapshot.get("archive_robots_url"),
-                "Archive Robot Content": closest_snapshot.get("archived_content"),
+                "Archive Robot Content": (
+                    "''" if closest_snapshot.get("archive_robots_url") == "" else closest_snapshot.get("archive_robots_url")
+                ),
                 "Archive Retrievel Date": format_db_date(closest_snapshot.get("archived_retrieval_date")),
             })
             archived_content = closest_snapshot.get("archived_content") 
@@ -163,11 +221,11 @@ async def generate_report(db: Database):
 
 async def main(db:Database):
     await fetch_orgs(db)
-    # await check_org_sites(db) # Often Not Required unless site status is required
+    await check_org_sites(db) # Often Not Required unless site status is required
     await fetch_robots(db)
     await fetch_internet_archive_snapshots(db)
     await fetch_archived_robots(db)
-    await generate_report((db))
+    await generate_report(db)
 
 
 if __name__ == "__main__":
