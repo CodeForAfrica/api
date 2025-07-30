@@ -1,4 +1,4 @@
-boto3==1.39.13
+boto3==1.39.16
 celery==5.5.3
 dj-rest-auth==7.0.1
 # Must match dj-rest-auth[with_social]==7.0.1
