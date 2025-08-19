@@ -18,7 +18,7 @@ gunicorn[gevent, setproctitle]==23.0.0
 html2text==2025.4.15
 lxml==6.0.0
 redis==6.4.0
-requests==2.32.4
+requests==2.32.5
 sentry-sdk==2.35.0
 tablib[xlsx]==3.8.0
 trafilatura==1.12.2
