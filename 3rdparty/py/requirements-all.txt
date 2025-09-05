@@ -1,27 +1,31 @@
 aiohttp==3.9.3
 backoff==2.2.1
-boto3==1.34.98
-celery==5.4.0
-dj-rest-auth[with_social]==5.1.0
-Django==3.2.23
-django-cors-headers==4.3.1
-django-storages==1.14.3
-djangorestframework==3.15.1
-djangorestframework-simplejwt==5.3.1
-environs==14.2.0
-google-api-python-client==2.127.0
+boto3==1.40.23
+celery==5.5.3
+dj-rest-auth==7.0.1
+# Must match dj-rest-auth[with_social]==7.0.1
+django-allauth[socialaccount]>=64.0.0
+Django==4.2.24
+django-cors-headers==4.7.0
+django-storages==1.14.6
+djangorestframework==3.16.1
+djangorestframework-simplejwt==5.5.1
+environs[django]==11.2.1
+google-api-python-client==2.181.0
+google-auth==2.40.3
 google-auth-httplib2==0.2.0
-google-auth-oauthlib==1.2.0
-greenlet==3.0.3
-gunicorn[gevent, setproctitle]==22.0.0
-html2text==2024.2.26
+google-auth-oauthlib==1.2.2
+greenlet==3.2.4
+gunicorn[gevent, setproctitle]==23.0.0
+html2text==2025.4.15
+lxml==6.0.1
 openpyxl==3.1.5
 pandas==2.3.0
 pyairtable==2.3.3
-redis==5.0.4
-requests==2.31.0
+redis==6.4.0
+requests==2.32.5
 scrapy==2.12.0
-sentry-sdk==2.1.0
-tablib[xlsx]==3.6.1
-trafilatura==1.9.0
-tweepy==4.14.0
+sentry-sdk==2.36.0
+tablib[xlsx]==3.8.0
+trafilatura==1.12.2
+tweepy==4.13.0  # NOTE(kilemensi) >=4.14.0 introduces breaking changes!

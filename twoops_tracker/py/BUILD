@@ -6,9 +6,11 @@ python_sources(
         "3rdparty/py:requirements-all#django-storages",
         "3rdparty/py:requirements-all#djangorestframework-simplejwt",
         "3rdparty/py:requirements-all#google-api-python-client",
+        "3rdparty/py:requirements-all#google-auth",
         "3rdparty/py:requirements-all#google-auth-httplib2",
         "3rdparty/py:requirements-all#google-auth-oauthlib",
         "3rdparty/py:requirements-all#dj-rest-auth",
+        "3rdparty/py:requirements-all#django-allauth",
         "3rdparty/py:requirements-all#gunicorn",
         "3rdparty/py:requirements-all#celery",
         "3rdparty/py:requirements-all#redis",
@@ -52,5 +54,5 @@ pex_binary(
     dependencies=[
         ":lib",
     ],
-    entry_point="main.py",
+    entry_point="twoops_tracker/py/twoopstracker/main",
 )

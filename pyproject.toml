@@ -1,3 +1,28 @@
+[project]
+name = "commons-api"
+version = "0.0.0"
+requires-python = ">= 3.11"
+authors = [{ name = 'Code for Africa', email = 'tech@codeforafrica.org' }]
+readme = "README.md"
+keywords = ["api", "commons", "civictech", "trolltracker"]
+classifiers = [
+  'Development Status :: 5 - Production/Stable',
+  'Programming Language :: Python',
+  'Programming Language :: Python :: Implementation :: CPython',
+  'Programming Language :: Python :: 3',
+  'Programming Language :: Python :: 3 :: Only',
+  'Programming Language :: Python :: 3.11',
+  'License :: OSI Approved :: MIT License',
+  'Operating System :: OS Independent',
+  'Framework :: Django',
+  'Topic :: Software Development :: Libraries :: Python Modules',
+  'Topic :: Internet',
+]
+
+[project.urls]
+Repository = "https://github.com/CodeForAfrica/api"
+Issues = "https://github.com/CodeForAfrica/api/issues"
+
 [tool.isort]
 profile = "black"
 
