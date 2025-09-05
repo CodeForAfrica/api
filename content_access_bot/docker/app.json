@@ -1,0 +1,9 @@
+{
+    "name": "content_access_bot",
+    "cron": [
+        {
+            "command": "./pex",
+            "schedule": "@daily"
+        }
+    ]
+}

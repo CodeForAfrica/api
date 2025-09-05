@@ -1,0 +1,4 @@
+FROM python:3.11-slim-bookworm
+
+COPY content_access_bot.py/content_access_bot-srcs@environment=linux.pex /content_access_bot-srcs.pex
+RUN PEX_TOOLS=1 python /content_access_bot-srcs.pex venv --scope=srcs --compile /app

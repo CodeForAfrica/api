@@ -40,6 +40,8 @@ root_patterns = [
   "/pants-plugins",
   "/pesacheck_meedan_bridge/py",
   "/pesacheck_meedan_bridge/docker",
+  "/content_access_bot/py",
+  "/content_access_bot/docker",
 ]
 
 [python]
@@ -57,7 +59,7 @@ args = ["--quiet"]
 
 [mypy]
 requirements = ["django-stubs"]
-interpreter_constraints = ["==3.11.*"]
+interpreter_constraints = ["==3.10.*","==3.11.*", "==3.12.*", "==3.13.*"]
 
 [pyupgrade]
 args = ["--py36-plus"]
