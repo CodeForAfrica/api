@@ -7,11 +7,13 @@ class RobotsDatabasePipeline:
         self.db = Database()
 
     def process_item(self, item, spider):
-        self.db.insert_current_robots(item["airtable_id"],
+        self.db.insert_current_robots(
+            item["airtable_id"],
             item["robots_url"],
             item["robots_timestamp"],
             item["robots_content"],
-            item["robots_status"])
+            item["robots_status"]
+        )
         return item
 
 class ArchivedURLsDatabasePipeline:

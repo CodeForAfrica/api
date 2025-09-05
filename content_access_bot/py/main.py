@@ -6,7 +6,7 @@ import asyncio
 from airtable import get_organizations, batch_upsert_organizations
 from scrapy.crawler import CrawlerProcess
 import pandas as pd
-from db import Database, MediaHouse
+from db import Database, MediaHouse, SiteCheck
 from diff import diff_robot_content
 from spider import ArchivedRobotsSpider, ArchivedURLsSpider, RobotsSpider
 from utils import check_site_availability, get_robots_url,find_closest_snapshot,format_db_date
@@ -28,21 +28,21 @@ async def fetch_orgs(db:Database):
 
 
 async def check_org_sites(db:Database):
-    unchecked_ogs =  db.select_media_houses_without_status()
-    if not unchecked_ogs:
+    unchecked_orgs = db.select_media_houses_without_recent_check()
+    if not unchecked_orgs:
         logging.info(f"No sites to check")
         return
-    count = len(unchecked_ogs) if unchecked_ogs is not None else 0
+    count = len(unchecked_orgs) if unchecked_orgs is not None else 0
     logging.info(f"Checking {count} sites")
 
     async def update_org_site(org):
         site_status = await check_site_availability(org['url'])
         db.update_site_status(
             org['airtable_id'], site_status['status_code'],
-                              site_status['reachable'], site_status['redirect'], site_status['final_url']
+            site_status['reachable'], site_status['redirect'], site_status['final_url']
         )
     #TODO:Use Spider to check sites
-    await asyncio.gather(*(update_org_site(org) for org in unchecked_ogs))
+    await asyncio.gather(*(update_org_site(org) for org in unchecked_orgs))
     logging.info("Finished checking Sites")
 
 
@@ -52,23 +52,29 @@ async def fetch_robots(db: Database):
         logging.info(f"No sites to check")
         return
 
+    # Get latest site checks to determine which need robot fetching
+    latest_checks = db.get_latest_site_checks()
+    check_dict = {check['airtable_id']: check for check in latest_checks}
+    
     filtered_media_houses = []
     today = datetime.now()
+    
     for media_house in all_media_houses:
-        robots_timestamp = media_house.get('robots_timestamp')
-        robots_content = media_house.get('robots_content')
-        # If robots_content is None or empty, always include
-        if not robots_content:
+        airtable_id = media_house['airtable_id']
+        latest_check = check_dict.get(airtable_id)
+        
+        if not latest_check or not latest_check.get('robots_content'):
             filtered_media_houses.append(media_house)
             continue
-        # If robots_timestamp exists, check if it's within MAX_ROBOTS_AGE days
+            
+        robots_timestamp = latest_check.get('robots_timestamp')
         if robots_timestamp:
             try:
                 robots_date = datetime.strptime(robots_timestamp, "%Y%m%d%H%M%S")
                 if (today - robots_date).days > MAX_ROBOTS_AGE:
                     filtered_media_houses.append(media_house)
             except Exception as e:
-                logging.warning(f"Invalid robots_timestamp for {media_house.get('airtable_id')}: {robots_timestamp}")
+                logging.warning(f"Invalid robots_timestamp for {airtable_id}: {robots_timestamp}")
 
     count = len(filtered_media_houses)
     if count == 0:
@@ -89,13 +95,13 @@ async def fetch_robots(db: Database):
 async def fetch_internet_archive_snapshots(db: Database):
     logging.info("fetch_internet_archive_snapshots")
     all_media_houses = db.get_all_media_houses()
-    all_archive_snapshots = db.get_all_internet_archive_snapshots()
-    if not all_media_houses or not all_archive_snapshots:
+    if not all_media_houses:
         logging.info(f"No sites to fetch internet archive snapshots")
         return
 
+    all_archive_snapshots = db.get_all_internet_archive_snapshots()
     # Get set of airtable_ids that already have snapshots
-    fetched_airtable_ids = set(s['airtable_id'] for s in all_archive_snapshots)
+    fetched_airtable_ids = set(s['airtable_id'] for s in all_archive_snapshots) if all_archive_snapshots else set()
     # Filter only media houses not yet fetched
     to_fetch = [media_house for media_house in all_media_houses if media_house['airtable_id'] not in fetched_airtable_ids]
 
@@ -104,7 +110,7 @@ async def fetch_internet_archive_snapshots(db: Database):
         logging.info("No new sites to fetch internet archive snapshots for.")
         return
 
-    logging.info(f"Fetching Robots for {count} sites")
+    logging.info(f"Fetching Internet Archive snapshots for {count} sites")
     target_date = (datetime.now() - timedelta(days=MAX_INTERNATE_ARCHIVE_AGE)).strftime("%Y%m%d%H%M%S")
     urls = [(media_house['airtable_id'], media_house['url']) for media_house in to_fetch]
     process = CrawlerProcess(settings={
@@ -158,7 +164,7 @@ async def fetch_archived_robots(db:Database):
 
 
 async def generate_report(db: Database):
-    combined_data = db.get_combided_data()
+    combined_data = db.get_combined_data()
     if not combined_data:
         logging.info("No Data to generate report from")
         return
