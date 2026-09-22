@@ -9,13 +9,17 @@ from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
 
 
-def extract_summary(content):
-    tree = lxml.html.fromstring(content)
-    figures = tree.xpath("//figure")
-    if len(figures) == 0:
+def extract_summary(description):
+    # Ghost posts store the plain-text excerpt (the fact-check summary). Legacy
+    # Medium rows stored full HTML, where the summary preceded the first <figure>.
+    if not description or not description.strip():
         return None
-    summary_el = figures[0].getprevious()
-    summary_text = summary_el.text_content()
+    tree = lxml.html.fromstring(description)
+    figures = tree.xpath("//figure")
+    if figures and figures[0].getprevious() is not None:
+        summary_text = figures[0].getprevious().text_content()
+    else:
+        summary_text = tree.text_content()
     return summary_text.strip() if summary_text else None
 
 
@@ -35,19 +39,44 @@ language_codes = {
 }
 
 
-def fetch_from_pesacheck():
-    url = "https://api.rss2json.com/v1/api.json"
-    feed_url = settings.PESACHECK_URL
-    params = {
-        "rss_url": feed_url,
-        "api_key": settings.PESACHECK_RSS2JSON_API_KEY,
-        "count": 10,
-        "order_by": "pubDate",
+def parse_ghost_post(post):
+    # Internal Ghost tags (e.g. #hash-tags) are for site organisation only.
+    tags = [
+        tag["name"]
+        for tag in post.get("tags") or []
+        if tag.get("visibility") == "public"
+    ]
+    authors = [author["name"] for author in post.get("authors") or []]
+    return {
+        "title": post["title"],
+        "pubDate": post.get("published_at") or "",
+        "author": ", ".join(authors),
+        "guid": post["id"],
+        "link": post["url"],
+        "thumbnail": post.get("feature_image") or "",
+        "description": (
+            post.get("custom_excerpt") or post.get("excerpt") or ""
+        ).strip(),
+        "categories": tags,
     }
-    response = requests.get(url, params=params, timeout=60)
-    if response.status_code == 200:
-        return response.json().get("items") or []
-    raise Exception("An Error Occurred fetching data from pesacheck")
+
+
+def fetch_from_pesacheck():
+    url = f"{settings.PESACHECK_GHOST_URL.rstrip('/')}/ghost/api/content/posts/"
+    params = {
+        "key": settings.PESACHECK_GHOST_CONTENT_API_KEY,
+        "limit": settings.PESACHECK_GHOST_POSTS_LIMIT,
+        "order": "published_at desc",
+        "include": "tags,authors",
+        "fields": "id,title,url,excerpt,custom_excerpt,feature_image,published_at",
+    }
+    headers = {"Accept-Version": "v5.0"}
+    response = requests.get(url, params=params, headers=headers, timeout=60)
+    if response.status_code != 200:
+        raise Exception(
+            f"An Error Occurred fetching data from pesacheck: {response.text}"
+        )
+    return [parse_ghost_post(post) for post in response.json().get("posts") or []]
 
 
 def store_in_database(feed, db):
@@ -59,7 +88,7 @@ def post_to_check_and_update(feed, db):
     categories = json.loads(feed.categories)
     codes = [
         language_codes[language.lower()]
-        for language in feed.categories
+        for language in categories
         if language.lower() in language_codes
     ]
     language = "en" if not codes else codes[0]
@@ -114,6 +143,8 @@ def main(db):
         if from_pesacheck:
             for _, item in enumerate(from_pesacheck):
                 try:
+                    if db.feed_exists(item["guid"]):
+                        continue
                     feed = PesacheckFeed(
                         title=item["title"],
                         pubDate=item["pubDate"],
@@ -130,13 +161,17 @@ def main(db):
                     )
                     store_in_database(feed, db=db)
                     posted = post_to_check_and_update(feed, db=db)
-                    success_posts.append(posted)
+                    if posted:
+                        success_posts.append(posted)
                 except Exception as exception:
                     sentry_sdk.capture_exception(exception)
     except Exception as e:
         sentry_sdk.capture_exception(e)
     finally:
-        sentry_sdk.capture_message(success_posts)
+        sentry_sdk.capture_message(
+            f"Posted {len(success_posts)} PesaCheck article(s) to Check: "
+            f"{[post.link for post in success_posts]}"
+        )
 
 
 if __name__ == "__main__":

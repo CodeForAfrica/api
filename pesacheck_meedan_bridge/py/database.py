@@ -123,6 +123,15 @@ class PesacheckDatabase:
         finally:
             conn.close()
 
+    def feed_exists(self, guid):
+        conn = self.create_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT 1 FROM pesacheck_feeds WHERE guid = ?", (guid,))
+            return cur.fetchone() is not None
+        finally:
+            conn.close()
+
     def get_pending_pesacheck_feeds(self):
         conn = self.create_connection()
         try:
