@@ -1,5 +1,6 @@
 import json
 import sys
+from datetime import UTC, datetime
 
 import lxml.html  # nosec B410
 import requests
@@ -9,17 +10,22 @@ from check_api import post_to_check
 from database import PesacheckDatabase, PesacheckFeed
 
 
-def extract_summary(description):
-    # Ghost posts store the plain-text excerpt (the fact-check summary). Legacy
-    # Medium rows stored full HTML, where the summary preceded the first <figure>.
-    if not description or not description.strip():
-        return None
-    tree = lxml.html.fromstring(description)
+def is_ghost_feed(feed):
+    # Legacy Medium rows use the post URL as guid; Ghost rows use the post id.
+    return not feed.guid.startswith("http")
+
+
+def extract_summary(feed):
+    # Ghost rows store the plain-text excerpt, which is the fact-check summary.
+    if is_ghost_feed(feed):
+        return feed.description.strip() or None
+    # Legacy Medium rows stored full HTML, where the summary preceded the first
+    # <figure>.
+    tree = lxml.html.fromstring(feed.description)
     figures = tree.xpath("//figure")
-    if figures and figures[0].getprevious() is not None:
-        summary_text = figures[0].getprevious().text_content()
-    else:
-        summary_text = tree.text_content()
+    if len(figures) == 0 or figures[0].getprevious() is None:
+        return None
+    summary_text = figures[0].getprevious().text_content()
     return summary_text.strip() if summary_text else None
 
 
@@ -61,8 +67,20 @@ def parse_ghost_post(post):
     }
 
 
-def fetch_from_pesacheck():
-    url = f"{settings.PESACHECK_GHOST_URL.rstrip('/')}/ghost/api/content/posts/"
+def get_checkpoint(db):
+    pub_dates = []
+    for pub_date in db.get_ghost_pub_dates():
+        try:
+            pub_dates.append(datetime.fromisoformat(pub_date))
+        except ValueError:
+            continue
+    return max(pub_dates) if pub_dates else None
+
+
+def fetch_from_pesacheck(since=None):
+    # Without a checkpoint (first run against Ghost), only fetch the newest
+    # page instead of backfilling PesaCheck's entire archive.
+    url = f"{settings.PESACHECK_URL.rstrip('/')}/ghost/api/content/posts/"
     params = {
         "key": settings.PESACHECK_GHOST_CONTENT_API_KEY,
         "limit": settings.PESACHECK_GHOST_POSTS_LIMIT,
@@ -70,13 +88,24 @@ def fetch_from_pesacheck():
         "include": "tags,authors",
         "fields": "id,title,url,excerpt,custom_excerpt,feature_image,published_at",
     }
+    if since:
+        since_utc = since.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S")
+        params["filter"] = f"published_at:>='{since_utc}'"
     headers = {"Accept-Version": "v5.0"}
-    response = requests.get(url, params=params, headers=headers, timeout=60)
-    if response.status_code != 200:
-        raise Exception(
-            f"An Error Occurred fetching data from pesacheck: {response.text}"
-        )
-    return [parse_ghost_post(post) for post in response.json().get("posts") or []]
+    posts = []
+    page = 1
+    while page:
+        params["page"] = page
+        response = requests.get(url, params=params, headers=headers, timeout=60)
+        if response.status_code != 200:
+            raise Exception(
+                f"An Error Occurred fetching data from pesacheck: {response.text}"
+            )
+        data = response.json()
+        posts.extend(data.get("posts") or [])
+        pagination = (data.get("meta") or {}).get("pagination") or {}
+        page = pagination.get("next") if since else None
+    return posts
 
 
 def store_in_database(feed, db):
@@ -85,6 +114,9 @@ def store_in_database(feed, db):
 
 
 def post_to_check_and_update(feed, db):
+    # Mark the row before posting so that, if the result cannot be recorded, the
+    # row is not re-posted on the next run and is flagged for reconciliation.
+    db.update_pesacheck_feed_status(feed.guid, "Posting")
     categories = json.loads(feed.categories)
     codes = [
         language_codes[language.lower()]
@@ -93,7 +125,7 @@ def post_to_check_and_update(feed, db):
     ]
     language = "en" if not codes else codes[0]
     claim_description = feed.title
-    summary = extract_summary(feed.description) or "Not Found"
+    summary = extract_summary(feed) or "Not Found"
     input_data = {
         "media_type": "Blank",
         "channel": 1,
@@ -106,65 +138,64 @@ def post_to_check_and_update(feed, db):
         "language": language,
         "publish_report": True,
     }
-    res = post_to_check(input_data)
-    if res:
-        feed.check_project_media_id = (
-            res["data"].get("createProjectMedia").get("project_media").get("id")
-        )
-        feed.check_full_url = (
-            res["data"].get("createProjectMedia").get("project_media").get("full_url")
-        )
-        feed.claim_description_id = (
-            res["data"]
-            .get("createProjectMedia")
-            .get("project_media")
-            .get("claim_description")
-            .get("fact_check")
-            .get("id")
-        )
-        feed.status = "Completed"
-        db.update_pesacheck_feed(feed.guid, feed)
-        return feed
+    try:
+        res = post_to_check(input_data)
+    except requests.RequestException:
+        # e.g. a timeout: Check may still have created the item, so leave the
+        # row as "Posting" rather than risk a duplicate.
+        raise
+    except Exception:
+        db.update_pesacheck_feed_status(feed.guid, "Pending")
+        raise
+    project_media = res["data"]["createProjectMedia"]["project_media"]
+    feed.check_project_media_id = project_media.get("id")
+    feed.check_full_url = project_media.get("full_url")
+    feed.claim_description_id = project_media["claim_description"]["fact_check"]["id"]
+    feed.status = "Completed"
+    db.update_pesacheck_feed(feed.guid, feed)
+    return feed
 
 
 def main(db):
     success_posts = []
     try:
-        unsent_data = db.get_pending_pesacheck_feeds()
-        if unsent_data:
-            for pending in unsent_data:
-                try:
-                    posted = post_to_check_and_update(pending, db=db)
-                    if posted:
-                        success_posts.append(posted)
-                except Exception as exception:
-                    sentry_sdk.capture_exception(exception)
-        from_pesacheck = fetch_from_pesacheck()
-        if from_pesacheck:
-            for _, item in enumerate(from_pesacheck):
-                try:
-                    if db.feed_exists(item["guid"]):
-                        continue
-                    feed = PesacheckFeed(
-                        title=item["title"],
-                        pubDate=item["pubDate"],
-                        author=item["author"],
-                        guid=item["guid"],
-                        link=item["link"],
-                        categories=json.dumps(item["categories"]),
-                        thumbnail=item["thumbnail"],
-                        description=item["description"],
-                        status="Pending",
-                        check_project_media_id="",
-                        check_full_url="",
-                        claim_description_id="",
-                    )
-                    store_in_database(feed, db=db)
-                    posted = post_to_check_and_update(feed, db=db)
-                    if posted:
-                        success_posts.append(posted)
-                except Exception as exception:
-                    sentry_sdk.capture_exception(exception)
+        unreconciled = db.get_pesacheck_feeds_by_status("Posting")
+        if unreconciled:
+            sentry_sdk.capture_message(
+                f"{len(unreconciled)} PesaCheck article(s) may have been posted to "
+                f"Check without being recorded: {[feed.link for feed in unreconciled]}",
+                level="warning",
+            )
+        for pending in db.get_pesacheck_feeds_by_status("Pending"):
+            try:
+                success_posts.append(post_to_check_and_update(pending, db=db))
+            except Exception as exception:
+                sentry_sdk.capture_exception(exception)
+        from_pesacheck = fetch_from_pesacheck(since=get_checkpoint(db))
+        # Oldest first, so the checkpoint never moves past an unstored article.
+        for post in reversed(from_pesacheck):
+            try:
+                item = parse_ghost_post(post)
+                if db.feed_exists(item["guid"]):
+                    continue
+                feed = PesacheckFeed(
+                    title=item["title"],
+                    pubDate=item["pubDate"],
+                    author=item["author"],
+                    guid=item["guid"],
+                    link=item["link"],
+                    categories=json.dumps(item["categories"]),
+                    thumbnail=item["thumbnail"],
+                    description=item["description"],
+                    status="Pending",
+                    check_project_media_id="",
+                    check_full_url="",
+                    claim_description_id="",
+                )
+                store_in_database(feed, db=db)
+                success_posts.append(post_to_check_and_update(feed, db=db))
+            except Exception as exception:
+                sentry_sdk.capture_exception(exception)
     except Exception as e:
         sentry_sdk.capture_exception(e)
     finally:
@@ -176,11 +207,7 @@ def main(db):
 
 if __name__ == "__main__":
     try:
-        db = PesacheckDatabase()
-        if not db:
-            sentry_sdk.capture_message("Unable to connect to database")
-            sys.exit()
-        main(db=db)
+        main(db=PesacheckDatabase())
     except Exception as e:
         sentry_sdk.capture_exception(e)
-        sys.exit()
+        sys.exit(1)
