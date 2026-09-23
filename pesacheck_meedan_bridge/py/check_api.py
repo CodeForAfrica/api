@@ -70,6 +70,12 @@ def post_to_check(data):
     url = settings.PESACHECK_CHECK_URL
     response = requests.post(url, headers=headers, json=body, timeout=60)
     res = response.json()
-    if response.status_code == 200 and res.get("data"):
-        return res
-    raise Exception(response.text)
+    if response.status_code != 200 or res.get("errors"):
+        raise Exception(response.text)
+    project_media = ((res.get("data") or {}).get("createProjectMedia") or {}).get(
+        "project_media"
+    )
+    if not project_media:
+        # e.g. a field-level rejection: HTTP 200 with a null createProjectMedia.
+        raise Exception(response.text)
+    return res

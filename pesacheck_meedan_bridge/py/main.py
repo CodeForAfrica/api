@@ -113,10 +113,7 @@ def store_in_database(feed, db):
     return feed
 
 
-def post_to_check_and_update(feed, db):
-    # Mark the row before posting so that, if the result cannot be recorded, the
-    # row is not re-posted on the next run and is flagged for reconciliation.
-    db.update_pesacheck_feed_status(feed.guid, "Posting")
+def build_check_input(feed):
     categories = json.loads(feed.categories)
     codes = [
         language_codes[language.lower()]
@@ -126,7 +123,7 @@ def post_to_check_and_update(feed, db):
     language = "en" if not codes else codes[0]
     claim_description = feed.title
     summary = extract_summary(feed) or "Not Found"
-    input_data = {
+    return {
         "media_type": "Blank",
         "channel": 1,
         "set_tags": categories,
@@ -138,6 +135,15 @@ def post_to_check_and_update(feed, db):
         "language": language,
         "publish_report": True,
     }
+
+
+def post_to_check_and_update(feed, db):
+    # Build the request first: a failure here means nothing was sent, so the row
+    # must stay "Pending" rather than be marked as maybe-posted.
+    input_data = build_check_input(feed)
+    # Mark the row before posting so that, if the result cannot be recorded, the
+    # row is not re-posted on the next run and is flagged for reconciliation.
+    db.update_pesacheck_feed_status(feed.guid, "Posting")
     try:
         res = post_to_check(input_data)
     except requests.RequestException:
@@ -145,8 +151,11 @@ def post_to_check_and_update(feed, db):
         # row as "Posting" rather than risk a duplicate.
         raise
     except Exception:
+        # Check rejected the mutation, so nothing was created.
         db.update_pesacheck_feed_status(feed.guid, "Pending")
         raise
+    # post_to_check() has validated the response, so from here on the item
+    # exists in Check: a failure to record it leaves the row as "Posting".
     project_media = res["data"]["createProjectMedia"]["project_media"]
     feed.check_project_media_id = project_media.get("id")
     feed.check_full_url = project_media.get("full_url")
@@ -176,6 +185,12 @@ def main(db):
         for post in reversed(from_pesacheck):
             try:
                 item = parse_ghost_post(post)
+            except Exception as exception:
+                # A malformed post is skipped: holding the checkpoint behind it
+                # would block every later article indefinitely.
+                sentry_sdk.capture_exception(exception)
+                continue
+            try:
                 if db.feed_exists(item["guid"]):
                     continue
                 feed = PesacheckFeed(
@@ -193,11 +208,22 @@ def main(db):
                     claim_description_id="",
                 )
                 store_in_database(feed, db=db)
+            except Exception as exception:
+                # The article could not be stored, so stop here: storing a newer
+                # one would advance the checkpoint past this one for good. The
+                # next run starts again from the current checkpoint.
+                sentry_sdk.capture_exception(exception)
+                break
+            try:
+                # The article is stored, so a failure here is retried next run.
                 success_posts.append(post_to_check_and_update(feed, db=db))
             except Exception as exception:
                 sentry_sdk.capture_exception(exception)
     except Exception as e:
+        # Re-raised so that the process exits non-zero and cron/monitoring can
+        # see that the whole run failed.
         sentry_sdk.capture_exception(e)
+        raise
     finally:
         sentry_sdk.capture_message(
             f"Posted {len(success_posts)} PesaCheck article(s) to Check: "
