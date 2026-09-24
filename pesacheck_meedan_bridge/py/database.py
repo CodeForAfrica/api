@@ -2,7 +2,6 @@ import sqlite3
 from dataclasses import dataclass
 from sqlite3 import Error
 
-import sentry_sdk
 import settings
 
 
@@ -28,12 +27,7 @@ class PesacheckDatabase:
         self.create_table()
 
     def create_connection(self):
-        try:
-            conn = sqlite3.connect(self.db_file)
-            return conn
-        except Error as e:
-            sentry_sdk.capture_exception(e)
-        return None
+        return sqlite3.connect(self.db_file)
 
     def create_table(self):
         conn = self.create_connection()
@@ -55,8 +49,6 @@ class PesacheckDatabase:
                               claim_description_id TEXT)"""
             )
             conn.commit()
-        except Error as e:
-            sentry_sdk.capture_exception(e)
         finally:
             conn.close()
 
@@ -86,8 +78,6 @@ class PesacheckDatabase:
                 ),
             )
             conn.commit()
-        except Error as e:
-            sentry_sdk.capture_exception(e)
         finally:
             conn.close()
 
@@ -118,22 +108,55 @@ class PesacheckDatabase:
                 ),
             )
             conn.commit()
-        except Error as e:
-            sentry_sdk.capture_exception(e)
+            if cur.rowcount != 1:
+                raise Error(f"No pesacheck_feeds row with guid {guid}")
         finally:
             conn.close()
 
-    def get_pending_pesacheck_feeds(self):
+    def update_pesacheck_feed_status(self, guid, status):
         conn = self.create_connection()
         try:
             cur = conn.cursor()
-            cur.execute("SELECT * FROM pesacheck_feeds WHERE status = 'Pending'")
+            cur.execute(
+                "UPDATE pesacheck_feeds SET status = ? WHERE guid = ?", (status, guid)
+            )
+            conn.commit()
+            if cur.rowcount != 1:
+                raise Error(f"No pesacheck_feeds row with guid {guid}")
+        finally:
+            conn.close()
+
+    def feed_exists(self, guid):
+        conn = self.create_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT 1 FROM pesacheck_feeds WHERE guid = ?", (guid,))
+            return cur.fetchone() is not None
+        finally:
+            conn.close()
+
+    def get_ghost_pub_dates(self):
+        # Legacy Medium rows use the post URL as guid; Ghost rows use the post id.
+        conn = self.create_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT pubDate FROM pesacheck_feeds "
+                "WHERE guid NOT LIKE 'http%' AND pubDate != ''"
+            )
+            return [row[0] for row in cur.fetchall()]
+        finally:
+            conn.close()
+
+    def get_pesacheck_feeds_by_status(self, status):
+        conn = self.create_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM pesacheck_feeds WHERE status = ?", (status,))
             rows = cur.fetchall()
             feeds = []
             for row in rows:
                 feeds.append(PesacheckFeed(*row))
             return feeds
-        except Error as e:
-            sentry_sdk.capture_exception(e)
         finally:
             conn.close()
