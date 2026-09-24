@@ -8,6 +8,8 @@ name: PesaCheck Meedan Bridge | Continuous Deployment
       - chore/pesacheck-bridge-cd
     paths:
       - "pesacheck_meedan_bridge/py/VERSION"
+      # TODO: remove before merging; here only to test the workflow itself.
+      - ".github/workflows/pesacheck-meedan-bridge-cd.yaml"
 env:
   DOKKU_REMOTE_BRANCH: "master"
   DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/pesacheck-meedan-bridge"
@@ -52,7 +54,7 @@ jobs:
           pants --version
 
       - name: Check BUILD files
-        run: ./pants tailor --check update-build-files --check
+        run: pants tailor --check update-build-files --check
 
       - name: Lint
         run: |
@@ -60,7 +62,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          VERSION=${{ env.VERSION }} ./pants package pesacheck_meedan_bridge/docker/::
+          VERSION=${{ env.VERSION }} pants package pesacheck_meedan_bridge/docker/::
 
       - name: Login to DockerHub
         uses: docker/login-action@v3
