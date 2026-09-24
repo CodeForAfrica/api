@@ -4,12 +4,8 @@ name: PesaCheck Meedan Bridge | Continuous Deployment
   push:
     branches:
       - main
-      # TODO: remove before merging; here only to test the workflow itself.
-      - chore/pesacheck-bridge-cd
     paths:
       - "pesacheck_meedan_bridge/py/VERSION"
-      # TODO: remove before merging; here only to test the workflow itself.
-      - ".github/workflows/pesacheck-meedan-bridge-cd.yaml"
 env:
   DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/pesacheck-meedan-bridge"
   IMAGE_NAME: "codeforafrica/pesacheck_meedan_bridge"
