@@ -1,0 +1,83 @@
+# yamllint disable rule:line-length
+name: PesaCheck Meedan Bridge | Continuous Deployment
+"on":
+  push:
+    branches:
+      - main
+    paths:
+      - "pesacheck_meedan_bridge/py/VERSION"
+# The job only checks out the repo; the deploy uses DockerHub/SSH secrets.
+permissions:
+  contents: read
+env:
+  DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/pesacheck-meedan-bridge"
+  IMAGE_NAME: "codeforafrica/pesacheck_meedan_bridge"
+
+# This allows a subsequently queued workflow run to interrupt previous runs
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set env
+        run: echo "VERSION=$(cat pesacheck_meedan_bridge/py/VERSION)" >> $GITHUB_ENV
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Initialize Pants
+        uses: pantsbuild/actions/init-pants@main
+        with:
+          # cache0 makes it easy to bust the cache if needed
+          gha-cache-key: cache0-py${{ matrix.python_version }}
+          named-caches-hash: ${{ hashFiles('lockfiles/*.json', '**/something-else.lock') }}
+
+      - name: Bootstrap Pants
+        run: |
+          pants --version
+
+      - name: Check BUILD files
+        run: pants tailor --check update-build-files --check
+
+      - name: Lint
+        run: |
+          pants lint --lint-skip-formatters pesacheck_meedan_bridge/::
+
+      - name: Build Docker image
+        run: |
+          VERSION=${{ env.VERSION }} pants package pesacheck_meedan_bridge/docker/::
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Push to DockerHub
+        run: |
+          docker push ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+
+      - name: Deploy to Dokku
+        uses: dokku/github-action@v1.9.0
+        with:
+          # With deploy_docker_image the action runs `dokku git:from-image` and
+          # never pushes a branch, so `branch`/`git_push_flags` don't apply.
+          deploy_docker_image: ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+          deploy_user_name: "CodeForAfrica Bot"
+          deploy_user_email: "support@codeforafrica.org"
+          git_remote_url: ${{ env.DOKKU_REMOTE_URL }}
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}

@@ -29,6 +29,11 @@ def extract_summary(feed):
     return summary_text.strip() if summary_text else None
 
 
+# Identify the bridge instead of defaulting to "python-requests/x.y.z", which
+# Cloudflare challenges in front of pesacheck.org. Kept separate from
+# py/VERSION, which isn't packaged into the pex.
+USER_AGENT = "PesaCheckMeedanBridge/1.0 (+https://pesacheck.org)"
+
 language_codes = {
     "english": "en",
     "french": "fr",
@@ -91,7 +96,7 @@ def fetch_from_pesacheck(since=None):
     if since:
         since_utc = since.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S")
         params["filter"] = f"published_at:>='{since_utc}'"
-    headers = {"Accept-Version": "v5.0"}
+    headers = {"Accept-Version": "v5.0", "User-Agent": USER_AGENT}
     posts = []
     page = 1
     while page:
