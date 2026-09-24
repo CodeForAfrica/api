@@ -30,8 +30,9 @@ def extract_summary(feed):
 
 
 # Identify the bridge instead of defaulting to "python-requests/x.y.z", which
-# Cloudflare challenges in front of pesacheck.org.
-USER_AGENT = "pesacheck-meedan-bridge (+https://github.com/CodeForAfrica/api)"
+# Cloudflare challenges in front of pesacheck.org. Kept separate from
+# py/VERSION, which isn't packaged into the pex.
+USER_AGENT = "PesaCheckMeedanBridge/1.0 (+https://pesacheck.org)"
 
 language_codes = {
     "english": "en",
