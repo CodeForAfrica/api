@@ -6,6 +6,9 @@ name: PesaCheck Meedan Bridge | Continuous Deployment
       - main
     paths:
       - "pesacheck_meedan_bridge/py/VERSION"
+# The job only checks out the repo; the deploy uses DockerHub/SSH secrets.
+permissions:
+  contents: read
 env:
   DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/pesacheck-meedan-bridge"
   IMAGE_NAME: "codeforafrica/pesacheck_meedan_bridge"
