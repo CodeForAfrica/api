@@ -4,6 +4,8 @@ name: PesaCheck Meedan Bridge | Continuous Deployment
   push:
     branches:
       - main
+      # TODO: remove before merging; here only to test the workflow itself.
+      - chore/pesacheck-bridge-cd
     paths:
       - "pesacheck_meedan_bridge/py/VERSION"
 env:
