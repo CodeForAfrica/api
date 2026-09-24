@@ -11,9 +11,7 @@ name: PesaCheck Meedan Bridge | Continuous Deployment
       # TODO: remove before merging; here only to test the workflow itself.
       - ".github/workflows/pesacheck-meedan-bridge-cd.yaml"
 env:
-  DOKKU_REMOTE_BRANCH: "master"
   DOKKU_REMOTE_URL: "ssh://dokku@dokku-1.dev.codeforafrica.org/pesacheck-meedan-bridge"
-  GIT_PUSH_FLAGS: "--force"
   IMAGE_NAME: "codeforafrica/pesacheck_meedan_bridge"
 
 # This allows a subsequently queued workflow run to interrupt previous runs
@@ -74,13 +72,13 @@ jobs:
         run: |
           docker push ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
 
-      - name: Push to Dokku
+      - name: Deploy to Dokku
         uses: dokku/github-action@v1.9.0
         with:
-          branch: ${{ env.DOKKU_REMOTE_BRANCH }}
-          # Deploy the image we just pushed (git:from-image) instead of having
-          # Dokku build this monorepo with a buildpack.
+          # With deploy_docker_image the action runs `dokku git:from-image` and
+          # never pushes a branch, so `branch`/`git_push_flags` don't apply.
           deploy_docker_image: ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
-          git_push_flags: ${{ env.GIT_PUSH_FLAGS }}
+          deploy_user_name: "CodeForAfrica Bot"
+          deploy_user_email: "support@codeforafrica.org"
           git_remote_url: ${{ env.DOKKU_REMOTE_URL }}
           ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
