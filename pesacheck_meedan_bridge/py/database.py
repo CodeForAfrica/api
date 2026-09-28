@@ -19,12 +19,22 @@ class PesacheckFeed:
     check_project_media_id: str = ""
     check_full_url: str = ""
     claim_description_id: str = ""
+    # Which CMS the article came from: "medium", "ghost" or "superdesk".
+    source: str = ""
+    language: str = ""
 
 
 class PesacheckDatabase:
+    # Appended to pesacheck_feeds after the original columns, in this order.
+    ADDED_COLUMNS = (
+        ("source", "TEXT NOT NULL DEFAULT ''"),
+        ("language", "TEXT NOT NULL DEFAULT ''"),
+    )
+
     def __init__(self):
         self.db_file = settings.PESACHECK_DATABASE_NAME
         self.create_table()
+        self.migrate()
 
     def create_connection(self):
         return sqlite3.connect(self.db_file)
@@ -46,8 +56,38 @@ class PesacheckDatabase:
                               categories TEXT DEFAULT '[]',
                               check_project_media_id TEXT,
                               check_full_url TEXT,
-                              claim_description_id TEXT)"""
+                              claim_description_id TEXT,
+                              source TEXT NOT NULL DEFAULT '',
+                              language TEXT NOT NULL DEFAULT '')"""
             )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def migrate(self):
+        """Add columns a database created by an older version is missing."""
+        conn = self.create_connection()
+        try:
+            cur = conn.cursor()
+            existing = {
+                row[1] for row in cur.execute("PRAGMA table_info(pesacheck_feeds)")
+            }
+            added = []
+            for column, definition in self.ADDED_COLUMNS:
+                if column not in existing:
+                    cur.execute(
+                        f"ALTER TABLE pesacheck_feeds ADD COLUMN {column} {definition}"
+                    )
+                    added.append(column)
+            if "source" in added:
+                # Rows predating the column: Medium stored the post URL as the
+                # guid, Ghost stored the post id.
+                cur.execute(
+                    """UPDATE pesacheck_feeds
+                       SET source = CASE WHEN guid LIKE 'http%' THEN 'medium'
+                                         ELSE 'ghost' END
+                       WHERE source = ''"""
+                )
             conn.commit()
         finally:
             conn.close()
@@ -56,8 +96,9 @@ class PesacheckDatabase:
         conn = self.create_connection()
         sql = """INSERT INTO pesacheck_feeds (title, pubDate, author,
                  guid, link, thumbnail, description, status, categories,
-                 check_project_media_id, check_full_url, claim_description_id)
-                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+                 check_project_media_id, check_full_url, claim_description_id,
+                 source, language)
+                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
         try:
             cur = conn.cursor()
             cur.execute(
@@ -75,6 +116,8 @@ class PesacheckDatabase:
                     feed.check_project_media_id,
                     feed.check_full_url,
                     feed.claim_description_id,
+                    feed.source,
+                    feed.language,
                 ),
             )
             conn.commit()
@@ -87,7 +130,8 @@ class PesacheckDatabase:
                 SET title = ?, pubDate = ?, author = ?, link = ?, thumbnail = ?,
                 description = ?, status = ?, categories = ?,
                 check_project_media_id = ?, check_full_url = ?,
-                claim_description_id = ? WHERE guid = ?"""
+                claim_description_id = ?, source = ?, language = ?
+                WHERE guid = ?"""
         params_tail = []
         if expected_status is not None:
             sql += " AND status = ?"
@@ -108,6 +152,8 @@ class PesacheckDatabase:
                     new_feed.check_project_media_id,
                     new_feed.check_full_url,
                     new_feed.claim_description_id,
+                    new_feed.source,
+                    new_feed.language,
                     guid,
                     *params_tail,
                 ),
@@ -174,14 +220,15 @@ class PesacheckDatabase:
         finally:
             conn.close()
 
-    def get_ghost_pub_dates(self):
-        # Legacy Medium rows use the post URL as guid; Ghost rows use the post id.
+    def get_pub_dates(self, source):
+        """Publication dates already stored for one provider's articles."""
         conn = self.create_connection()
         try:
             cur = conn.cursor()
             cur.execute(
                 "SELECT pubDate FROM pesacheck_feeds "
-                "WHERE guid NOT LIKE 'http%' AND pubDate != ''"
+                "WHERE source = ? AND pubDate != ''",
+                (source,),
             )
             return [row[0] for row in cur.fetchall()]
         finally:

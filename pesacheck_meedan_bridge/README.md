@@ -41,10 +41,29 @@ To run `pex` binary, execute:
 docker compose exec api-pesacheck_meedan_bridge ./pex
 ```
 
+## Where articles come from
+
+`PESACHECK_PROVIDER` selects the CMS the bridge reads:
+
+| Provider | Reads | Needs |
+|---|---|---|
+| `ghost` | Ghost Content API at `{PESACHECK_URL}/ghost/api/content/posts/` | `PESACHECK_GHOST_CONTENT_API_KEY` |
+| `superdesk` | Publisher's GraphQL API (`swp_article`), filtered to the tenant and to articles carrying a `Debunk` verdict | `PESACHECK_SUPERDESK_GRAPHQL_URL`, `PESACHECK_SUPERDESK_TENANT_CODE` |
+
+Only the active provider's settings are required, so switching is a config
+change plus a restart. Each article records the provider it came from in the
+`source` column, and the fetch position is tracked per provider, so switching
+back and forth doesn't re-post or lose place.
+
+Superdesk articles are posted to Check with a URL built from
+`PESACHECK_SITE_URL` + `/fact-checks/<desk>/<slug>`; point that at a preview
+deployment to test against one. Their language comes from Superdesk directly,
+and the Check tags are the language, country, content type and harm type.
+
 ## How articles are picked up
 
-Each run fetches everything published since the newest PesaCheck (Ghost) article
-already stored in SQLite, paginating in pages of `PESACHECK_GHOST_POSTS_LIMIT`.
+Each run fetches everything published since the newest article already stored
+for the active provider, paginating in pages of `PESACHECK_POSTS_LIMIT`.
 When nothing is stored yet, only the newest page is fetched, so the first run
 against a fresh database does not backfill PesaCheck's whole archive.
 
@@ -56,6 +75,12 @@ Articles are tracked by `status`:
 | `Posting` | Sent to Check, but the outcome could not be recorded (e.g. a timeout). **Not** retried automatically: check the article in Check, then set the row to `Completed` (with the Check ids) or back to `Pending`. Each run reports these to Sentry. |
 | `Completed` | Accepted by Check, with the Check ids stored. |
 | `Duplicate` | Check already has this fact-check (it rejects a repeat of the same content). Terminal: never retried. The Check ids are not recorded, so find the article in Check by title if you need them. |
+
+### Adding another provider
+
+Add a module exposing `name`, `fetch(since, limit)` returning raw records, and
+`parse(record)` returning a `provider_base.Article`; register it in
+`providers.py`. `main.py` knows nothing about any particular CMS.
 
 ### Known limitation: backdated articles
 

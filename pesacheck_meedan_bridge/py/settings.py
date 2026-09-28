@@ -19,9 +19,28 @@ if PESACHECK_SENTRY_DSN:
         profiles_sample_rate=1.0,
     )
 
+# Which CMS to read fact-checks from: "ghost" or "superdesk". Each provider
+# validates its own settings, so only the active one's are required.
+PESACHECK_PROVIDER = env("PESACHECK_PROVIDER", "ghost")
+
+# Page size, and the number of articles a run with no checkpoint fetches.
+# Falls back to the old Ghost-only name so existing deployments keep theirs.
+PESACHECK_POSTS_LIMIT = env.int(
+    "PESACHECK_POSTS_LIMIT", env.int("PESACHECK_GHOST_POSTS_LIMIT", 15)
+)
+
+# Public site, used to build the article URL posted to Check.
+PESACHECK_SITE_URL = env("PESACHECK_SITE_URL", "https://pesacheck.org")
+
+# Ghost
 PESACHECK_URL = env("PESACHECK_URL", "https://pesacheck.org")
-PESACHECK_GHOST_CONTENT_API_KEY = env("PESACHECK_GHOST_CONTENT_API_KEY")
-PESACHECK_GHOST_POSTS_LIMIT = env.int("PESACHECK_GHOST_POSTS_LIMIT", 15)
+PESACHECK_GHOST_CONTENT_API_KEY = env("PESACHECK_GHOST_CONTENT_API_KEY", None)
+
+# Superdesk (Publisher's GraphQL API)
+PESACHECK_SUPERDESK_GRAPHQL_URL = env("PESACHECK_SUPERDESK_GRAPHQL_URL", None)
+PESACHECK_SUPERDESK_TENANT_CODE = env("PESACHECK_SUPERDESK_TENANT_CODE", None)
+# Shared secret a Cloudflare WAF rule matches to skip bot protection.
+PESACHECK_SUPERDESK_PRESHARED_AUTH = env("PESACHECK_SUPERDESK_PRESHARED_AUTH", None)
 
 PESACHECK_CHECK_URL = env("PESACHECK_CHECK_URL")
 PESACHECK_CHECK_TOKEN = env("PESACHECK_CHECK_TOKEN")
