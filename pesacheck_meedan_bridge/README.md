@@ -55,6 +55,7 @@ Articles are tracked by `status`:
 | `Pending` | Stored, not yet accepted by Check. Retried on every run. |
 | `Posting` | Sent to Check, but the outcome could not be recorded (e.g. a timeout). **Not** retried automatically: check the article in Check, then set the row to `Completed` (with the Check ids) or back to `Pending`. Each run reports these to Sentry. |
 | `Completed` | Accepted by Check, with the Check ids stored. |
+| `Duplicate` | Check already has this fact-check (it rejects a repeat of the same content). Terminal: never retried. The Check ids are not recorded, so find the article in Check by title if you need them. |
 
 ### Known limitation: backdated articles
 

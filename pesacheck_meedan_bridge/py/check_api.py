@@ -3,6 +3,14 @@ import json
 import requests
 import settings
 
+# Check refuses a fact-check it already has, via a unique index on the
+# fact-check signature. The article is in Check, so there is nothing to retry.
+DUPLICATE_CONSTRAINT = "index_fact_checks_on_signature"
+
+
+class DuplicateFactCheckError(Exception):
+    pass
+
 
 def create_mutation_query(
     media_type="Blank",
@@ -70,7 +78,10 @@ def post_to_check(data):
     url = settings.PESACHECK_CHECK_URL
     response = requests.post(url, headers=headers, json=body, timeout=60)
     res = response.json()
-    if response.status_code != 200 or res.get("errors"):
+    errors = res.get("errors") or []
+    if any(DUPLICATE_CONSTRAINT in str(error.get("message", "")) for error in errors):
+        raise DuplicateFactCheckError(response.text)
+    if response.status_code != 200 or errors:
         raise Exception(response.text)
     project_media = ((res.get("data") or {}).get("createProjectMedia") or {}).get(
         "project_media"

@@ -6,7 +6,7 @@ import lxml.html  # nosec B410
 import requests
 import sentry_sdk
 import settings
-from check_api import post_to_check
+from check_api import DuplicateFactCheckError, post_to_check
 from database import PesacheckDatabase, PesacheckFeed
 
 
@@ -151,6 +151,11 @@ def post_to_check_and_update(feed, db):
     db.update_pesacheck_feed_status(feed.guid, "Posting")
     try:
         res = post_to_check(input_data)
+    except DuplicateFactCheckError:
+        # Check already has this fact-check, so retrying it every run would
+        # fail forever. Mark it terminally instead.
+        db.update_pesacheck_feed_status(feed.guid, "Duplicate")
+        raise
     except requests.RequestException:
         # e.g. a timeout: Check may still have created the item, so leave the
         # row as "Posting" rather than risk a duplicate.
@@ -172,6 +177,7 @@ def post_to_check_and_update(feed, db):
 
 def main(db):
     success_posts = []
+    duplicates = []
     try:
         unreconciled = db.get_pesacheck_feeds_by_status("Posting")
         if unreconciled:
@@ -183,6 +189,8 @@ def main(db):
         for pending in db.get_pesacheck_feeds_by_status("Pending"):
             try:
                 success_posts.append(post_to_check_and_update(pending, db=db))
+            except DuplicateFactCheckError:
+                duplicates.append(pending)
             except Exception as exception:
                 sentry_sdk.capture_exception(exception)
         from_pesacheck = fetch_from_pesacheck(since=get_checkpoint(db))
@@ -222,6 +230,8 @@ def main(db):
             try:
                 # The article is stored, so a failure here is retried next run.
                 success_posts.append(post_to_check_and_update(feed, db=db))
+            except DuplicateFactCheckError:
+                duplicates.append(feed)
             except Exception as exception:
                 sentry_sdk.capture_exception(exception)
     except Exception as e:
@@ -230,10 +240,16 @@ def main(db):
         sentry_sdk.capture_exception(e)
         raise
     finally:
-        sentry_sdk.capture_message(
+        message = (
             f"Posted {len(success_posts)} PesaCheck article(s) to Check: "
             f"{[post.link for post in success_posts]}"
         )
+        if duplicates:
+            message += (
+                f". Skipped {len(duplicates)} article(s) Check already has: "
+                f"{[duplicate.link for duplicate in duplicates]}"
+            )
+        sentry_sdk.capture_message(message)
 
 
 if __name__ == "__main__":
