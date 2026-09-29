@@ -81,13 +81,17 @@ class PesacheckDatabase:
         finally:
             conn.close()
 
-    def update_pesacheck_feed(self, guid, new_feed):
+    def update_pesacheck_feed(self, guid, new_feed, expected_status=None):
         conn = self.create_connection()
         sql = """UPDATE pesacheck_feeds
                 SET title = ?, pubDate = ?, author = ?, link = ?, thumbnail = ?,
                 description = ?, status = ?, categories = ?,
                 check_project_media_id = ?, check_full_url = ?,
                 claim_description_id = ? WHERE guid = ?"""
+        params_tail = []
+        if expected_status is not None:
+            sql += " AND status = ?"
+            params_tail.append(expected_status)
         try:
             cur = conn.cursor()
             cur.execute(
@@ -105,24 +109,59 @@ class PesacheckDatabase:
                     new_feed.check_full_url,
                     new_feed.claim_description_id,
                     guid,
+                    *params_tail,
                 ),
             )
             conn.commit()
             if cur.rowcount != 1:
-                raise Error(f"No pesacheck_feeds row with guid {guid}")
+                raise Error(
+                    f"No pesacheck_feeds row with guid {guid}"
+                    + (f" in status {expected_status}" if expected_status else "")
+                )
         finally:
             conn.close()
 
-    def update_pesacheck_feed_status(self, guid, status):
+    def claim_pending_feed(self, guid):
+        """Move a row from Pending to Posting, returning whether we won it.
+
+        Two overlapping runs can both read the same Pending row. SQLite
+        serializes the conditional update, so only one of them sees rowcount 1
+        and calls Check; the loser leaves the row alone.
+        """
         conn = self.create_connection()
         try:
             cur = conn.cursor()
             cur.execute(
-                "UPDATE pesacheck_feeds SET status = ? WHERE guid = ?", (status, guid)
+                "UPDATE pesacheck_feeds SET status = 'Posting' "
+                "WHERE guid = ? AND status = 'Pending'",
+                (guid,),
             )
             conn.commit()
+            return cur.rowcount == 1
+        finally:
+            conn.close()
+
+    def update_pesacheck_feed_status(self, guid, status, expected_status=None):
+        """Set a row's status, optionally only from an expected one.
+
+        Terminal transitions pass expected_status="Posting" so a row another
+        run has already finished can't be overwritten.
+        """
+        conn = self.create_connection()
+        sql = "UPDATE pesacheck_feeds SET status = ? WHERE guid = ?"
+        params = [status, guid]
+        if expected_status is not None:
+            sql += " AND status = ?"
+            params.append(expected_status)
+        try:
+            cur = conn.cursor()
+            cur.execute(sql, params)
+            conn.commit()
             if cur.rowcount != 1:
-                raise Error(f"No pesacheck_feeds row with guid {guid}")
+                raise Error(
+                    f"No pesacheck_feeds row with guid {guid}"
+                    + (f" in status {expected_status}" if expected_status else "")
+                )
         finally:
             conn.close()
 

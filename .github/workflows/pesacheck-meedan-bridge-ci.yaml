@@ -1,0 +1,60 @@
+# yamllint disable rule:line-length
+name: PesaCheck Meedan Bridge | Continuous Integration
+"on":
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "pesacheck_meedan_bridge/**"
+      - ".github/workflows/pesacheck-meedan-bridge-ci.yaml"
+# The job only checks out the repo.
+permissions:
+  contents: read
+
+# This allows a subsequently queued workflow run to interrupt previous runs
+concurrency:
+  # yamllint disable-line rule:line-length
+  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Perform CI Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Initialize Pants
+        uses: pantsbuild/actions/init-pants@main
+        with:
+          # cache0 makes it easy to bust the cache if needed
+          gha-cache-key: cache0-py${{ matrix.python_version }}
+          named-caches-hash: ${{ hashFiles('lockfiles/*.json', '**/something-else.lock') }}
+
+      - name: Bootstrap Pants
+        run: pants --version
+
+      - name: Check BUILD files
+        run: pants tailor --check update-build-files --check
+
+      - name: Lint
+        run: |
+          pants lint --lint-skip-formatters pesacheck_meedan_bridge/::
+
+      - name: Test
+        run: |
+          pants test pesacheck_meedan_bridge/::
+
+      - name: Build
+        run: |
+          pants package pesacheck_meedan_bridge/py:pesacheck-deps pesacheck_meedan_bridge/py:pesacheck-srcs

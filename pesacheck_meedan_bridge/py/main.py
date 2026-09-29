@@ -142,19 +142,34 @@ def build_check_input(feed):
     }
 
 
+def mark_terminal(feed, db, status):
+    """Record a terminal status without losing the outcome it describes.
+
+    The caller is about to raise the exception this status explains; a failure
+    here must not replace it, or a known duplicate would look like a row whose
+    outcome could not be recorded.
+    """
+    feed.status = status
+    try:
+        db.update_pesacheck_feed_status(feed.guid, status, expected_status="Posting")
+    except Exception as exception:
+        sentry_sdk.capture_exception(exception)
+
+
 def post_to_check_and_update(feed, db):
     # Build the request first: a failure here means nothing was sent, so the row
     # must stay "Pending" rather than be marked as maybe-posted.
     input_data = build_check_input(feed)
-    # Mark the row before posting so that, if the result cannot be recorded, the
-    # row is not re-posted on the next run and is flagged for reconciliation.
-    db.update_pesacheck_feed_status(feed.guid, "Posting")
+    # Claim the row before posting: it marks the row as maybe-posted so a failed
+    # run doesn't re-post it, and it stops an overlapping run posting it twice.
+    if not db.claim_pending_feed(feed.guid):
+        return None
     try:
         res = post_to_check(input_data)
     except DuplicateFactCheckError:
         # Check already has this fact-check, so retrying it every run would
         # fail forever. Mark it terminally instead.
-        db.update_pesacheck_feed_status(feed.guid, "Duplicate")
+        mark_terminal(feed, db, "Duplicate")
         raise
     except requests.RequestException:
         # e.g. a timeout: Check may still have created the item, so leave the
@@ -162,7 +177,7 @@ def post_to_check_and_update(feed, db):
         raise
     except Exception:
         # Check rejected the mutation, so nothing was created.
-        db.update_pesacheck_feed_status(feed.guid, "Pending")
+        mark_terminal(feed, db, "Pending")
         raise
     # post_to_check() has validated the response, so from here on the item
     # exists in Check: a failure to record it leaves the row as "Posting".
@@ -171,8 +186,25 @@ def post_to_check_and_update(feed, db):
     feed.check_full_url = project_media.get("full_url")
     feed.claim_description_id = project_media["claim_description"]["fact_check"]["id"]
     feed.status = "Completed"
-    db.update_pesacheck_feed(feed.guid, feed)
+    db.update_pesacheck_feed(feed.guid, feed, expected_status="Posting")
     return feed
+
+
+def count_phrase(count):
+    """Shared wording so the run's messages can't drift apart."""
+    return f"{count} PesaCheck article(s)"
+
+
+def post_and_record(feed, db, success_posts, duplicates):
+    """Post one stored article, recording the outcome for the run summary."""
+    try:
+        posted = post_to_check_and_update(feed, db=db)
+        if posted is not None:
+            success_posts.append(posted.link)
+    except DuplicateFactCheckError:
+        duplicates.append(feed.link)
+    except Exception as exception:
+        sentry_sdk.capture_exception(exception)
 
 
 def main(db):
@@ -182,17 +214,13 @@ def main(db):
         unreconciled = db.get_pesacheck_feeds_by_status("Posting")
         if unreconciled:
             sentry_sdk.capture_message(
-                f"{len(unreconciled)} PesaCheck article(s) may have been posted to "
-                f"Check without being recorded: {[feed.link for feed in unreconciled]}",
+                f"{count_phrase(len(unreconciled))} may have been posted to "
+                "Check without being recorded: "
+                f"{[feed.link for feed in unreconciled]}",
                 level="warning",
             )
         for pending in db.get_pesacheck_feeds_by_status("Pending"):
-            try:
-                success_posts.append(post_to_check_and_update(pending, db=db))
-            except DuplicateFactCheckError:
-                duplicates.append(pending)
-            except Exception as exception:
-                sentry_sdk.capture_exception(exception)
+            post_and_record(pending, db, success_posts, duplicates)
         from_pesacheck = fetch_from_pesacheck(since=get_checkpoint(db))
         # Oldest first, so the checkpoint never moves past an unstored article.
         for post in reversed(from_pesacheck):
@@ -227,27 +255,19 @@ def main(db):
                 # next run starts again from the current checkpoint.
                 sentry_sdk.capture_exception(exception)
                 break
-            try:
-                # The article is stored, so a failure here is retried next run.
-                success_posts.append(post_to_check_and_update(feed, db=db))
-            except DuplicateFactCheckError:
-                duplicates.append(feed)
-            except Exception as exception:
-                sentry_sdk.capture_exception(exception)
+            # The article is stored, so a failure here is retried next run.
+            post_and_record(feed, db, success_posts, duplicates)
     except Exception as e:
         # Re-raised so that the process exits non-zero and cron/monitoring can
         # see that the whole run failed.
         sentry_sdk.capture_exception(e)
         raise
     finally:
-        message = (
-            f"Posted {len(success_posts)} PesaCheck article(s) to Check: "
-            f"{[post.link for post in success_posts]}"
-        )
+        message = f"Posted {count_phrase(len(success_posts))} to Check: {success_posts}"
         if duplicates:
             message += (
-                f". Skipped {len(duplicates)} article(s) Check already has: "
-                f"{[duplicate.link for duplicate in duplicates]}"
+                f". Skipped {count_phrase(len(duplicates))} "
+                f"Check already has: {duplicates}"
             )
         sentry_sdk.capture_message(message)
 

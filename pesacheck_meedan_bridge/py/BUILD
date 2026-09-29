@@ -8,6 +8,11 @@ python_sources(
     ],
 )
 
+python_tests(
+    name="tests",
+    dependencies=[":lib"],
+)
+
 pex_binary(
     name="pesacheck-deps",
     environment=parametrize("__local__", "linux"),
