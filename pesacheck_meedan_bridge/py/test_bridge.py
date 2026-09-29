@@ -18,14 +18,16 @@ TMP = tempfile.mkdtemp()
 # Set before settings is imported. environs does not override what's already
 # in the environment, so a developer's .env can't change these.
 os.environ.update(
-    PESACHECK_SENTRY_DSN="",
-    PESACHECK_URL="https://pesacheck.org",
-    PESACHECK_GHOST_CONTENT_API_KEY="key",
-    PESACHECK_GHOST_POSTS_LIMIT="2",
-    PESACHECK_CHECK_URL="https://check.invalid/graphql",
-    PESACHECK_CHECK_TOKEN="t",
-    PESACHECK_CHECK_WORKSPACE_SLUG="ws",
-    PESACHECK_DATABASE_NAME=os.path.join(TMP, "unused.db"),
+    {
+        "PESACHECK_SENTRY_DSN": "",
+        "PESACHECK_URL": "https://pesacheck.org",
+        "PESACHECK_GHOST_CONTENT_API_KEY": "key",
+        "PESACHECK_GHOST_POSTS_LIMIT": "2",
+        "PESACHECK_CHECK_URL": "https://check.invalid/graphql",
+        "PESACHECK_CHECK_TOKEN": "t",  # nosec B105 - placeholder, nothing is called
+        "PESACHECK_CHECK_WORKSPACE_SLUG": "ws",
+        "PESACHECK_DATABASE_NAME": os.path.join(TMP, "unused.db"),
+    }
 )
 
 import check_api  # noqa: E402
