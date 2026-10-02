@@ -41,14 +41,14 @@ class GhostProvider:
                 "PESACHECK_PROVIDER is 'ghost'"
             )
 
-    def fetch(self, since=None, limit=15):
-        # Without a checkpoint (first run against Ghost), only fetch the newest
-        # page instead of backfilling PesaCheck's entire archive.
+    def fetch(self, since=None, limit=15, max_articles=None):
+        # Oldest first when catching up from a checkpoint, newest page when
+        # there is no checkpoint. Returns oldest first either way.
         url = f"{settings.PESACHECK_URL.rstrip('/')}/ghost/api/content/posts/"
         params = {
             "key": settings.PESACHECK_GHOST_CONTENT_API_KEY,
             "limit": limit,
-            "order": "published_at desc",
+            "order": "published_at asc" if since else "published_at desc",
             "include": "tags,authors",
             "fields": "id,title,url,excerpt,custom_excerpt,feature_image,published_at",
         }
@@ -67,9 +67,12 @@ class GhostProvider:
                 )
             data = response.json()
             posts.extend(data.get("posts") or [])
+            if max_articles is not None and len(posts) >= max_articles:
+                return posts[:max_articles]
             pagination = (data.get("meta") or {}).get("pagination") or {}
             page = pagination.get("next") if since else None
-        return posts
+        # The no-checkpoint page came newest first.
+        return posts if since else list(reversed(posts))
 
     def parse(self, post):
         # Internal Ghost tags (e.g. #hash-tags) are for site organisation only.

@@ -29,6 +29,12 @@ PESACHECK_POSTS_LIMIT = env.int(
     "PESACHECK_POSTS_LIMIT", env.int("PESACHECK_GHOST_POSTS_LIMIT", 15)
 )
 
+# Ceiling on one run when catching up from a checkpoint. Without it, a
+# checkpoint far in the past (a long outage, or the first run after switching
+# provider) would import years of articles, posting all of them to Check.
+# Catch-up then continues on the next run, since the checkpoint advances.
+PESACHECK_MAX_ARTICLES = env.int("PESACHECK_MAX_ARTICLES", 100)
+
 # Public site, used to build the article URL posted to Check.
 PESACHECK_SITE_URL = env("PESACHECK_SITE_URL", "https://pesacheck.org")
 

@@ -220,16 +220,22 @@ class PesacheckDatabase:
         finally:
             conn.close()
 
-    def get_pub_dates(self, source):
-        """Publication dates already stored for one provider's articles."""
+    def get_pub_dates(self, source=None):
+        """Publication dates already stored, for one provider or for all.
+
+        All sources is what the first run of a newly configured provider needs:
+        the articles exist under the old provider's source, so its position is
+        the only thing that says where the new one should start.
+        """
         conn = self.create_connection()
+        sql = "SELECT pubDate FROM pesacheck_feeds WHERE pubDate != ''"
+        params = ()
+        if source is not None:
+            sql += " AND source = ?"
+            params = (source,)
         try:
             cur = conn.cursor()
-            cur.execute(
-                "SELECT pubDate FROM pesacheck_feeds "
-                "WHERE source = ? AND pubDate != ''",
-                (source,),
-            )
+            cur.execute(sql, params)
             return [row[0] for row in cur.fetchall()]
         finally:
             conn.close()

@@ -15,10 +15,15 @@ DEBUNK_SCHEME = "Debunk"
 CATEGORY_SCHEMES = ["Debunklang", "countries", "content_type", "Harm_type"]
 
 FACT_CHECKS_QUERY = """
-  query FactChecks($where: swp_article_bool_exp!, $limit: Int!, $offset: Int!) {
+  query FactChecks(
+    $where: swp_article_bool_exp!
+    $limit: Int!
+    $offset: Int!
+    $order: order_by!
+  ) {
     items: swp_article(
       where: $where
-      order_by: { published_at: desc }
+      order_by: { published_at: $order }
       limit: $limit
       offset: $offset
     ) {
@@ -91,20 +96,26 @@ class SuperdeskProvider:
             ],
         }
 
-    def fetch(self, since=None, limit=15):
-        # Without a checkpoint (first run against Superdesk), only fetch the
-        # newest page instead of backfilling PesaCheck's entire archive.
+    def fetch(self, since=None, limit=15, max_articles=None):
+        # Oldest first when catching up from a checkpoint, newest page when
+        # there is no checkpoint. Returns oldest first either way.
         headers = {"Content-Type": "application/json", "User-Agent": USER_AGENT}
         if settings.PESACHECK_SUPERDESK_PRESHARED_AUTH:
             # A Cloudflare WAF rule skips bot protection when this matches.
             headers["x-preshared-auth"] = settings.PESACHECK_SUPERDESK_PRESHARED_AUTH
         where = self.build_where(since)
+        order = "asc" if since else "desc"
         articles = []
         offset = 0
         while True:
             body = {
                 "query": FACT_CHECKS_QUERY,
-                "variables": {"where": where, "limit": limit, "offset": offset},
+                "variables": {
+                    "where": where,
+                    "limit": limit,
+                    "offset": offset,
+                    "order": order,
+                },
             }
             response = requests.post(
                 settings.PESACHECK_SUPERDESK_GRAPHQL_URL,
@@ -123,10 +134,13 @@ class SuperdeskProvider:
                 )
             page = ((data.get("data") or {}).get("items")) or []
             articles.extend(page)
+            if max_articles is not None and len(articles) >= max_articles:
+                return articles[:max_articles]
             if not since or len(page) < limit:
                 break
             offset += limit
-        return articles
+        # The no-checkpoint page came newest first.
+        return articles if since else list(reversed(articles))
 
     def parse(self, article):
         metadata = parse_metadata(article.get("metadata"))

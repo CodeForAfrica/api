@@ -269,9 +269,10 @@ class TestGhostProvider(Base):
 
     def test_burst_larger_than_limit_is_fully_imported_oldest_first(self):
         self.add_row("0" * 24, "2026-09-01T10:00:00.000+00:00")
+        # Catching up, so Ghost is asked for oldest first.
         pages = [
-            ghost_response([ghost_post(5, 5), ghost_post(4, 4)], next_page=2),
-            ghost_response([ghost_post(3, 3), ghost_post(2, 2)], next_page=None),
+            ghost_response([ghost_post(2, 2), ghost_post(3, 3)], next_page=2),
+            ghost_response([ghost_post(4, 4), ghost_post(5, 5)], next_page=None),
         ]
         with mock.patch.object(
             provider_ghost.requests,
@@ -289,7 +290,7 @@ class TestGhostProvider(Base):
     def test_fetch_error_on_later_page_stores_nothing(self):
         self.add_row("0" * 24, "2026-09-01T10:00:00.000+00:00")
         err = mock.Mock(status_code=500, text="boom")
-        pages = [ghost_response([ghost_post(5, 5)], next_page=2), err]
+        pages = [ghost_response([ghost_post(2, 2)], next_page=2), err]
         with mock.patch.object(
             provider_ghost.requests,
             "get",
@@ -441,6 +442,156 @@ class TestSuperdeskProvider(Base):
             main.get_checkpoint(self.db, "superdesk"),
             datetime(2026, 9, 5, 10, tzinfo=UTC),
         )
+        self.assertEqual(
+            main.get_checkpoint(self.db, "ghost"), datetime(2026, 9, 2, 10, tzinfo=UTC)
+        )
+
+
+class TestCutover(Base):
+    """Switching a live deployment from one CMS to the other."""
+
+    provider = "superdesk"
+
+    def fetch_since(self, articles=None):
+        with mock.patch.object(
+            provider_superdesk.requests,
+            "post",
+            return_value=superdesk_response(articles or []),
+        ) as post:
+            main.main(self.db)
+        where = post.call_args.kwargs["json"]["variables"]["where"]
+        return where["published_at"].get("_gte")
+
+    def test_first_superdesk_run_resumes_where_ghost_stopped(self):
+        # The same fact-checks exist in both CMSes under different guids and
+        # URLs, so starting from scratch would re-post them to Check.
+        self.add_row("a" * 24, "2026-09-20T10:00:00.000+00:00", source="ghost")
+        self.assertEqual(self.fetch_since(), "2026-09-20T10:00:00")
+
+    def test_an_article_older_than_the_ghost_checkpoint_is_not_reposted(self):
+        self.add_row("a" * 24, "2026-09-20T10:00:00.000+00:00", source="ghost")
+        # Superdesk still returns it (the API filter is what excludes it), so
+        # assert on the window we ask for rather than on the mock's reply.
+        self.assertEqual(self.fetch_since(), "2026-09-20T10:00:00")
+
+    def test_a_providers_own_checkpoint_wins_once_it_has_one(self):
+        self.add_row("a" * 24, "2026-09-25T10:00:00.000+00:00", source="ghost")
+        self.add_row("uuid-9", "2026-09-21T10:00:00.000+00:00", source="superdesk")
+        # Older, but it's this provider's own position: anything newer from
+        # Ghost is already stored, and re-fetching from the Ghost date would
+        # just re-examine rows we have.
+        self.assertEqual(self.fetch_since(), "2026-09-21T10:00:00")
+
+    def test_a_fresh_database_still_fetches_a_single_page(self):
+        self.assertIsNone(self.fetch_since())
+
+    def test_legacy_naive_dates_dont_break_the_global_checkpoint(self):
+        # Medium rows stored "2024-11-18 23:19:22" with no offset; mixing them
+        # with offset-aware dates used to raise TypeError in max().
+        self.add_row("https://medium.com/p/1", "2024-11-18 23:19:22", source="medium")
+        self.add_row("a" * 24, "2026-09-20T10:00:00.000+00:00", source="ghost")
+        self.assertEqual(
+            main.get_checkpoint(self.db), datetime(2026, 9, 20, 10, tzinfo=UTC)
+        )
+        self.assertEqual(
+            main.get_checkpoint(self.db, "medium"),
+            datetime(2024, 11, 18, 23, 19, 22, tzinfo=UTC),
+        )
+
+
+class TestCatchUpIsBounded(Base):
+    """A checkpoint far in the past must not import years in one run."""
+
+    def test_ghost_asks_oldest_first_when_catching_up(self):
+        self.add_row("0" * 24, "2026-09-01T10:00:00.000+00:00")
+        with mock.patch.object(
+            provider_ghost.requests, "get", return_value=ghost_response([])
+        ) as get:
+            main.main(self.db)
+        self.assertEqual(get.call_args.kwargs["params"]["order"], "published_at asc")
+
+    def test_ghost_asks_newest_first_without_a_checkpoint(self):
+        with mock.patch.object(
+            provider_ghost.requests, "get", return_value=ghost_response([])
+        ) as get:
+            main.main(self.db)
+        self.assertEqual(get.call_args.kwargs["params"]["order"], "published_at desc")
+
+    def test_newest_page_is_returned_oldest_first(self):
+        # No checkpoint: the API answers newest first, the caller wants the
+        # reverse so a partial run still advances the checkpoint safely.
+        with mock.patch.object(
+            provider_ghost.requests,
+            "get",
+            return_value=ghost_response([ghost_post(2, day=3), ghost_post(1, day=2)]),
+        ):
+            posts = provider_ghost.GhostProvider().fetch(since=None, limit=2)
+        self.assertEqual([p["title"] for p in posts], ["Post 1", "Post 2"])
+
+    def test_ghost_stops_at_the_cap(self):
+        pages = [
+            ghost_response([ghost_post(1), ghost_post(2)], next_page=2),
+            ghost_response([ghost_post(3), ghost_post(4)], next_page=3),
+        ]
+        calls = []
+
+        def fake_get(url, params, headers, timeout):
+            calls.append(params["page"])
+            return pages[params["page"] - 1]
+
+        with mock.patch.object(provider_ghost.requests, "get", side_effect=fake_get):
+            posts = provider_ghost.GhostProvider().fetch(
+                since=datetime(2024, 1, 1, tzinfo=UTC), limit=2, max_articles=3
+            )
+        self.assertEqual(len(posts), 3)
+        self.assertEqual(calls, [1, 2])  # stopped instead of walking the archive
+
+    def test_superdesk_stops_at_the_cap(self):
+        pages = [
+            superdesk_response([superdesk_article(1), superdesk_article(2)]),
+            superdesk_response([superdesk_article(3), superdesk_article(4)]),
+        ]
+        calls = []
+
+        def fake_post(url, json, headers, timeout):
+            calls.append(json["variables"]["offset"])
+            return pages[len(calls) - 1]
+
+        with mock.patch.object(
+            provider_superdesk.requests, "post", side_effect=fake_post
+        ):
+            articles = provider_superdesk.SuperdeskProvider().fetch(
+                since=datetime(2024, 1, 1, tzinfo=UTC), limit=2, max_articles=3
+            )
+        self.assertEqual(len(articles), 3)
+        self.assertEqual(calls, [0, 2])
+
+    def test_superdesk_orders_by_the_direction_it_asked_for(self):
+        with mock.patch.object(
+            provider_superdesk.requests, "post", return_value=superdesk_response([])
+        ) as post:
+            provider_superdesk.SuperdeskProvider().fetch(
+                since=datetime(2024, 1, 1, tzinfo=UTC), limit=2
+            )
+        self.assertEqual(post.call_args.kwargs["json"]["variables"]["order"], "asc")
+        with mock.patch.object(
+            provider_superdesk.requests, "post", return_value=superdesk_response([])
+        ) as post:
+            provider_superdesk.SuperdeskProvider().fetch(since=None, limit=2)
+        self.assertEqual(post.call_args.kwargs["json"]["variables"]["order"], "desc")
+
+    def test_a_capped_run_advances_the_checkpoint_so_the_next_one_continues(self):
+        self.add_row("0" * 24, "2026-09-01T10:00:00.000+00:00")
+        with mock.patch.object(settings, "PESACHECK_MAX_ARTICLES", 1):
+            with mock.patch.object(
+                provider_ghost.requests,
+                "get",
+                return_value=ghost_response(
+                    [ghost_post(1, day=2), ghost_post(2, day=3)], next_page=None
+                ),
+            ):
+                main.main(self.db)
+        self.assertEqual([d["title"] for d in self.posted], ["Post 1"])
         self.assertEqual(
             main.get_checkpoint(self.db, "ghost"), datetime(2026, 9, 2, 10, tzinfo=UTC)
         )
@@ -604,6 +755,7 @@ class TestBatchFailures(Base):
         self.add_row("0" * 24, "2026-09-01T10:00:00.000+00:00")
         before = main.get_checkpoint(self.db, "ghost")
         older, newer = ghost_post(1, day=2), ghost_post(2, day=3)
+        # Oldest first, as a catch-up fetch returns them.
         real_insert = self.db.insert_pesacheck_feed
 
         def flaky(feed):
@@ -612,26 +764,26 @@ class TestBatchFailures(Base):
             return real_insert(feed)
 
         with mock.patch.object(self.db, "insert_pesacheck_feed", side_effect=flaky):
-            self.run_ghost([newer, older])
+            self.run_ghost([older, newer])
         self.assertNotIn(older["id"], self.rows())
         self.assertNotIn(newer["id"], self.rows())
         self.assertEqual(main.get_checkpoint(self.db, "ghost"), before)
         self.assertEqual(self.posted, [])
-        self.run_ghost([newer, older])
+        self.run_ghost([older, newer])
         self.assertEqual([d["title"] for d in self.posted], ["Post 1", "Post 2"])
 
     def test_malformed_post_does_not_block_later_articles(self):
         bad = ghost_post(1, day=2)
         del bad["title"]
-        self.run_ghost([ghost_post(2, day=3), bad])
+        self.run_ghost([bad, ghost_post(2, day=3)])
         self.assertEqual([d["title"] for d in self.posted], ["Post 2"])
         self.assertIsInstance(self.sentry_exc.call_args.args[0], KeyError)
 
     def test_duplicate_post_across_pages_is_handled_once(self):
         dup = ghost_post(1, day=2)
         pages = [
-            ghost_response([ghost_post(2, day=3), dup], next_page=2),
-            ghost_response([dup, ghost_post(3, day=1)], next_page=None),
+            ghost_response([ghost_post(3, day=1), dup], next_page=2),
+            ghost_response([dup, ghost_post(2, day=3)], next_page=None),
         ]
         self.add_row("0" * 24, "2026-09-01T10:00:00.000+00:00")
         with mock.patch.object(

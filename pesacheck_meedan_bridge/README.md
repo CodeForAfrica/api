@@ -52,8 +52,15 @@ docker compose exec api-pesacheck_meedan_bridge ./pex
 
 Only the active provider's settings are required, so switching is a config
 change plus a restart. Each article records the provider it came from in the
-`source` column, and the fetch position is tracked per provider, so switching
-back and forth doesn't re-post or lose place.
+`source` column, and the fetch position is tracked per provider.
+
+A provider that has no articles of its own yet — the first run after a switch —
+starts from the newest article stored under *any* source, i.e. wherever the
+previous provider stopped. Both CMSes hold the same fact-checks under different
+ids and URLs, so starting from scratch would re-post them: Check would not
+reject them as duplicates, because its signature covers the fact-check URL,
+which differs between the two sites. It would also skip anything published
+beyond one page since the last run.
 
 Superdesk articles are posted to Check with a URL built from
 `PESACHECK_SITE_URL` + `/fact-checks/<desk>/<slug>`; point that at a preview
@@ -63,7 +70,12 @@ and the Check tags are the language, country, content type and harm type.
 ## How articles are picked up
 
 Each run fetches everything published since the newest article already stored
-for the active provider, paginating in pages of `PESACHECK_POSTS_LIMIT`.
+for the active provider, oldest first, in pages of `PESACHECK_POSTS_LIMIT` and
+at most `PESACHECK_MAX_ARTICLES` per run. The cap bounds a checkpoint far in
+the past — a long outage, or the first run after a provider switch — and
+costs nothing: the checkpoint advances as articles are stored, so the next run
+picks up where this one stopped.
+
 When nothing is stored yet, only the newest page is fetched, so the first run
 against a fresh database does not backfill PesaCheck's whole archive.
 

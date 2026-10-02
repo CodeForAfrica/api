@@ -1,6 +1,6 @@
 import json
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 
 import lxml.html  # nosec B410
 import requests
@@ -25,13 +25,18 @@ def extract_summary(feed):
     return summary_text.strip() if summary_text else None
 
 
-def get_checkpoint(db, source):
+def get_checkpoint(db, source=None):
     pub_dates = []
     for pub_date in db.get_pub_dates(source):
         try:
-            pub_dates.append(datetime.fromisoformat(pub_date))
+            parsed = datetime.fromisoformat(pub_date)
         except ValueError:
             continue
+        if parsed.tzinfo is None:
+            # Legacy Medium rows stored "2024-11-18 23:19:22" (UTC, unmarked);
+            # without this they can't be compared with the others.
+            parsed = parsed.replace(tzinfo=UTC)
+        pub_dates.append(parsed)
     return max(pub_dates) if pub_dates else None
 
 
@@ -140,12 +145,19 @@ def main(db):
         for pending in db.get_pesacheck_feeds_by_status("Pending"):
             post_and_record(pending, db, success_posts, duplicates)
         provider = get_provider(settings.PESACHECK_PROVIDER)
+        # On a provider's first run, carry on from wherever the previous one
+        # stopped: the same fact-checks exist in both CMSes, and re-posting
+        # them would create duplicate published reports in Check rather than
+        # being rejected (Check's signature covers the URL, which differs).
+        since = get_checkpoint(db, provider.name) or get_checkpoint(db)
         from_pesacheck = provider.fetch(
-            since=get_checkpoint(db, provider.name),
+            since=since,
             limit=settings.PESACHECK_POSTS_LIMIT,
+            max_articles=settings.PESACHECK_MAX_ARTICLES,
         )
-        # Oldest first, so the checkpoint never moves past an unstored article.
-        for post in reversed(from_pesacheck):
+        # Providers return oldest first, so the checkpoint never moves past an
+        # unstored article.
+        for post in from_pesacheck:
             try:
                 article = provider.parse(post)
             except Exception as exception:
