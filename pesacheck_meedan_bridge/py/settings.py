@@ -38,6 +38,13 @@ PESACHECK_MAX_ARTICLES = env.int("PESACHECK_MAX_ARTICLES", 100)
 # Public site, used to build the article URL posted to Check.
 PESACHECK_SITE_URL = env("PESACHECK_SITE_URL", "https://pesacheck.org")
 
+# How a Superdesk article's public URL is built, as a template over
+# {site}, {desk} (the Publisher route slug) and {slug}. The default is the
+# Ghost-era shape, which is what every fact-check already in Check links to;
+# switch it to "{site}/fact-checks/{desk}/{slug}" once the new site serves
+# that as the canonical URL.
+PESACHECK_ARTICLE_URL_TEMPLATE = env("PESACHECK_ARTICLE_URL_TEMPLATE", "{site}/{slug}/")
+
 # Ghost
 PESACHECK_URL = env("PESACHECK_URL", "https://pesacheck.org")
 PESACHECK_GHOST_CONTENT_API_KEY = env("PESACHECK_GHOST_CONTENT_API_KEY", None)

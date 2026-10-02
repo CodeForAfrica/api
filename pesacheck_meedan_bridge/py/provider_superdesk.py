@@ -167,7 +167,20 @@ class SuperdeskProvider:
         )
 
     def article_url(self, article):
-        base = settings.PESACHECK_SITE_URL.rstrip("/")
-        desk = (article.get("swp_route") or {}).get("slug")
-        slug = article["slug"]
-        return f"{base}/fact-checks/{desk}/{slug}" if desk else f"{base}/{slug}"
+        """The public URL posted to Check, per PESACHECK_ARTICLE_URL_TEMPLATE.
+
+        Publisher has no canonical-URL field (swp_redirect_route is empty), so
+        the URL is built here. It matters beyond the link itself: Check's
+        duplicate signature covers the fact-check URL, so changing the shape
+        makes already-imported articles look new.
+        """
+        desk = (article.get("swp_route") or {}).get("slug") or ""
+        template = settings.PESACHECK_ARTICLE_URL_TEMPLATE
+        if "{desk}" in template and not desk:
+            # An article with no route can't have a desk in its path.
+            template = "{site}/{slug}/"
+        return template.format(
+            site=settings.PESACHECK_SITE_URL.rstrip("/"),
+            desk=desk,
+            slug=article["slug"],
+        )

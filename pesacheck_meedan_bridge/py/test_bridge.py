@@ -317,7 +317,7 @@ class TestSuperdeskProvider(Base):
         article = provider_superdesk.SuperdeskProvider().parse(superdesk_article(1))
         self.assertEqual(article.guid, "uuid-1")
         self.assertEqual(article.title, "Post 1")
-        self.assertEqual(article.url, "https://pesacheck.org/fact-checks/somali/post-1")
+        self.assertEqual(article.url, "https://pesacheck.org/post-1/")
         self.assertEqual(article.summary, "Summary 1")  # HTML stripped
         self.assertEqual(article.language, "so")
         self.assertEqual(
@@ -331,9 +331,29 @@ class TestSuperdeskProvider(Base):
             settings, "PESACHECK_SITE_URL", "https://pesacheck-ui.vercel.app/"
         ):
             article = provider_superdesk.SuperdeskProvider().parse(superdesk_article(1))
-        self.assertEqual(
-            article.url, "https://pesacheck-ui.vercel.app/fact-checks/somali/post-1"
-        )
+        self.assertEqual(article.url, "https://pesacheck-ui.vercel.app/post-1/")
+
+    def test_url_shape_is_configurable(self):
+        # Default is the Ghost-era shape, which every fact-check already in
+        # Check links to; the new site's own shape is one setting away.
+        with mock.patch.object(
+            settings,
+            "PESACHECK_ARTICLE_URL_TEMPLATE",
+            "{site}/fact-checks/{desk}/{slug}",
+        ):
+            article = provider_superdesk.SuperdeskProvider().parse(superdesk_article(1))
+        self.assertEqual(article.url, "https://pesacheck.org/fact-checks/somali/post-1")
+
+    def test_an_article_without_a_route_still_gets_a_url(self):
+        article = superdesk_article(1)
+        article["swp_route"] = None
+        with mock.patch.object(
+            settings,
+            "PESACHECK_ARTICLE_URL_TEMPLATE",
+            "{site}/fact-checks/{desk}/{slug}",
+        ):
+            parsed = provider_superdesk.SuperdeskProvider().parse(article)
+        self.assertEqual(parsed.url, "https://pesacheck.org/post-1/")
 
     def test_falls_back_to_numeric_id_without_a_guid(self):
         article = superdesk_article(1)
@@ -418,9 +438,7 @@ class TestSuperdeskProvider(Base):
         self.assertEqual(
             self.posted[0]["set_tags"], ["Somali", "Kenya", "Quick Read", "Sports"]
         )
-        self.assertEqual(
-            self.posted[0]["url"], "https://pesacheck.org/fact-checks/somali/post-1"
-        )
+        self.assertEqual(self.posted[0]["url"], "https://pesacheck.org/post-1/")
         self.assertEqual(set(self.sources().values()), {"superdesk"})
         self.assertEqual(
             main.get_checkpoint(self.db, "superdesk"),

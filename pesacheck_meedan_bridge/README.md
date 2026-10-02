@@ -63,9 +63,16 @@ which differs between the two sites. It would also skip anything published
 beyond one page since the last run.
 
 Superdesk articles are posted to Check with a URL built from
-`PESACHECK_SITE_URL` + `/fact-checks/<desk>/<slug>`; point that at a preview
-deployment to test against one. Their language comes from Superdesk directly,
-and the Check tags are the language, country, content type and harm type.
+`PESACHECK_SITE_URL` and `PESACHECK_ARTICLE_URL_TEMPLATE` (`{site}`, `{desk}`,
+`{slug}`); point the site at a preview deployment to test against one.
+Publisher has no canonical-URL field — `swp_redirect_route` is empty — so the
+URL is assembled here, and the default keeps the Ghost-era `{site}/{slug}/`
+shape that every fact-check already in Check links to. The shape matters
+beyond the link: Check's duplicate signature covers the fact-check URL, so
+changing it makes already-imported articles look new.
+
+Their language comes from Superdesk directly, and the Check tags are the
+language, country, content type and harm type.
 
 ## How articles are picked up
 
