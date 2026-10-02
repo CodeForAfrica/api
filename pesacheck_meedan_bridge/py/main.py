@@ -8,19 +8,15 @@ import sentry_sdk
 import settings
 from check_api import DuplicateFactCheckError, post_to_check
 from database import PesacheckDatabase, PesacheckFeed
-
-
-def is_ghost_feed(feed):
-    # Legacy Medium rows use the post URL as guid; Ghost rows use the post id.
-    return not feed.guid.startswith("http")
+from provider_ghost import language_from_categories
+from providers import get_provider
 
 
 def extract_summary(feed):
-    # Ghost rows store the plain-text excerpt, which is the fact-check summary.
-    if is_ghost_feed(feed):
+    # Providers store a plain-text summary. Legacy Medium rows stored full
+    # HTML, where the summary preceded the first <figure>.
+    if feed.source != "medium":
         return feed.description.strip() or None
-    # Legacy Medium rows stored full HTML, where the summary preceded the first
-    # <figure>.
     tree = lxml.html.fromstring(feed.description)
     figures = tree.xpath("//figure")
     if len(figures) == 0 or figures[0].getprevious() is None:
@@ -29,88 +25,19 @@ def extract_summary(feed):
     return summary_text.strip() if summary_text else None
 
 
-# Identify the bridge instead of defaulting to "python-requests/x.y.z", which
-# Cloudflare challenges in front of pesacheck.org. Kept separate from
-# py/VERSION, which isn't packaged into the pex.
-USER_AGENT = "PesaCheckMeedanBridge/1.0 (+https://pesacheck.org)"
-
-language_codes = {
-    "english": "en",
-    "french": "fr",
-    "oromo": "om",
-    "afaan": "om",
-    "afaan oromoo": "om",
-    "swahili": "sw",
-    "kiswahili": "sw",
-    "amharic": "am",
-    "somali": "so",
-    "somaaliga": "so",
-    "tigrinya": "ti",
-    "arabic": "ar",
-}
-
-
-def parse_ghost_post(post):
-    # Internal Ghost tags (e.g. #hash-tags) are for site organisation only.
-    tags = [
-        tag["name"]
-        for tag in post.get("tags") or []
-        if tag.get("visibility") == "public"
-    ]
-    authors = [author["name"] for author in post.get("authors") or []]
-    return {
-        "title": post["title"],
-        "pubDate": post.get("published_at") or "",
-        "author": ", ".join(authors),
-        "guid": post["id"],
-        "link": post["url"],
-        "thumbnail": post.get("feature_image") or "",
-        "description": (
-            post.get("custom_excerpt") or post.get("excerpt") or ""
-        ).strip(),
-        "categories": tags,
-    }
-
-
-def get_checkpoint(db):
+def get_checkpoint(db, source=None):
     pub_dates = []
-    for pub_date in db.get_ghost_pub_dates():
+    for pub_date in db.get_pub_dates(source):
         try:
-            pub_dates.append(datetime.fromisoformat(pub_date))
+            parsed = datetime.fromisoformat(pub_date)
         except ValueError:
             continue
+        if parsed.tzinfo is None:
+            # Legacy Medium rows stored "2024-11-18 23:19:22" (UTC, unmarked);
+            # without this they can't be compared with the others.
+            parsed = parsed.replace(tzinfo=UTC)
+        pub_dates.append(parsed)
     return max(pub_dates) if pub_dates else None
-
-
-def fetch_from_pesacheck(since=None):
-    # Without a checkpoint (first run against Ghost), only fetch the newest
-    # page instead of backfilling PesaCheck's entire archive.
-    url = f"{settings.PESACHECK_URL.rstrip('/')}/ghost/api/content/posts/"
-    params = {
-        "key": settings.PESACHECK_GHOST_CONTENT_API_KEY,
-        "limit": settings.PESACHECK_GHOST_POSTS_LIMIT,
-        "order": "published_at desc",
-        "include": "tags,authors",
-        "fields": "id,title,url,excerpt,custom_excerpt,feature_image,published_at",
-    }
-    if since:
-        since_utc = since.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S")
-        params["filter"] = f"published_at:>='{since_utc}'"
-    headers = {"Accept-Version": "v5.0", "User-Agent": USER_AGENT}
-    posts = []
-    page = 1
-    while page:
-        params["page"] = page
-        response = requests.get(url, params=params, headers=headers, timeout=60)
-        if response.status_code != 200:
-            raise Exception(
-                f"An Error Occurred fetching data from pesacheck: {response.text}"
-            )
-        data = response.json()
-        posts.extend(data.get("posts") or [])
-        pagination = (data.get("meta") or {}).get("pagination") or {}
-        page = pagination.get("next") if since else None
-    return posts
 
 
 def store_in_database(feed, db):
@@ -120,12 +47,8 @@ def store_in_database(feed, db):
 
 def build_check_input(feed):
     categories = json.loads(feed.categories)
-    codes = [
-        language_codes[language.lower()]
-        for language in categories
-        if language.lower() in language_codes
-    ]
-    language = "en" if not codes else codes[0]
+    # Rows stored before the language column fall back to the tag names.
+    language = feed.language or language_from_categories(categories) or "en"
     claim_description = feed.title
     summary = extract_summary(feed) or "Not Found"
     return {
@@ -221,32 +144,45 @@ def main(db):
             )
         for pending in db.get_pesacheck_feeds_by_status("Pending"):
             post_and_record(pending, db, success_posts, duplicates)
-        from_pesacheck = fetch_from_pesacheck(since=get_checkpoint(db))
-        # Oldest first, so the checkpoint never moves past an unstored article.
-        for post in reversed(from_pesacheck):
+        provider = get_provider(settings.PESACHECK_PROVIDER)
+        # On a provider's first run, carry on from wherever the previous one
+        # stopped: the same fact-checks exist in both CMSes, and re-posting
+        # them would create duplicate published reports in Check rather than
+        # being rejected (Check's signature covers the URL, which differs).
+        since = get_checkpoint(db, provider.name) or get_checkpoint(db)
+        from_pesacheck = provider.fetch(
+            since=since,
+            limit=settings.PESACHECK_POSTS_LIMIT,
+            max_articles=settings.PESACHECK_MAX_ARTICLES,
+        )
+        # Providers return oldest first, so the checkpoint never moves past an
+        # unstored article.
+        for post in from_pesacheck:
             try:
-                item = parse_ghost_post(post)
+                article = provider.parse(post)
             except Exception as exception:
                 # A malformed post is skipped: holding the checkpoint behind it
                 # would block every later article indefinitely.
                 sentry_sdk.capture_exception(exception)
                 continue
             try:
-                if db.feed_exists(item["guid"]):
+                if db.feed_exists(article.guid):
                     continue
                 feed = PesacheckFeed(
-                    title=item["title"],
-                    pubDate=item["pubDate"],
-                    author=item["author"],
-                    guid=item["guid"],
-                    link=item["link"],
-                    categories=json.dumps(item["categories"]),
-                    thumbnail=item["thumbnail"],
-                    description=item["description"],
+                    title=article.title,
+                    pubDate=article.published_at,
+                    author=article.author,
+                    guid=article.guid,
+                    link=article.url,
+                    categories=json.dumps(article.categories),
+                    thumbnail=article.thumbnail,
+                    description=article.summary,
                     status="Pending",
                     check_project_media_id="",
                     check_full_url="",
                     claim_description_id="",
+                    source=provider.name,
+                    language=article.language,
                 )
                 store_in_database(feed, db=db)
             except Exception as exception:

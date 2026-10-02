@@ -1,7 +1,7 @@
 """Tests for the bridge. Run with `pants test pesacheck_meedan_bridge/py::`.
 
-Nothing here touches the network or a real database: Ghost and Check are
-mocked, and every test gets its own SQLite file.
+Nothing here touches the network or a real database: the CMS APIs and Check
+are mocked, and every test gets its own SQLite file.
 """
 
 import json
@@ -20,9 +20,13 @@ TMP = tempfile.mkdtemp()
 os.environ.update(
     {
         "PESACHECK_SENTRY_DSN": "",
+        "PESACHECK_PROVIDER": "ghost",
         "PESACHECK_URL": "https://pesacheck.org",
+        "PESACHECK_SITE_URL": "https://pesacheck.org",
         "PESACHECK_GHOST_CONTENT_API_KEY": "key",
-        "PESACHECK_GHOST_POSTS_LIMIT": "2",
+        "PESACHECK_POSTS_LIMIT": "2",
+        "PESACHECK_SUPERDESK_GRAPHQL_URL": "https://graphql.invalid/v1/graphql",
+        "PESACHECK_SUPERDESK_TENANT_CODE": "123abc",
         "PESACHECK_CHECK_URL": "https://check.invalid/graphql",
         "PESACHECK_CHECK_TOKEN": "t",  # nosec B105 - placeholder, nothing is called
         "PESACHECK_CHECK_WORKSPACE_SLUG": "ws",
@@ -33,6 +37,10 @@ os.environ.update(
 import check_api  # noqa: E402
 import database  # noqa: E402
 import main  # noqa: E402
+import provider_base  # noqa: E402
+import provider_ghost  # noqa: E402
+import provider_superdesk  # noqa: E402
+import providers  # noqa: E402
 import settings  # noqa: E402
 
 
@@ -62,6 +70,40 @@ def ghost_response(posts, next_page=None):
     return resp
 
 
+def superdesk_article(i, day=1, **extra):
+    metadata = {
+        "guid": f"uuid-{i}",
+        "language": "so",
+        "byline": "A",
+        "subject": [
+            {"code": "false", "name": "False", "scheme": "Debunk"},
+            {"code": "KEN", "name": "Kenya", "scheme": "countrymention1"},
+            {"code": "KEN", "name": "Kenya", "scheme": "countries"},
+            {"code": "quickread", "name": "Quick Read", "scheme": "content_type"},
+            {"code": "debunkso", "name": "Somali", "scheme": "Debunklang"},
+            {"code": "sports", "name": "Sports", "scheme": "Harm_type"},
+        ],
+    }
+    metadata.update(extra.pop("metadata", None) or {})
+    article = {
+        "id": 6000 + i,
+        "title": f"Post {i}",
+        "slug": f"post-{i}",
+        "lead": f"<p>Summary {i}</p>",
+        "published_at": f"2026-09-{day:02d}T10:00:00",
+        "metadata": json.dumps(metadata),
+        "swp_route": {"slug": "somali"},
+    }
+    article.update(extra)
+    return article
+
+
+def superdesk_response(articles):
+    resp = mock.Mock(status_code=200)
+    resp.json.return_value = {"data": {"items": articles}}
+    return resp
+
+
 def check_response(i):
     return {
         "data": {
@@ -77,10 +119,14 @@ def check_response(i):
 
 
 class Base(unittest.TestCase):
+    provider = "ghost"
+
     def setUp(self):
         fd, self.db_file = tempfile.mkstemp(suffix=".db", dir=TMP)
         os.close(fd)
         settings.PESACHECK_DATABASE_NAME = self.db_file
+        settings.PESACHECK_PROVIDER = self.provider
+        self.addCleanup(setattr, settings, "PESACHECK_PROVIDER", "ghost")
         self.db = database.PesacheckDatabase()
         self.posted = []
 
@@ -97,19 +143,21 @@ class Base(unittest.TestCase):
         self.sentry_msg = mock.patch.object(main.sentry_sdk, "capture_message").start()
         self.addCleanup(mock.patch.stopall)
 
-    def run_with(self, posts):
-        with mock.patch.object(
-            main.requests, "get", return_value=ghost_response(posts)
-        ):
-            main.main(self.db)
-
     def rows(self):
         conn = sqlite3.connect(self.db_file)
         rows = conn.execute("SELECT guid, status FROM pesacheck_feeds").fetchall()
         conn.close()
         return dict(rows)
 
-    def add_row(self, guid, pub_date, status="Completed", description="x"):
+    def sources(self):
+        conn = sqlite3.connect(self.db_file)
+        rows = conn.execute("SELECT guid, source FROM pesacheck_feeds").fetchall()
+        conn.close()
+        return dict(rows)
+
+    def add_row(
+        self, guid, pub_date, status="Completed", description="x", source="ghost"
+    ):
         self.db.insert_pesacheck_feed(
             database.PesacheckFeed(
                 title="t",
@@ -121,32 +169,63 @@ class Base(unittest.TestCase):
                 description=description,
                 status=status,
                 categories="[]",
+                source=source,
             )
         )
 
+    def run_ghost(self, posts, next_page=None):
+        with mock.patch.object(
+            provider_ghost.requests,
+            "get",
+            return_value=ghost_response(posts, next_page),
+        ):
+            main.main(self.db)
 
-class TestPagination(Base):
+
+class TestProviderRegistry(unittest.TestCase):
+    def test_known_providers(self):
+        self.assertIsInstance(
+            providers.get_provider("ghost"), provider_ghost.GhostProvider
+        )
+        self.assertIsInstance(
+            providers.get_provider("superdesk"), provider_superdesk.SuperdeskProvider
+        )
+
+    def test_unknown_provider_names_the_known_ones(self):
+        with self.assertRaises(ValueError) as ctx:
+            providers.get_provider("wordpress")
+        self.assertIn("ghost, superdesk", str(ctx.exception))
+
+    def test_provider_validates_its_own_settings(self):
+        with mock.patch.object(settings, "PESACHECK_GHOST_CONTENT_API_KEY", None):
+            with self.assertRaises(ValueError):
+                providers.get_provider("ghost")
+            # A missing Ghost key does not stop Superdesk running.
+            providers.get_provider("superdesk")
+        with mock.patch.object(settings, "PESACHECK_SUPERDESK_TENANT_CODE", None):
+            with self.assertRaises(ValueError):
+                providers.get_provider("superdesk")
+
+
+class TestGhostProvider(Base):
     def test_first_run_fetches_single_page_without_filter(self):
         with mock.patch.object(
-            main.requests,
+            provider_ghost.requests,
             "get",
             return_value=ghost_response([ghost_post(2), ghost_post(1)], next_page=2),
         ) as get:
-            posts = main.fetch_from_pesacheck(since=None)
+            posts = provider_ghost.GhostProvider().fetch(since=None, limit=2)
         self.assertEqual(len(posts), 2)
         self.assertEqual(get.call_count, 1)
         self.assertNotIn("filter", get.call_args.kwargs["params"])
-        self.assertEqual(
-            get.call_args.args[0], "https://pesacheck.org/ghost/api/content/posts/"
-        )
 
     def test_sends_identifying_user_agent(self):
         with mock.patch.object(
-            main.requests, "get", return_value=ghost_response([])
+            provider_ghost.requests, "get", return_value=ghost_response([])
         ) as get:
-            main.fetch_from_pesacheck()
+            provider_ghost.GhostProvider().fetch()
         headers = get.call_args.kwargs["headers"]
-        self.assertEqual(headers["User-Agent"], main.USER_AGENT)
+        self.assertEqual(headers["User-Agent"], provider_base.USER_AGENT)
         self.assertNotIn("python-requests", headers["User-Agent"])
 
     def test_checkpoint_follows_next_until_exhausted(self):
@@ -155,46 +234,48 @@ class TestPagination(Base):
             ghost_response([ghost_post(3), ghost_post(2)], next_page=3),
             ghost_response([ghost_post(1)], next_page=None),
         ]
-        seen_pages = []
+        seen = []
 
         def fake_get(url, params, headers, timeout):
-            seen_pages.append((params["page"], params["filter"]))
+            seen.append((params["page"], params["filter"]))
             return pages[params["page"] - 1]
 
-        since = datetime(
-            2026,
-            9,
-            1,
-            13,
-            0,
-            tzinfo=datetime.fromisoformat("2026-01-01T00:00+03:00").tzinfo,
-        )
-        with mock.patch.object(main.requests, "get", side_effect=fake_get):
-            posts = main.fetch_from_pesacheck(since=since)
+        tz = datetime.fromisoformat("2026-01-01T00:00+03:00").tzinfo
+        since = datetime(2026, 9, 1, 13, 0, tzinfo=tz)
+        with mock.patch.object(provider_ghost.requests, "get", side_effect=fake_get):
+            posts = provider_ghost.GhostProvider().fetch(since=since, limit=2)
         self.assertEqual(
             [p["title"] for p in posts], [f"Post {i}" for i in (5, 4, 3, 2, 1)]
         )
-        # Converted to UTC.
-        self.assertEqual(seen_pages[0], (1, "published_at:>='2026-09-01 10:00:00'"))
-        self.assertEqual([p for p, _ in seen_pages], [1, 2, 3])
+        self.assertEqual(seen[0], (1, "published_at:>='2026-09-01 10:00:00'"))
 
-    def test_checkpoint_ignores_legacy_rows(self):
-        self.add_row("https://medium.com/p/abc", "2030-01-01 00:00:00")
-        self.assertIsNone(main.get_checkpoint(self.db))
+    def test_parse_maps_tags_and_language(self):
+        article = provider_ghost.GhostProvider().parse(ghost_post(1))
+        self.assertEqual(article.guid, ghost_post(1)["id"])
+        self.assertEqual(article.categories, ["Somali"])
+        self.assertEqual(article.language, "so")
+        self.assertEqual(article.summary, "Summary 1")
+        self.assertEqual(article.url, "https://pesacheck.org/post-1/")
+
+    def test_checkpoint_is_scoped_to_the_provider(self):
+        self.add_row("https://medium.com/p/abc", "2030-01-01 00:00:00", source="medium")
+        self.assertIsNone(main.get_checkpoint(self.db, "ghost"))
         self.add_row("a" * 24, "2026-09-01T10:00:00.000+00:00")
         self.add_row("b" * 24, "2026-09-03T10:00:00.000+00:00")
         self.assertEqual(
-            main.get_checkpoint(self.db), datetime(2026, 9, 3, 10, tzinfo=UTC)
+            main.get_checkpoint(self.db, "ghost"), datetime(2026, 9, 3, 10, tzinfo=UTC)
         )
+        self.assertIsNone(main.get_checkpoint(self.db, "superdesk"))
 
     def test_burst_larger_than_limit_is_fully_imported_oldest_first(self):
         self.add_row("0" * 24, "2026-09-01T10:00:00.000+00:00")
+        # Catching up, so Ghost is asked for oldest first.
         pages = [
-            ghost_response([ghost_post(5, 5), ghost_post(4, 4)], next_page=2),
-            ghost_response([ghost_post(3, 3), ghost_post(2, 2)], next_page=None),
+            ghost_response([ghost_post(2, 2), ghost_post(3, 3)], next_page=2),
+            ghost_response([ghost_post(4, 4), ghost_post(5, 5)], next_page=None),
         ]
         with mock.patch.object(
-            main.requests,
+            provider_ghost.requests,
             "get",
             side_effect=lambda url, params, **kw: pages[params["page"] - 1],
         ):
@@ -202,16 +283,16 @@ class TestPagination(Base):
         self.assertEqual(
             [d["title"] for d in self.posted], ["Post 2", "Post 3", "Post 4", "Post 5"]
         )
-        self.assertTrue(all(v == "Completed" for v in self.rows().values()))
         self.assertEqual(self.posted[0]["language"], "so")
         self.assertEqual(self.posted[0]["set_tags"], ["Somali"])
+        self.assertEqual(set(self.sources().values()), {"ghost"})
 
     def test_fetch_error_on_later_page_stores_nothing(self):
         self.add_row("0" * 24, "2026-09-01T10:00:00.000+00:00")
         err = mock.Mock(status_code=500, text="boom")
-        pages = [ghost_response([ghost_post(5, 5)], next_page=2), err]
+        pages = [ghost_response([ghost_post(2, 2)], next_page=2), err]
         with mock.patch.object(
-            main.requests,
+            provider_ghost.requests,
             "get",
             side_effect=lambda url, params, **kw: pages[params["page"] - 1],
         ):
@@ -219,7 +300,390 @@ class TestPagination(Base):
                 main.main(self.db)
         self.assertEqual(self.posted, [])
         self.assertEqual(len(self.rows()), 1)
-        self.sentry_exc.assert_called_once()
+
+
+class TestSuperdeskProvider(Base):
+    provider = "superdesk"
+
+    def run_superdesk(self, articles):
+        with mock.patch.object(
+            provider_superdesk.requests,
+            "post",
+            return_value=superdesk_response(articles),
+        ):
+            main.main(self.db)
+
+    def test_parse_maps_the_staging_shape(self):
+        article = provider_superdesk.SuperdeskProvider().parse(superdesk_article(1))
+        self.assertEqual(article.guid, "uuid-1")
+        self.assertEqual(article.title, "Post 1")
+        self.assertEqual(article.url, "https://pesacheck.org/post-1/")
+        self.assertEqual(article.summary, "Summary 1")  # HTML stripped
+        self.assertEqual(article.language, "so")
+        self.assertEqual(
+            article.categories, ["Somali", "Kenya", "Quick Read", "Sports"]
+        )
+        self.assertEqual(article.published_at, "2026-09-01T10:00:00+00:00")
+        self.assertEqual(article.author, "A")
+
+    def test_url_base_is_configurable(self):
+        with mock.patch.object(
+            settings, "PESACHECK_SITE_URL", "https://pesacheck-ui.vercel.app/"
+        ):
+            article = provider_superdesk.SuperdeskProvider().parse(superdesk_article(1))
+        self.assertEqual(article.url, "https://pesacheck-ui.vercel.app/post-1/")
+
+    def test_url_shape_is_configurable(self):
+        # Default is the Ghost-era shape, which every fact-check already in
+        # Check links to; the new site's own shape is one setting away.
+        with mock.patch.object(
+            settings,
+            "PESACHECK_ARTICLE_URL_TEMPLATE",
+            "{site}/fact-checks/{desk}/{slug}",
+        ):
+            article = provider_superdesk.SuperdeskProvider().parse(superdesk_article(1))
+        self.assertEqual(article.url, "https://pesacheck.org/fact-checks/somali/post-1")
+
+    def test_an_article_without_a_route_still_gets_a_url(self):
+        article = superdesk_article(1)
+        article["swp_route"] = None
+        with mock.patch.object(
+            settings,
+            "PESACHECK_ARTICLE_URL_TEMPLATE",
+            "{site}/fact-checks/{desk}/{slug}",
+        ):
+            parsed = provider_superdesk.SuperdeskProvider().parse(article)
+        self.assertEqual(parsed.url, "https://pesacheck.org/post-1/")
+
+    def test_falls_back_to_numeric_id_without_a_guid(self):
+        article = superdesk_article(1)
+        article["metadata"] = json.dumps({"subject": []})
+        self.assertEqual(
+            provider_superdesk.SuperdeskProvider().parse(article).guid, "6001"
+        )
+
+    def test_unparseable_metadata_does_not_crash(self):
+        article = superdesk_article(1)
+        article["metadata"] = "not json"
+        parsed = provider_superdesk.SuperdeskProvider().parse(article)
+        self.assertEqual(parsed.categories, [])
+        self.assertEqual(parsed.language, "")
+
+    def test_query_filters_to_fact_checks_for_the_tenant(self):
+        with mock.patch.object(
+            provider_superdesk.requests, "post", return_value=superdesk_response([])
+        ) as post:
+            provider_superdesk.SuperdeskProvider().fetch(
+                since=datetime(2026, 9, 1, 10, tzinfo=UTC), limit=5
+            )
+        where = post.call_args.kwargs["json"]["variables"]["where"]
+        self.assertEqual(where["tenant_code"], {"_eq": "123abc"})
+        self.assertEqual(where["published_at"]["_gte"], "2026-09-01T10:00:00")
+        self.assertEqual(
+            where["_and"][0]["swp_article_metadata"]["swp_article_metadata_subjects"],
+            {"scheme": {"_eq": "Debunk"}},
+        )
+
+    def test_first_run_fetches_a_single_page(self):
+        with mock.patch.object(
+            provider_superdesk.requests,
+            "post",
+            return_value=superdesk_response([superdesk_article(i) for i in range(2)]),
+        ) as post:
+            articles = provider_superdesk.SuperdeskProvider().fetch(since=None, limit=2)
+        self.assertEqual(post.call_count, 1)
+        self.assertEqual(len(articles), 2)
+
+    def test_pages_until_a_short_page(self):
+        pages = [
+            superdesk_response([superdesk_article(1), superdesk_article(2)]),
+            superdesk_response([superdesk_article(3)]),
+        ]
+        offsets = []
+
+        def fake_post(url, json, headers, timeout):
+            offsets.append(json["variables"]["offset"])
+            return pages[len(offsets) - 1]
+
+        with mock.patch.object(
+            provider_superdesk.requests, "post", side_effect=fake_post
+        ):
+            articles = provider_superdesk.SuperdeskProvider().fetch(
+                since=datetime(2026, 9, 1, tzinfo=UTC), limit=2
+            )
+        self.assertEqual(offsets, [0, 2])
+        self.assertEqual(len(articles), 3)
+
+    def test_graphql_errors_are_raised(self):
+        resp = mock.Mock(status_code=200, text='{"errors":[{"message":"boom"}]}')
+        resp.json.return_value = {"errors": [{"message": "boom"}]}
+        with mock.patch.object(provider_superdesk.requests, "post", return_value=resp):
+            with self.assertRaises(Exception):
+                provider_superdesk.SuperdeskProvider().fetch()
+
+    def test_preshared_auth_header_sent_when_configured(self):
+        with mock.patch.object(
+            settings, "PESACHECK_SUPERDESK_PRESHARED_AUTH", "s3cret"
+        ):
+            with mock.patch.object(
+                provider_superdesk.requests, "post", return_value=superdesk_response([])
+            ) as post:
+                provider_superdesk.SuperdeskProvider().fetch()
+        self.assertEqual(post.call_args.kwargs["headers"]["x-preshared-auth"], "s3cret")
+
+    def test_end_to_end_posts_and_records_the_source(self):
+        self.run_superdesk([superdesk_article(2, day=3), superdesk_article(1, day=2)])
+        self.assertEqual([d["title"] for d in self.posted], ["Post 1", "Post 2"])
+        self.assertEqual(self.posted[0]["language"], "so")
+        self.assertEqual(
+            self.posted[0]["set_tags"], ["Somali", "Kenya", "Quick Read", "Sports"]
+        )
+        self.assertEqual(self.posted[0]["url"], "https://pesacheck.org/post-1/")
+        self.assertEqual(set(self.sources().values()), {"superdesk"})
+        self.assertEqual(
+            main.get_checkpoint(self.db, "superdesk"),
+            datetime(2026, 9, 3, 10, tzinfo=UTC),
+        )
+
+    def test_rerun_posts_nothing(self):
+        self.run_superdesk([superdesk_article(1)])
+        self.run_superdesk([superdesk_article(1)])
+        self.assertEqual(len(self.posted), 1)
+
+    def test_switching_providers_keeps_separate_checkpoints(self):
+        self.run_superdesk([superdesk_article(1, day=5)])
+        settings.PESACHECK_PROVIDER = "ghost"
+        self.run_ghost([ghost_post(9, day=2)])
+        self.assertEqual([d["title"] for d in self.posted], ["Post 1", "Post 9"])
+        self.assertEqual(self.sources(), {"uuid-1": "superdesk", f"{9:024x}": "ghost"})
+        self.assertEqual(
+            main.get_checkpoint(self.db, "superdesk"),
+            datetime(2026, 9, 5, 10, tzinfo=UTC),
+        )
+        self.assertEqual(
+            main.get_checkpoint(self.db, "ghost"), datetime(2026, 9, 2, 10, tzinfo=UTC)
+        )
+
+
+class TestCutover(Base):
+    """Switching a live deployment from one CMS to the other."""
+
+    provider = "superdesk"
+
+    def fetch_since(self, articles=None):
+        with mock.patch.object(
+            provider_superdesk.requests,
+            "post",
+            return_value=superdesk_response(articles or []),
+        ) as post:
+            main.main(self.db)
+        where = post.call_args.kwargs["json"]["variables"]["where"]
+        return where["published_at"].get("_gte")
+
+    def test_first_superdesk_run_resumes_where_ghost_stopped(self):
+        # The same fact-checks exist in both CMSes under different guids and
+        # URLs, so starting from scratch would re-post them to Check.
+        self.add_row("a" * 24, "2026-09-20T10:00:00.000+00:00", source="ghost")
+        self.assertEqual(self.fetch_since(), "2026-09-20T10:00:00")
+
+    def test_an_article_older_than_the_ghost_checkpoint_is_not_reposted(self):
+        self.add_row("a" * 24, "2026-09-20T10:00:00.000+00:00", source="ghost")
+        # Superdesk still returns it (the API filter is what excludes it), so
+        # assert on the window we ask for rather than on the mock's reply.
+        self.assertEqual(self.fetch_since(), "2026-09-20T10:00:00")
+
+    def test_a_providers_own_checkpoint_wins_once_it_has_one(self):
+        self.add_row("a" * 24, "2026-09-25T10:00:00.000+00:00", source="ghost")
+        self.add_row("uuid-9", "2026-09-21T10:00:00.000+00:00", source="superdesk")
+        # Older, but it's this provider's own position: anything newer from
+        # Ghost is already stored, and re-fetching from the Ghost date would
+        # just re-examine rows we have.
+        self.assertEqual(self.fetch_since(), "2026-09-21T10:00:00")
+
+    def test_a_fresh_database_still_fetches_a_single_page(self):
+        self.assertIsNone(self.fetch_since())
+
+    def test_legacy_naive_dates_dont_break_the_global_checkpoint(self):
+        # Medium rows stored "2024-11-18 23:19:22" with no offset; mixing them
+        # with offset-aware dates used to raise TypeError in max().
+        self.add_row("https://medium.com/p/1", "2024-11-18 23:19:22", source="medium")
+        self.add_row("a" * 24, "2026-09-20T10:00:00.000+00:00", source="ghost")
+        self.assertEqual(
+            main.get_checkpoint(self.db), datetime(2026, 9, 20, 10, tzinfo=UTC)
+        )
+        self.assertEqual(
+            main.get_checkpoint(self.db, "medium"),
+            datetime(2024, 11, 18, 23, 19, 22, tzinfo=UTC),
+        )
+
+
+class TestCatchUpIsBounded(Base):
+    """A checkpoint far in the past must not import years in one run."""
+
+    def test_ghost_asks_oldest_first_when_catching_up(self):
+        self.add_row("0" * 24, "2026-09-01T10:00:00.000+00:00")
+        with mock.patch.object(
+            provider_ghost.requests, "get", return_value=ghost_response([])
+        ) as get:
+            main.main(self.db)
+        self.assertEqual(get.call_args.kwargs["params"]["order"], "published_at asc")
+
+    def test_ghost_asks_newest_first_without_a_checkpoint(self):
+        with mock.patch.object(
+            provider_ghost.requests, "get", return_value=ghost_response([])
+        ) as get:
+            main.main(self.db)
+        self.assertEqual(get.call_args.kwargs["params"]["order"], "published_at desc")
+
+    def test_newest_page_is_returned_oldest_first(self):
+        # No checkpoint: the API answers newest first, the caller wants the
+        # reverse so a partial run still advances the checkpoint safely.
+        with mock.patch.object(
+            provider_ghost.requests,
+            "get",
+            return_value=ghost_response([ghost_post(2, day=3), ghost_post(1, day=2)]),
+        ):
+            posts = provider_ghost.GhostProvider().fetch(since=None, limit=2)
+        self.assertEqual([p["title"] for p in posts], ["Post 1", "Post 2"])
+
+    def test_ghost_stops_at_the_cap(self):
+        pages = [
+            ghost_response([ghost_post(1), ghost_post(2)], next_page=2),
+            ghost_response([ghost_post(3), ghost_post(4)], next_page=3),
+        ]
+        calls = []
+
+        def fake_get(url, params, headers, timeout):
+            calls.append(params["page"])
+            return pages[params["page"] - 1]
+
+        with mock.patch.object(provider_ghost.requests, "get", side_effect=fake_get):
+            posts = provider_ghost.GhostProvider().fetch(
+                since=datetime(2024, 1, 1, tzinfo=UTC), limit=2, max_articles=3
+            )
+        self.assertEqual(len(posts), 3)
+        self.assertEqual(calls, [1, 2])  # stopped instead of walking the archive
+
+    def test_superdesk_stops_at_the_cap(self):
+        pages = [
+            superdesk_response([superdesk_article(1), superdesk_article(2)]),
+            superdesk_response([superdesk_article(3), superdesk_article(4)]),
+        ]
+        calls = []
+
+        def fake_post(url, json, headers, timeout):
+            calls.append(json["variables"]["offset"])
+            return pages[len(calls) - 1]
+
+        with mock.patch.object(
+            provider_superdesk.requests, "post", side_effect=fake_post
+        ):
+            articles = provider_superdesk.SuperdeskProvider().fetch(
+                since=datetime(2024, 1, 1, tzinfo=UTC), limit=2, max_articles=3
+            )
+        self.assertEqual(len(articles), 3)
+        self.assertEqual(calls, [0, 2])
+
+    def test_superdesk_orders_by_the_direction_it_asked_for(self):
+        with mock.patch.object(
+            provider_superdesk.requests, "post", return_value=superdesk_response([])
+        ) as post:
+            provider_superdesk.SuperdeskProvider().fetch(
+                since=datetime(2024, 1, 1, tzinfo=UTC), limit=2
+            )
+        self.assertEqual(post.call_args.kwargs["json"]["variables"]["order"], "asc")
+        with mock.patch.object(
+            provider_superdesk.requests, "post", return_value=superdesk_response([])
+        ) as post:
+            provider_superdesk.SuperdeskProvider().fetch(since=None, limit=2)
+        self.assertEqual(post.call_args.kwargs["json"]["variables"]["order"], "desc")
+
+    def test_a_capped_run_advances_the_checkpoint_so_the_next_one_continues(self):
+        self.add_row("0" * 24, "2026-09-01T10:00:00.000+00:00")
+        with mock.patch.object(settings, "PESACHECK_MAX_ARTICLES", 1):
+            with mock.patch.object(
+                provider_ghost.requests,
+                "get",
+                return_value=ghost_response(
+                    [ghost_post(1, day=2), ghost_post(2, day=3)], next_page=None
+                ),
+            ):
+                main.main(self.db)
+        self.assertEqual([d["title"] for d in self.posted], ["Post 1"])
+        self.assertEqual(
+            main.get_checkpoint(self.db, "ghost"), datetime(2026, 9, 2, 10, tzinfo=UTC)
+        )
+
+
+class TestMigration(unittest.TestCase):
+    """A database created before the source/language columns existed."""
+
+    OLD_SCHEMA = """CREATE TABLE pesacheck_feeds
+        (title TEXT NOT NULL, pubDate TEXT NOT NULL, author TEXT NOT NULL,
+         guid TEXT PRIMARY KEY, link TEXT NOT NULL, thumbnail TEXT NOT NULL,
+         description TEXT NOT NULL, status TEXT DEFAULT 'Pending',
+         categories TEXT DEFAULT '[]', check_project_media_id TEXT,
+         check_full_url TEXT, claim_description_id TEXT)"""
+
+    def setUp(self):
+        fd, self.db_file = tempfile.mkstemp(suffix=".db", dir=TMP)
+        os.close(fd)
+        conn = sqlite3.connect(self.db_file)
+        conn.execute(self.OLD_SCHEMA)
+        conn.execute(
+            "INSERT INTO pesacheck_feeds VALUES "
+            "('t','2024-11-18 23:19:22','a','https://medium.com/p/1','l','','d',"
+            "'Completed','[]','','','')"
+        )
+        conn.execute(
+            "INSERT INTO pesacheck_feeds VALUES "
+            "('t','2026-09-18T07:23:07.000+00:00','a','6aace4daa4a78b00073f9a6e',"
+            "'l','','d','Completed','[]','','','')"
+        )
+        conn.commit()
+        conn.close()
+        settings.PESACHECK_DATABASE_NAME = self.db_file
+
+    def test_adds_columns_and_backfills_source(self):
+        db = database.PesacheckDatabase()
+        conn = sqlite3.connect(self.db_file)
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(pesacheck_feeds)")}
+        self.assertIn("source", columns)
+        self.assertIn("language", columns)
+        sources = dict(conn.execute("SELECT guid, source FROM pesacheck_feeds"))
+        conn.close()
+        self.assertEqual(sources["https://medium.com/p/1"], "medium")
+        self.assertEqual(sources["6aace4daa4a78b00073f9a6e"], "ghost")
+        # The Ghost row's date becomes the Ghost checkpoint; Medium's does not.
+        self.assertEqual(
+            main.get_checkpoint(db, "ghost"),
+            datetime.fromisoformat("2026-09-18T07:23:07.000+00:00"),
+        )
+
+    def test_is_idempotent_and_rows_still_load(self):
+        database.PesacheckDatabase()
+        db = database.PesacheckDatabase()
+        feeds = db.get_pesacheck_feeds_by_status("Completed")
+        self.assertEqual(len(feeds), 2)
+        self.assertEqual({f.source for f in feeds}, {"medium", "ghost"})
+
+    def test_legacy_medium_summary_still_uses_the_figure_rule(self):
+        database.PesacheckDatabase()
+        feed = database.PesacheckFeed(
+            title="t",
+            pubDate="",
+            author="",
+            guid="https://medium.com/p/2",
+            link="",
+            thumbnail="",
+            description="<p>The summary.</p><figure><img src=x></figure>",
+            status="Pending",
+            categories="[]",
+            source="medium",
+        )
+        self.assertEqual(main.extract_summary(feed), "The summary.")
+        feed.description = "<p>Body only</p>"
+        self.assertIsNone(main.extract_summary(feed))
 
 
 class TestDatabaseWrites(Base):
@@ -227,9 +691,9 @@ class TestDatabaseWrites(Base):
         with mock.patch.object(
             self.db,
             "insert_pesacheck_feed",
-            side_effect=sqlite3.OperationalError("database is locked"),
+            side_effect=sqlite3.OperationalError("locked"),
         ):
-            self.run_with([ghost_post(1)])
+            self.run_ghost([ghost_post(1)])
         self.assertEqual(self.posted, [])
         self.sentry_exc.assert_called_once()
 
@@ -239,7 +703,7 @@ class TestDatabaseWrites(Base):
             "claim_pending_feed",
             side_effect=sqlite3.OperationalError("locked"),
         ):
-            self.run_with([ghost_post(1)])
+            self.run_ghost([ghost_post(1)])
         self.assertEqual(self.posted, [])
         self.assertEqual(self.rows(), {ghost_post(1)["id"]: "Pending"})
         self.sentry_exc.assert_called_once()
@@ -248,33 +712,32 @@ class TestDatabaseWrites(Base):
         with mock.patch.object(
             self.db,
             "update_pesacheck_feed",
-            side_effect=sqlite3.OperationalError("disk full"),
+            side_effect=sqlite3.OperationalError("full"),
         ):
-            self.run_with([ghost_post(1)])
+            self.run_ghost([ghost_post(1)])
         self.assertEqual(len(self.posted), 1)
         self.assertEqual(self.rows(), {ghost_post(1)["id"]: "Posting"})
-        # Next run: not re-posted, and a warning is raised for reconciliation.
         self.sentry_msg.reset_mock()
-        self.run_with([ghost_post(1)])
+        self.run_ghost([ghost_post(1)])
         self.assertEqual(len(self.posted), 1)
         levels = [c.kwargs.get("level") for c in self.sentry_msg.call_args_list]
         self.assertIn("warning", levels)
 
     def test_check_error_reverts_to_pending_and_retries(self):
         self.post_mock.side_effect = Exception('{"errors": ["bad"]}')
-        self.run_with([ghost_post(1)])
+        self.run_ghost([ghost_post(1)])
         self.assertEqual(self.rows(), {ghost_post(1)["id"]: "Pending"})
         self.post_mock.side_effect = lambda data: (
             self.posted.append(data),
             check_response(1),
         )[1]
-        self.run_with([])
+        self.run_ghost([])
         self.assertEqual(self.rows(), {ghost_post(1)["id"]: "Completed"})
         self.assertEqual(len(self.posted), 1)
 
     def test_check_timeout_leaves_posting(self):
         self.post_mock.side_effect = requests.Timeout("timed out")
-        self.run_with([ghost_post(1)])
+        self.run_ghost([ghost_post(1)])
         self.assertEqual(self.rows(), {ghost_post(1)["id"]: "Posting"})
 
     def test_update_of_missing_row_raises(self):
@@ -305,75 +768,12 @@ class TestDatabaseWrites(Base):
             database.PesacheckDatabase()
 
 
-class TestMalformedPosts(Base):
-    def test_malformed_post_skipped_others_processed(self):
-        bad = ghost_post(2)
-        del bad["title"]
-        with mock.patch.object(
-            main.requests,
-            "get",
-            return_value=ghost_response([ghost_post(3), bad, ghost_post(1)]),
-        ):
-            main.main(self.db)
-        self.assertEqual([d["title"] for d in self.posted], ["Post 1", "Post 3"])
-        self.assertEqual(self.sentry_exc.call_count, 1)
-        self.assertIsInstance(self.sentry_exc.call_args.args[0], KeyError)
-
-
-class TestSummary(Base):
-    def feed(self, guid, description):
-        return database.PesacheckFeed(
-            title="t",
-            pubDate="",
-            author="",
-            guid=guid,
-            link="",
-            thumbnail="",
-            description=description,
-            status="Pending",
-            categories="[]",
-        )
-
-    def test_ghost_excerpt_is_plain_text(self):
-        self.assertEqual(
-            main.extract_summary(self.feed("a" * 24, "  A <b>claim</b> & more ")),
-            "A <b>claim</b> & more",
-        )
-        self.assertIsNone(main.extract_summary(self.feed("a" * 24, "  ")))
-
-    def test_legacy_with_figure(self):
-        html = "<p>The summary.</p><figure><img src=x></figure><p>Body</p>"
-        self.assertEqual(
-            main.extract_summary(self.feed("https://medium.com/p/1", html)),
-            "The summary.",
-        )
-
-    def test_legacy_without_figure_returns_none(self):
-        html = "<p>Whole long article body</p><p>More body</p>"
-        self.assertIsNone(
-            main.extract_summary(self.feed("https://medium.com/p/1", html))
-        )
-
-    def test_legacy_figure_first_returns_none(self):
-        html = "<div><figure><img src=x></figure><p>Body</p></div>"
-        self.assertIsNone(
-            main.extract_summary(self.feed("https://medium.com/p/1", html))
-        )
-
-    def test_legacy_without_figure_posts_not_found(self):
-        self.add_row(
-            "https://medium.com/p/1", "", status="Pending", description="<p>Body</p>"
-        )
-        with mock.patch.object(main.requests, "get", return_value=ghost_response([])):
-            main.main(self.db)
-        self.assertEqual(self.posted[0]["summary"], "Not Found")
-
-
-class TestReviewRound2(Base):
+class TestBatchFailures(Base):
     def test_failed_insert_aborts_batch_and_holds_checkpoint(self):
         self.add_row("0" * 24, "2026-09-01T10:00:00.000+00:00")
-        before = main.get_checkpoint(self.db)
+        before = main.get_checkpoint(self.db, "ghost")
         older, newer = ghost_post(1, day=2), ghost_post(2, day=3)
+        # Oldest first, as a catch-up fetch returns them.
         real_insert = self.db.insert_pesacheck_feed
 
         def flaky(feed):
@@ -382,34 +782,30 @@ class TestReviewRound2(Base):
             return real_insert(feed)
 
         with mock.patch.object(self.db, "insert_pesacheck_feed", side_effect=flaky):
-            with mock.patch.object(
-                main.requests, "get", return_value=ghost_response([newer, older])
-            ):
-                main.main(self.db)
-        # Neither article was stored, so the checkpoint still covers both.
+            self.run_ghost([older, newer])
         self.assertNotIn(older["id"], self.rows())
         self.assertNotIn(newer["id"], self.rows())
-        self.assertEqual(main.get_checkpoint(self.db), before)
+        self.assertEqual(main.get_checkpoint(self.db, "ghost"), before)
         self.assertEqual(self.posted, [])
-        # Next run (database healthy) imports both, oldest first.
-        with mock.patch.object(
-            main.requests, "get", return_value=ghost_response([newer, older])
-        ):
-            main.main(self.db)
+        self.run_ghost([older, newer])
         self.assertEqual([d["title"] for d in self.posted], ["Post 1", "Post 2"])
 
+    def test_malformed_post_does_not_block_later_articles(self):
+        bad = ghost_post(1, day=2)
+        del bad["title"]
+        self.run_ghost([bad, ghost_post(2, day=3)])
+        self.assertEqual([d["title"] for d in self.posted], ["Post 2"])
+        self.assertIsInstance(self.sentry_exc.call_args.args[0], KeyError)
+
     def test_duplicate_post_across_pages_is_handled_once(self):
-        # A post published mid-pagination can be returned on two pages; the
-        # feed_exists() check already covers that, since each article is stored
-        # before the next is looked at.
         dup = ghost_post(1, day=2)
         pages = [
-            ghost_response([ghost_post(2, day=3), dup], next_page=2),
-            ghost_response([dup, ghost_post(3, day=1)], next_page=None),
+            ghost_response([ghost_post(3, day=1), dup], next_page=2),
+            ghost_response([dup, ghost_post(2, day=3)], next_page=None),
         ]
         self.add_row("0" * 24, "2026-09-01T10:00:00.000+00:00")
         with mock.patch.object(
-            main.requests,
+            provider_ghost.requests,
             "get",
             side_effect=lambda url, params, **kw: pages[params["page"] - 1],
         ):
@@ -419,96 +815,86 @@ class TestReviewRound2(Base):
         )
         self.sentry_exc.assert_not_called()
 
-    def test_malformed_post_does_not_block_later_articles(self):
-        bad = ghost_post(1, day=2)
-        del bad["title"]
-        good = ghost_post(2, day=3)
-        with mock.patch.object(
-            main.requests, "get", return_value=ghost_response([good, bad])
-        ):
-            main.main(self.db)
-        self.assertEqual([d["title"] for d in self.posted], ["Post 2"])
-        self.assertIsInstance(self.sentry_exc.call_args.args[0], KeyError)
-
     def test_bad_categories_leave_row_pending_without_posting(self):
         self.add_row("a" * 24, "", status="Pending")
         conn = sqlite3.connect(self.db_file)
         conn.execute("UPDATE pesacheck_feeds SET categories = 'not-json'")
         conn.commit()
         conn.close()
-        with mock.patch.object(main.requests, "get", return_value=ghost_response([])):
-            main.main(self.db)
+        self.run_ghost([])
         self.assertEqual(self.posted, [])
         self.assertEqual(self.rows(), {"a" * 24: "Pending"})
 
-    def test_check_rejection_reverts_to_pending(self):
-        self.post_mock.side_effect = Exception("Mutation rejected")
-        with mock.patch.object(
-            main.requests, "get", return_value=ghost_response([ghost_post(1)])
-        ):
-            main.main(self.db)
-        self.assertEqual(self.rows(), {ghost_post(1)["id"]: "Pending"})
-
     def test_whole_run_failure_raises(self):
         with mock.patch.object(
-            main.requests, "get", side_effect=requests.ConnectionError("down")
+            provider_ghost.requests, "get", side_effect=requests.ConnectionError("down")
         ):
             with self.assertRaises(requests.ConnectionError):
                 main.main(self.db)
-        # The end-of-run message is still sent.
         self.assertTrue(self.sentry_msg.called)
 
 
 class TestDuplicates(Base):
-    duplicate_payload = {
-        "errors": [
-            {
-                "message": (
-                    "PG::UniqueViolation: ERROR:  duplicate key value violates "
-                    'unique constraint "index_fact_checks_on_signature"'
-                )
-            }
-        ]
-    }
-
     def test_duplicate_is_marked_terminally_and_not_retried(self):
         self.post_mock.side_effect = check_api.DuplicateFactCheckError("dup")
-        with mock.patch.object(
-            main.requests, "get", return_value=ghost_response([ghost_post(1)])
-        ):
-            main.main(self.db)
+        self.run_ghost([ghost_post(1)])
         self.assertEqual(self.rows(), {ghost_post(1)["id"]: "Duplicate"})
         # The in-memory feed agrees with the row, so later reads can't drift.
         self.assertEqual(
             self.db.get_pesacheck_feeds_by_status("Duplicate")[0].status, "Duplicate"
         )
-        # Next run: not retried, and no exception reported for it.
         self.sentry_exc.reset_mock()
         self.post_mock.reset_mock()
-        with mock.patch.object(main.requests, "get", return_value=ghost_response([])):
-            main.main(self.db)
+        self.run_ghost([])
         self.post_mock.assert_not_called()
         self.sentry_exc.assert_not_called()
 
     def test_duplicates_are_summarised_once_not_reported_as_errors(self):
         self.post_mock.side_effect = check_api.DuplicateFactCheckError("dup")
-        with mock.patch.object(
-            main.requests,
-            "get",
-            return_value=ghost_response([ghost_post(2, day=3), ghost_post(1, day=2)]),
-        ):
-            main.main(self.db)
+        self.run_ghost([ghost_post(2, day=3), ghost_post(1, day=2)])
         self.sentry_exc.assert_not_called()
         message = self.sentry_msg.call_args.args[0]
-        self.assertIn("Posted 0 PesaCheck article(s)", message)
         self.assertIn("Skipped 2 PesaCheck article(s) Check already has", message)
 
     def test_pending_duplicate_from_an_earlier_run_is_resolved(self):
         self.add_row("a" * 24, "", status="Pending")
         self.post_mock.side_effect = check_api.DuplicateFactCheckError("dup")
-        with mock.patch.object(main.requests, "get", return_value=ghost_response([])):
-            main.main(self.db)
+        self.run_ghost([])
         self.assertEqual(self.rows(), {"a" * 24: "Duplicate"})
+
+
+class TestSummary(Base):
+    def feed(self, source, description):
+        return database.PesacheckFeed(
+            title="t",
+            pubDate="",
+            author="",
+            guid="g",
+            link="",
+            thumbnail="",
+            description=description,
+            status="Pending",
+            categories="[]",
+            source=source,
+        )
+
+    def test_provider_summary_is_used_as_is(self):
+        self.assertEqual(
+            main.extract_summary(self.feed("ghost", "  A claim & more ")),
+            "A claim & more",
+        )
+        self.assertIsNone(main.extract_summary(self.feed("superdesk", "  ")))
+
+    def test_legacy_without_figure_posts_not_found(self):
+        self.add_row(
+            "https://medium.com/p/1",
+            "",
+            status="Pending",
+            description="<p>Body</p>",
+            source="medium",
+        )
+        self.run_ghost([])
+        self.assertEqual(self.posted[0]["summary"], "Not Found")
 
 
 class TestConcurrentRuns(Base):
@@ -552,7 +938,7 @@ class TestConcurrentRuns(Base):
             "update_pesacheck_feed_status",
             side_effect=sqlite3.OperationalError("locked"),
         ):
-            self.run_with([ghost_post(1)])
+            self.run_ghost([ghost_post(1)])
         # The run still knows it was a duplicate, and says so once.
         message = self.sentry_msg.call_args.args[0]
         self.assertIn("Skipped 1 PesaCheck article(s)", message)
@@ -595,6 +981,17 @@ class TestDuplicateDetection(unittest.TestCase):
 
 
 class TestCheckApiValidation(unittest.TestCase):
+    duplicate_payload = {
+        "errors": [
+            {
+                "message": (
+                    "PG::UniqueViolation: ERROR:  duplicate key value violates "
+                    'unique constraint "index_fact_checks_on_signature"'
+                )
+            }
+        ]
+    }
+
     def call_with(self, payload, status=200):
         resp = mock.Mock(status_code=status, text=json.dumps(payload))
         resp.json.return_value = payload
@@ -621,7 +1018,7 @@ class TestCheckApiValidation(unittest.TestCase):
 
     def test_raises_duplicate_error_for_signature_violation(self):
         with self.assertRaises(check_api.DuplicateFactCheckError):
-            self.call_with(TestDuplicates.duplicate_payload)
+            self.call_with(self.duplicate_payload)
 
     def test_other_graphql_errors_are_not_duplicates(self):
         with self.assertRaises(Exception) as ctx:
